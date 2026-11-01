@@ -37,11 +37,14 @@ Vercel (functions in `cle1`, next to the Neon database in us-east-2).
 
 ```bash
 npm install
-cp .env.example .env.local      # fill in DATABASE_URL, SESSION_SECRET, CRON_SECRET, ADMIN_PASSWORD
-npm run db:migrate              # creates the `salon` schema and tables
-npm run db:seed:demo            # catalogue, staff, roles, owner account and sample bookings
+cp .env.example .env.local      # fill in SESSION_SECRET, CRON_SECRET, ADMIN_PASSWORD
+npm run db:dev                  # own terminal: local PostgreSQL; the first run migrates and seeds sample bookings
 npm run dev                     # http://localhost:3210/portfolio/appointments
 ```
+
+Local development and tests use only the local database from `npm run db:dev`
+(`DATABASE_URL=postgres://postgres:postgres@127.0.0.1:54329/salon_dev`, data in `.dev-db/`). The
+production database URL is set only in the Vercel project; never put it in `.env.local`.
 
 The owner account (`ADMIN_EMAIL` / `ADMIN_PASSWORD`) has full access. Keep it private: the public
 demo uses separate read-only demo accounts.
@@ -51,6 +54,7 @@ demo uses separate read-only demo accounts.
 | Command                            | Purpose                                                            |
 | ---------------------------------- | ------------------------------------------------------------------ |
 | `npm run dev` / `build` / `start`  | Next.js on port 3210                                               |
+| `npm run db:dev`                   | Local development PostgreSQL (first run: migrate + demo seed)      |
 | `npm run check`                    | Lint, typecheck, tests and production build                        |
 | `npm test`                         | Unit and integration tests (Vitest)                                |
 | `npm run test:e2e`                 | Playwright against the dev server, or `E2E_BASE_URL`               |

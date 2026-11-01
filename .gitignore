@@ -37,4 +37,7 @@ next-env.d.ts
 /.cache/
 /artifacts/
 
+# local development database (npm run db:dev)
+/.dev-db/
+
 .vercel

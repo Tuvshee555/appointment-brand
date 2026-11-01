@@ -24,6 +24,7 @@
     "db:seed:demo": "tsx scripts/seed.ts --demo",
     "db:reset-demo": "tsx scripts/reset-demo.ts",
     "db:inspect": "tsx scripts/inspect.ts",
+    "db:dev": "tsx scripts/dev-db.ts",
     "images:prepare": "node scripts/prepare-images.mjs",
     "check": "npm run lint && npm run typecheck && npm run test && npm run build"
   },
