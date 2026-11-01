@@ -211,6 +211,14 @@ export function dayBounds(dateKey: DateKey): { start: Date; end: Date } {
   return { start: ubToUtc(dateKey, 0), end: ubToUtc(addDays(dateKey, 1), 0) }
 }
 
+/** "Өнөөдөр" / "Маргааш" / "11 сарын 3, Мягмар". */
+export function relativeDayLabel(dateKey: DateKey, today: DateKey): string {
+  const d = diffDays(dateKey, today)
+  if (d === 0) return 'Өнөөдөр'
+  if (d === 1) return 'Маргааш'
+  return formatDateKey(dateKey)
+}
+
 /** Minutes from local midnight of an instant. */
 export function minutesOfDay(value: Date | string): number {
   return toUbParts(asDate(value)).minutesOfDay

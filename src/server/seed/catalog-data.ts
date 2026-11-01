@@ -291,6 +291,7 @@ export const SERVICES: ServiceSeed[] = [
     image: 'polish-wall',
     skills: ['extensions'],
     addons: ['french-tip', 'simple-art-addon', 'premium-art-addon', 'repair-addon', 'pearl-decor'],
+    featured: true,
   },
   {
     slug: 'nail-repair',

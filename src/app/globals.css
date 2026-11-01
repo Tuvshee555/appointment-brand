@@ -1,0 +1,183 @@
+@import 'tailwindcss';
+
+/*
+ * SUVD design tokens — warm ivory canvas, porcelain surfaces, deep cocoa
+ * primary, muted blush accent, near-black ink. Contrast: ink on ivory > 15:1,
+ * ink-3 on ivory ≈ 5.6:1, ivory on cocoa-700 ≈ 10:1.
+ */
+@theme {
+  --font-sans: var(--font-golos), ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-display: var(--font-cormorant), ui-serif, Georgia, serif;
+
+  --color-ivory: #f7f2ea;
+  --color-porcelain: #fcfaf6;
+  --color-sand: #ede4d8;
+  --color-sand-2: #e4d8c8;
+  --color-line: #e3d8ca;
+  --color-line-strong: #cdbfae;
+
+  --color-ink: #1a1512;
+  --color-ink-2: #45392f;
+  --color-ink-3: #6b5d52;
+
+  --color-cocoa-50: #f6f0eb;
+  --color-cocoa-100: #eadfd6;
+  --color-cocoa-200: #d6c3b4;
+  --color-cocoa-300: #b99d88;
+  --color-cocoa-400: #9a7a64;
+  --color-cocoa-500: #7c5e4b;
+  --color-cocoa-600: #614739;
+  --color-cocoa-700: #4a362c;
+  --color-cocoa-800: #33251e;
+  --color-cocoa-900: #241a15;
+
+  --color-blush-50: #faf2ef;
+  --color-blush-100: #f3e3dd;
+  --color-blush-200: #e8cdc3;
+  --color-blush-300: #d7ae9f;
+  --color-blush-400: #c89585;
+  --color-blush-500: #b98474;
+  --color-blush-700: #8a5547;
+
+  --color-sage-50: #eef2ec;
+  --color-sage-600: #5b7558;
+  --color-sage-700: #485e46;
+  --color-amber-50: #fbf3e4;
+  --color-amber-600: #a4741f;
+  --color-amber-700: #85601c;
+  --color-rose-50: #fbecea;
+  --color-rose-600: #a3473a;
+  --color-rose-700: #86392e;
+  --color-sky-50: #edf2f6;
+  --color-sky-600: #4b6984;
+  --color-sky-700: #3c556c;
+
+  --radius-xs: 0.25rem;
+  --radius-card: 0.75rem;
+
+  --shadow-soft: 0 1px 2px rgb(36 26 21 / 0.04), 0 8px 24px -12px rgb(36 26 21 / 0.18);
+  --shadow-lift: 0 2px 6px rgb(36 26 21 / 0.06), 0 22px 48px -24px rgb(36 26 21 / 0.35);
+
+  --animate-fade-in: fade-in 180ms ease-out;
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+      transform: translateY(4px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+}
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+    text-rendering: optimizeLegibility;
+    scroll-behavior: smooth;
+  }
+  body {
+    background: var(--color-ivory);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+  }
+  :focus-visible {
+    outline: 2px solid var(--color-cocoa-600);
+    outline-offset: 2px;
+  }
+  ::selection {
+    background: var(--color-blush-200);
+  }
+  input[type='number']::-webkit-inner-spin-button,
+  input[type='number']::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+  input[type='number'] {
+    -moz-appearance: textfield;
+  }
+  dialog::backdrop {
+    background: rgb(36 26 21 / 0.5);
+  }
+  summary {
+    cursor: pointer;
+  }
+  summary::-webkit-details-marker {
+    display: none;
+  }
+}
+
+@layer components {
+  .display {
+    font-family: var(--font-display);
+    font-weight: 500;
+    letter-spacing: -0.012em;
+    line-height: 1.04;
+  }
+  .eyebrow {
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--color-cocoa-500);
+  }
+  .container-page {
+    margin-inline: auto;
+    width: 100%;
+    max-width: 78rem;
+    padding-inline: 1rem;
+  }
+  @media (min-width: 640px) {
+    .container-page {
+      padding-inline: 1.5rem;
+    }
+  }
+  @media (min-width: 1024px) {
+    .container-page {
+      padding-inline: 2rem;
+    }
+  }
+  .surface {
+    background: var(--color-porcelain);
+    border: 1px solid var(--color-line);
+    border-radius: var(--radius-card);
+  }
+  .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+  /* Price list dotted leader between name and price. */
+  .leader {
+    flex: 1;
+    min-width: 1rem;
+    border-bottom: 1px dotted var(--color-line-strong);
+    transform: translateY(-0.3em);
+  }
+  .grain {
+    background-image: radial-gradient(rgb(36 26 21 / 0.035) 1px, transparent 1px);
+    background-size: 3px 3px;
+  }
+  .no-scrollbar {
+    scrollbar-width: none;
+  }
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+@media print {
+  .no-print {
+    display: none !important;
+  }
+}

@@ -27,6 +27,7 @@ const nextConfig: NextConfig = {
   basePath,
   env: { NEXT_PUBLIC_BASE_PATH: basePath },
   cacheComponents: true,
+  partialPrefetching: true,
   poweredByHeader: false,
   turbopack: {
     rules: {

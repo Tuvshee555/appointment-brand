@@ -180,14 +180,14 @@ export async function monthAvailability(
   db: Database,
   prepared: PreparedSelection,
   month: string,
-  { now }: { now: Date },
+  { now, excludeAppointmentId }: { now: Date; excludeAppointmentId?: string },
 ): Promise<CalendarDay[]> {
   const { config, quote, candidates } = prepared
   const first = `${month}-01`
   const last = addDays(first, daysInMonth(first) - 1)
   const [specials, data] = await Promise.all([
     loadSpecialDays(db, config.salon.id, first, last),
-    loadStaffScheduleData(db, { staffIds: candidates.map((c) => c.id), from: first, to: last, now }),
+    loadStaffScheduleData(db, { staffIds: candidates.map((c) => c.id), from: first, to: last, now, excludeAppointmentId }),
   ])
   const days: CalendarDay[] = []
   for (let date = first; diffDays(date, last) <= 0; date = addDays(date, 1)) {
