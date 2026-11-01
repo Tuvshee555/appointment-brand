@@ -29,7 +29,7 @@ function normaliseUrl(connectionString: string): string {
 export function createPool(connectionString: string, overrides: PoolConfig = {}): Pool {
   return new Pool({
     connectionString: normaliseUrl(connectionString),
-    max: Number(process.env.DB_POOL_MAX ?? 5),
+    max: Number(process.env.DB_POOL_MAX || 5),
     idleTimeoutMillis: 20_000,
     connectionTimeoutMillis: 15_000,
     ...overrides,

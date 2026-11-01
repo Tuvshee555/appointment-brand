@@ -18,7 +18,7 @@ export interface SalonConfig {
 const salonIdCache = new Map<string, string>()
 
 /** The salon this deployment serves (SALON_SLUG, default: the demo salon). */
-export async function resolveSalonId(db: Database, slug = process.env.SALON_SLUG ?? DEMO_SALON.slug): Promise<string> {
+export async function resolveSalonId(db: Database, slug = process.env.SALON_SLUG || DEMO_SALON.slug): Promise<string> {
   const cached = salonIdCache.get(slug)
   if (cached) return cached
   const [row] = await db.select({ id: t.salons.id }).from(t.salons).where(eq(t.salons.slug, slug))

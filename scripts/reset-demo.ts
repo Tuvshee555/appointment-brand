@@ -9,7 +9,7 @@ import { loadEnv, withDb } from './lib/tasks'
 async function main() {
   const url = loadEnv()
   await withDb(url, async (db) => {
-    const slug = process.env.SALON_SLUG ?? 'suvd'
+    const slug = process.env.SALON_SLUG || 'suvd'
     const [salon] = await db
       .select()
       .from(t.salons)
@@ -18,8 +18,11 @@ async function main() {
       console.error(`[reset-demo] Salon "${slug}" is not a demo salon — nothing was changed.`)
       process.exit(1)
     }
-    await deleteDemoData(db, salon.id)
-    console.log(`[reset-demo] ${await seedDemo(db, { salonId: salon.id, force: true })}`)
+    const summary = await db.transaction(async (tx) => {
+      await deleteDemoData(tx, salon.id)
+      return seedDemo(tx, { salonId: salon.id, force: true })
+    })
+    console.log(`[reset-demo] ${summary}`)
   })
 }
 

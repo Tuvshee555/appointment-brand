@@ -179,7 +179,7 @@ export async function spentToday(ctx: ServiceContext): Promise<number> {
 }
 
 export function underBudget(spent: number) {
-  return spent < Number(process.env.AI_DAILY_BUDGET_USD ?? 2)
+  return spent < Number(process.env.AI_DAILY_BUDGET_USD || 2)
 }
 
 async function recordUsage(ctx: ServiceContext, model: string, usage: Anthropic.Beta.BetaUsage) {

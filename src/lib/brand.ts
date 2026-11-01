@@ -41,7 +41,7 @@ export const BRAND = {
 export const PORTFOLIO = {
   agency: 'Ursgal Digital',
   /** Absolute so it also works when the salon runs on its own domain. */
-  portfolioUrl: process.env.NEXT_PUBLIC_PORTFOLIO_URL ?? 'https://ursgal-digital.vercel.app/#demos',
+  portfolioUrl: process.env.NEXT_PUBLIC_PORTFOLIO_URL || 'https://ursgal-digital.vercel.app/#demos',
   note: 'Ursgal Digital-ын дотоод демо. Салон, ажилтан, үйлчлүүлэгч, захиалга бүгд зохиомол.',
 } as const
 

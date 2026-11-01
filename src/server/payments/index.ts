@@ -18,8 +18,8 @@ export function paymentMode(): PaymentMode {
 }
 
 export function qpayCredentials() {
-  const clientId = process.env.QPAY_USERNAME ?? process.env.QPAY_CLIENT_ID
-  const clientSecret = process.env.QPAY_PASSWORD ?? process.env.QPAY_CLIENT_SECRET
+  const clientId = process.env.QPAY_USERNAME || process.env.QPAY_CLIENT_ID
+  const clientSecret = process.env.QPAY_PASSWORD || process.env.QPAY_CLIENT_SECRET
   const invoiceCode = process.env.QPAY_INVOICE_CODE
   return clientId && clientSecret && invoiceCode ? { clientId, clientSecret, invoiceCode } : null
 }

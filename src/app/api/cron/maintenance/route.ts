@@ -19,8 +19,12 @@ export async function GET(req: Request) {
   for (const salon of salons) {
     const config = await loadSalonConfig(db, salon.id)
     if (salon.isDemo && process.env.DEMO_MODE === 'true') {
-      await deleteDemoData(db, salon.id)
-      report[salon.slug] = { demoReset: await seedDemo(db, { salonId: salon.id, now, force: true }) }
+      // One transaction: visitors see either yesterday's sample data or today's, never an empty salon.
+      const demoReset = await db.transaction(async (tx) => {
+        await deleteDemoData(tx, salon.id)
+        return seedDemo(tx, { salonId: salon.id, now, force: true })
+      })
+      report[salon.slug] = { demoReset }
       continue
     }
     report[salon.slug] = {

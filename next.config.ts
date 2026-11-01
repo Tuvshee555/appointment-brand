@@ -6,7 +6,7 @@ import type { NextConfig } from 'next'
 const basePath = '/portfolio/appointments'
 
 // Origins allowed to post Server Actions through the Ursgal rewrite.
-const allowedOrigins = (process.env.ALLOWED_ORIGINS ?? 'ursgal-digital.vercel.app')
+const allowedOrigins = (process.env.ALLOWED_ORIGINS || 'ursgal-digital.vercel.app')
   .split(',')
   .map((s) => s.trim())
   .filter(Boolean)
