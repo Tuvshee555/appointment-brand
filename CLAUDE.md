@@ -7,6 +7,7 @@ Read `README.md` and `docs/` before changing booking, payments, security or demo
 
 ## Commands
 
+- `npm run db:dev`: local PostgreSQL for development (data in `.dev-db/`); leave it running.
 - `npm run dev`: http://localhost:3210/portfolio/appointments (base path is required).
 - `npm run check`: lint, typecheck, Vitest and the production build. Run it before pushing.
 - `npm run test:e2e`: Playwright with installed Chrome; set `E2E_BASE_URL` to test a deployment.
@@ -35,6 +36,6 @@ Read `README.md` and `docs/` before changing booking, payments, security or demo
   overriding (see `Card`'s `bodyClassName`).
 - On Windows, embedded Postgres must be initialised with `--encoding=UTF8 --locale=C`
   (done in `tests/integration/global-setup.ts`).
-- Local development and the deployed demo share the Neon database; bookings you make locally
-  appear in the live demo until the nightly reset.
+- Development uses only the local database from `npm run db:dev`; the production URL is set
+  only in Vercel. An older `.env.local` that still points at Neon writes to the live demo.
 - Never commit `.env.local` or any credential.
