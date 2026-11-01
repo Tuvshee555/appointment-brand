@@ -50,7 +50,12 @@ export async function startDemoAction(input: unknown): Promise<ActionResult<null
     const [user] = await ctx.db
       .select({ id: t.adminUsers.id })
       .from(t.adminUsers)
-      .where(and(eq(t.adminUsers.email, view === 'owner' ? DEMO_VIEWER_EMAIL : DEMO_SPECIALIST_EMAIL), eq(t.adminUsers.salonId, ctx.salonId)))
+      .where(
+        and(
+          eq(t.adminUsers.email, view === 'owner' ? DEMO_VIEWER_EMAIL : DEMO_SPECIALIST_EMAIL),
+          eq(t.adminUsers.salonId, ctx.salonId),
+        ),
+      )
     if (!user) throw new ServiceError('demo_missing', 'Демо хэрэглэгч олдсонгүй. Өгөгдлийн санг seed хийнэ үү.')
     await createSession(user.id, {
       userAgent: await userAgent(),

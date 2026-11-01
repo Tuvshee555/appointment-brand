@@ -5,6 +5,7 @@ import { connection } from 'next/server'
 import { EmptyState, PageHeader, TableWrap, td, th } from '@/components/admin/ui'
 import { buttonClass } from '@/components/ui/button'
 import { DemoTag, StatusBadge } from '@/components/ui/badge'
+import { SOURCE_LABELS } from '@/lib/booking/status'
 import { inputClass } from '@/components/ui/field'
 import { Money } from '@/components/ui/money'
 import { formatDateTime, isDateKey } from '@/lib/datetime'
@@ -14,15 +15,6 @@ import { requireAdminPage } from '@/server/auth/current'
 import { LIST_TABS, listAppointments, staffOptions, type ListTab } from '@/server/queries/admin-appointments'
 
 export const metadata = { title: 'Захиалгууд' }
-
-const SOURCE_LABELS: Record<string, string> = {
-  website: 'Вэбсайт',
-  admin: 'Самбар',
-  assistant: 'AI туслах',
-  messenger: 'Messenger',
-  phone: 'Утас',
-  walk_in: 'Шууд ирсэн',
-}
 
 export default async function AppointmentsPage({
   searchParams,
@@ -63,14 +55,21 @@ export default async function AppointmentsPage({
           ) : null
         }
       />
-      <div className="no-scrollbar -mx-4 mb-4 flex gap-1 overflow-x-auto px-4 sm:mx-0 sm:px-0" role="tablist" aria-label="Шүүлтүүр">
+      <div
+        className="no-scrollbar -mx-4 mb-4 flex gap-1 overflow-x-auto px-4 sm:mx-0 sm:px-0"
+        role="tablist"
+        aria-label="Шүүлтүүр"
+      >
         {(Object.keys(LIST_TABS) as ListTab[]).map((k) => (
           <Link
             key={k}
             href={link({ tab: k })}
             role="tab"
             aria-selected={tab === k}
-            className={cn('shrink-0 rounded-full px-3.5 py-1.5 text-sm', tab === k ? 'bg-cocoa-800 text-ivory' : 'text-ink-2 hover:bg-sand')}
+            className={cn(
+              'shrink-0 rounded-full px-3.5 py-1.5 text-sm',
+              tab === k ? 'bg-cocoa-800 text-ivory' : 'text-ink-2 hover:bg-sand',
+            )}
           >
             {LIST_TABS[k]}
           </Link>
@@ -80,8 +79,16 @@ export default async function AppointmentsPage({
         <input type="hidden" name="tab" value={tab} />
         <label className="relative min-w-56 flex-1">
           <span className="sr-only">Хайх</span>
-          <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-ink-3" aria-hidden />
-          <input name="q" defaultValue={q ?? ''} placeholder="Нэр, утас, захиалгын дугаар" className={cn(inputClass, 'pl-9')} />
+          <Search
+            className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-ink-3"
+            aria-hidden
+          />
+          <input
+            name="q"
+            defaultValue={q ?? ''}
+            placeholder="Нэр, утас, захиалгын дугаар"
+            className={cn(inputClass, 'pl-9')}
+          />
         </label>
         {session.role !== 'specialist' ? (
           <label className="w-44">
@@ -112,57 +119,89 @@ export default async function AppointmentsPage({
       {list.rows.length === 0 ? (
         <EmptyState title="Захиалга олдсонгүй">Шүүлтүүрээ өөрчилж үзнэ үү.</EmptyState>
       ) : (
-        <TableWrap>
-          <thead>
-            <tr>
-              <th className={th}>Цаг</th>
-              <th className={th}>Үйлчлүүлэгч</th>
-              <th className={th}>Үйлчилгээ</th>
-              <th className={th}>Мастер</th>
-              <th className={th}>Төлөв</th>
-              <th className={cn(th, 'text-right')}>Үнэ / төлсөн</th>
-            </tr>
-          </thead>
-          <tbody>
+        <>
+          <ul className="surface divide-y divide-line sm:hidden">
             {list.rows.map((r) => (
-              <tr key={r.id} className="hover:bg-ivory">
-                <td className={td}>
-                  <Link href={`/admin/appointments/${r.id}`} className="font-medium text-cocoa-900 hover:underline">
-                    {formatDateTime(r.startsAt)}
-                  </Link>
-                  <div className="text-xs text-ink-3">
-                    {r.reference} · {SOURCE_LABELS[r.source]}
-                  </div>
-                </td>
-                <td className={td}>
-                  <div className="flex items-center gap-1.5">
-                    {r.customerName} {r.isDemo ? <DemoTag /> : null}
-                  </div>
-                  <div className="text-xs text-ink-3 tabular">{formatPhone(r.customerPhone)}</div>
-                  {r.demoVisitorHash && r.demoVisitorHash === session.demoVisitorHash ? (
-                    <span className="mt-1 inline-block rounded-xs bg-sage-50 px-1.5 py-0.5 text-[0.68rem] text-sage-700">таны туршилт</span>
-                  ) : null}
-                </td>
-                <td className={cn(td, 'max-w-64 text-ink-2')}>{r.services}</td>
-                <td className={td}>
-                  <span className="inline-flex items-center gap-1.5">
-                    <span className="size-2 rounded-full" style={{ background: r.staffColor }} aria-hidden />
-                    {r.staffName}
+              <li key={r.id}>
+                <Link href={`/admin/appointments/${r.id}`} className="block px-4 py-3.5 hover:bg-ivory">
+                  <span className="flex items-start justify-between gap-3">
+                    <span className="text-sm font-medium text-cocoa-900">{formatDateTime(r.startsAt)}</span>
+                    <StatusBadge status={r.status} />
                   </span>
-                </td>
-                <td className={td}>
-                  <StatusBadge status={r.status} />
-                </td>
-                <td className={cn(td, 'text-right whitespace-nowrap')}>
-                  <Money amount={r.total} from={r.hasFromPrice} />
-                  <div className={cn('text-xs', r.paid >= r.total ? 'text-sage-700' : 'text-ink-3')}>
-                    <Money amount={r.paid} />
-                  </div>
-                </td>
-              </tr>
+                  <span className="mt-1 flex items-center gap-1.5 text-sm text-ink">
+                    {r.customerName} {r.isDemo ? <DemoTag /> : null}
+                  </span>
+                  <span className="mt-0.5 block text-xs text-ink-3">
+                    {r.services} · {r.staffName}
+                  </span>
+                  <span className="mt-1.5 flex items-center justify-between text-xs text-ink-3">
+                    <span>
+                      {r.reference} · {SOURCE_LABELS[r.source]}
+                    </span>
+                    <span className="text-sm text-ink">
+                      <Money amount={r.total} from={r.hasFromPrice} />
+                    </span>
+                  </span>
+                </Link>
+              </li>
             ))}
-          </tbody>
-        </TableWrap>
+          </ul>
+          <div className="max-sm:hidden">
+            <TableWrap>
+              <thead>
+                <tr>
+                  <th className={th}>Цаг</th>
+                  <th className={th}>Үйлчлүүлэгч</th>
+                  <th className={th}>Үйлчилгээ</th>
+                  <th className={th}>Мастер</th>
+                  <th className={th}>Төлөв</th>
+                  <th className={cn(th, 'text-right')}>Үнэ / төлсөн</th>
+                </tr>
+              </thead>
+              <tbody>
+                {list.rows.map((r) => (
+                  <tr key={r.id} className="hover:bg-ivory">
+                    <td className={td}>
+                      <Link href={`/admin/appointments/${r.id}`} className="font-medium text-cocoa-900 hover:underline">
+                        {formatDateTime(r.startsAt)}
+                      </Link>
+                      <div className="text-xs text-ink-3">
+                        {r.reference} · {SOURCE_LABELS[r.source]}
+                      </div>
+                    </td>
+                    <td className={td}>
+                      <div className="flex items-center gap-1.5">
+                        {r.customerName} {r.isDemo ? <DemoTag /> : null}
+                      </div>
+                      <div className="tabular text-xs text-ink-3">{formatPhone(r.customerPhone)}</div>
+                      {r.demoVisitorHash && r.demoVisitorHash === session.demoVisitorHash ? (
+                        <span className="mt-1 inline-block rounded-xs bg-sage-50 px-1.5 py-0.5 text-[0.68rem] text-sage-700">
+                          таны туршилт
+                        </span>
+                      ) : null}
+                    </td>
+                    <td className={cn(td, 'max-w-64 text-ink-2')}>{r.services}</td>
+                    <td className={td}>
+                      <span className="inline-flex items-center gap-1.5">
+                        <span className="size-2 rounded-full" style={{ background: r.staffColor }} aria-hidden />
+                        {r.staffName}
+                      </span>
+                    </td>
+                    <td className={td}>
+                      <StatusBadge status={r.status} />
+                    </td>
+                    <td className={cn(td, 'text-right whitespace-nowrap')}>
+                      <Money amount={r.total} from={r.hasFromPrice} />
+                      <div className={cn('text-xs', r.paid >= r.total ? 'text-sage-700' : 'text-ink-3')}>
+                        <Money amount={r.paid} />
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </TableWrap>
+          </div>
+        </>
       )}
       {pages > 1 ? (
         <nav aria-label="Хуудас" className="mt-5 flex items-center justify-between text-sm">

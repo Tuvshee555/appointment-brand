@@ -1,7 +1,19 @@
+import Link from 'next/link'
 import type { ReactNode } from 'react'
+import { buttonClass } from '@/components/ui/button'
 import { cn } from '@/lib/cn'
 
-export function PageHeader({ title, description, actions, eyebrow }: { title: string; description?: ReactNode; actions?: ReactNode; eyebrow?: string }) {
+export function PageHeader({
+  title,
+  description,
+  actions,
+  eyebrow,
+}: {
+  title: string
+  description?: ReactNode
+  actions?: ReactNode
+  eyebrow?: string
+}) {
   return (
     <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
       <div>
@@ -14,21 +26,43 @@ export function PageHeader({ title, description, actions, eyebrow }: { title: st
   )
 }
 
-export function Card({ title, action, children, className, bodyClassName }: { title?: ReactNode; action?: ReactNode; children: ReactNode; className?: string; bodyClassName?: string }) {
+export function Card({
+  title,
+  action,
+  children,
+  className,
+  bodyClassName,
+}: {
+  title?: ReactNode
+  action?: ReactNode
+  children: ReactNode
+  className?: string
+  bodyClassName?: string
+}) {
   return (
-    <section className={cn('surface', className)}>
+    <section className={cn('surface min-w-0', className)}>
       {title ? (
         <header className="flex items-center justify-between gap-3 border-b border-line px-5 py-3.5">
           <h2 className="text-[0.95rem] font-medium text-cocoa-900">{title}</h2>
           {action}
         </header>
       ) : null}
-      <div className={cn('p-5', bodyClassName)}>{children}</div>
+      <div className={bodyClassName ?? 'p-5'}>{children}</div>
     </section>
   )
 }
 
-export function StatCard({ label, value, hint, tone = 'default' }: { label: string; value: ReactNode; hint?: ReactNode; tone?: 'default' | 'accent' | 'warning' | 'danger' }) {
+export function StatCard({
+  label,
+  value,
+  hint,
+  tone = 'default',
+}: {
+  label: string
+  value: ReactNode
+  hint?: ReactNode
+  tone?: 'default' | 'accent' | 'warning' | 'danger'
+}) {
   return (
     <div
       className={cn(
@@ -39,7 +73,7 @@ export function StatCard({ label, value, hint, tone = 'default' }: { label: stri
       )}
     >
       <p className="text-xs font-medium tracking-wide text-ink-3 uppercase">{label}</p>
-      <p className="mt-2 font-display text-[2rem] leading-none text-cocoa-900 tabular">{value}</p>
+      <p className="tabular mt-2 font-display text-[2rem] leading-none text-cocoa-900">{value}</p>
       {hint ? <p className="mt-2 text-xs text-ink-3">{hint}</p> : null}
     </div>
   )
@@ -54,17 +88,70 @@ export function EmptyState({ title, children }: { title: string; children?: Reac
   )
 }
 
-export function TableWrap({ children }: { children: ReactNode }) {
+/** `bare` drops the frame when the table already sits inside a Card. */
+export function TableWrap({
+  children,
+  bare = false,
+  minWidth = 'min-w-[44rem]',
+}: {
+  children: ReactNode
+  bare?: boolean
+  minWidth?: string
+}) {
   return (
-    <div className="surface overflow-x-auto">
-      <table className="w-full min-w-[44rem] text-left text-sm">{children}</table>
+    <div className={cn('overflow-x-auto', !bare && 'surface')}>
+      <table className={cn('w-full text-left text-sm', minWidth)}>{children}</table>
     </div>
   )
 }
 
-export const th = 'border-b border-line bg-porcelain px-4 py-3 text-xs font-medium tracking-wide whitespace-nowrap text-ink-3 uppercase'
+export const th =
+  'border-b border-line bg-porcelain px-4 py-3 text-xs font-medium tracking-wide whitespace-nowrap text-ink-3 uppercase'
 export const td = 'border-b border-line px-4 py-3 align-top'
 
 export function Pill({ children, className }: { children: ReactNode; className?: string }) {
-  return <span className={cn('inline-flex items-center rounded-xs bg-sand px-2 py-0.5 text-xs text-ink-2', className)}>{children}</span>
+  return (
+    <span className={cn('inline-flex items-center rounded-xs bg-sand px-2 py-0.5 text-xs text-ink-2', className)}>
+      {children}
+    </span>
+  )
+}
+
+/** Previous/next paging under a list; `href` builds the link for a page number. */
+export function Pager({
+  page,
+  pageSize,
+  total,
+  href,
+  unit = '',
+}: {
+  page: number
+  pageSize: number
+  total: number
+  href: (page: number) => string
+  unit?: string
+}) {
+  const from = total ? (page - 1) * pageSize + 1 : 0
+  const to = Math.min(total, page * pageSize)
+  return (
+    <nav aria-label="Хуудаслалт" className="mt-4 flex items-center justify-between gap-3 text-sm text-ink-3">
+      <span className="tabular">
+        {total > pageSize ? `${from}–${to} / ` : 'Нийт '}
+        {total}
+        {unit ? ` ${unit}` : ''}
+      </span>
+      <div className="flex gap-2">
+        {page > 1 ? (
+          <Link href={href(page - 1)} className={buttonClass('secondary', 'sm')}>
+            Өмнөх
+          </Link>
+        ) : null}
+        {to < total ? (
+          <Link href={href(page + 1)} className={buttonClass('secondary', 'sm')}>
+            Дараах
+          </Link>
+        ) : null}
+      </div>
+    </nav>
+  )
 }

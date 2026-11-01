@@ -242,8 +242,14 @@ export interface BookingRequest {
 }
 
 /** Creates an appointment after re-validating the slot inside a transaction. */
-export async function createBooking(ctx: ServiceContext, input: BookingRequest, opts: CreateBookingOptions): Promise<BookingResult> {
-  const prepared = await prepareSelection(ctx.db, ctx.salonId, input.items, input.staffId, { publicOnly: opts.publicRules })
+export async function createBooking(
+  ctx: ServiceContext,
+  input: BookingRequest,
+  opts: CreateBookingOptions,
+): Promise<BookingResult> {
+  const prepared = await prepareSelection(ctx.db, ctx.salonId, input.items, input.staffId, {
+    publicOnly: opts.publicRules,
+  })
   for (let attempt = 0; attempt < 3; attempt++) {
     try {
       return await insertBooking(ctx, prepared, input, opts)
@@ -288,7 +294,12 @@ async function insertBooking(
     if (opts.publicRules && preliminaryDayState(input.date, now, settings.maxAdvanceDays, hours) !== null) {
       throw new ServiceError('slot_unavailable', 'Энэ өдөр захиалга авах боломжгүй байна.')
     }
-    const data = await loadStaffScheduleData(tx, { staffIds: candidates.map((c) => c.id), from: input.date, to: input.date, now })
+    const data = await loadStaffScheduleData(tx, {
+      staffIds: candidates.map((c) => c.id),
+      from: input.date,
+      to: input.date,
+      now,
+    })
     const request = {
       date: input.date,
       now,
@@ -381,7 +392,8 @@ async function insertBooking(
           method: 'qpay',
           status: 'pending',
           amount: deposit,
-          provider: process.env.QPAY_MODE === 'sandbox' || process.env.QPAY_MODE === 'production' ? 'qpay' : 'simulated',
+          provider:
+            process.env.QPAY_MODE === 'sandbox' || process.env.QPAY_MODE === 'production' ? 'qpay' : 'simulated',
           expiresAt: holdExpiresAt,
           isDemo: opts.isDemo,
         })
@@ -400,8 +412,20 @@ async function insertBooking(
       status,
     })
     notificationIds.push(
-      await queueNotification(tx, { salonId: ctx.salonId, appointmentId: appt.id, kind: 'booking_created', isDemo: opts.isDemo, vars: v }),
-      await queueNotification(tx, { salonId: ctx.salonId, appointmentId: appt.id, kind: 'staff_new_booking', isDemo: opts.isDemo, vars: v }),
+      await queueNotification(tx, {
+        salonId: ctx.salonId,
+        appointmentId: appt.id,
+        kind: 'booking_created',
+        isDemo: opts.isDemo,
+        vars: v,
+      }),
+      await queueNotification(tx, {
+        salonId: ctx.salonId,
+        appointmentId: appt.id,
+        kind: 'staff_new_booking',
+        isDemo: opts.isDemo,
+        vars: v,
+      }),
     )
 
     return {
@@ -474,7 +498,9 @@ export async function transitionAppointment(
       await tx
         .select()
         .from(t.payments)
-        .where(and(eq(t.payments.appointmentId, appt.id), eq(t.payments.kind, 'deposit'), eq(t.payments.status, 'paid')))
+        .where(
+          and(eq(t.payments.appointmentId, appt.id), eq(t.payments.kind, 'deposit'), eq(t.payments.status, 'paid')),
+        )
     )[0]
     if (to === 'cancelled' || to === 'rejected' || to === 'no_show') {
       const noticeHours = Math.floor((appt.startsAt.getTime() - now.getTime()) / 3_600_000)
@@ -493,7 +519,8 @@ export async function transitionAppointment(
           createdAt: now,
         })
       }
-      if (depositOutcome === 'refund' && paidDeposit) await markRefunded(tx, paidDeposit, now, 'Цуцлалтын бодлогын дагуу буцаав')
+      if (depositOutcome === 'refund' && paidDeposit)
+        await markRefunded(tx, paidDeposit, now, 'Цуцлалтын бодлогын дагуу буцаав')
       // An unpaid deposit request is no longer payable.
       await tx
         .update(t.payments)
@@ -524,7 +551,13 @@ export async function transitionAppointment(
             : []
     for (const kind of kinds) {
       notificationIds.push(
-        await queueNotification(tx, { salonId: ctx.salonId, appointmentId: appt.id, kind, isDemo: appt.isDemo, vars: vars({ ...info, status: to }) }),
+        await queueNotification(tx, {
+          salonId: ctx.salonId,
+          appointmentId: appt.id,
+          kind,
+          isDemo: appt.isDemo,
+          vars: vars({ ...info, status: to }),
+        }),
       )
     }
     return { status: to, depositOutcome: depositOutcome === 'none' ? undefined : depositOutcome }
@@ -564,7 +597,13 @@ export async function rescheduleAppointment(
   appointmentId: string,
   input: RescheduleInput,
   opts: { actor: 'customer' | 'staff'; publicRules: boolean; adminUserId?: string | null },
-): Promise<{ appointmentId: string; reference: string; status: AppointmentStatus; startsAt: string; staffName: string }> {
+): Promise<{
+  appointmentId: string
+  reference: string
+  status: AppointmentStatus
+  startsAt: string
+  staffName: string
+}> {
   const [appt] = await ctx.db
     .select()
     .from(t.appointments)
@@ -581,7 +620,10 @@ export async function rescheduleAppointment(
   const addons = await ctx.db.select().from(t.appointmentAddons).where(eq(t.appointmentAddons.appointmentId, appt.id))
   const items: SelectionItem[] = lines
     .filter((l) => l.serviceId)
-    .map((l) => ({ serviceId: l.serviceId!, addonIds: addons.filter((a) => a.appointmentServiceId === l.id && a.addonId).map((a) => a.addonId!) }))
+    .map((l) => ({
+      serviceId: l.serviceId!,
+      addonIds: addons.filter((a) => a.appointmentServiceId === l.id && a.addonId).map((a) => a.addonId!),
+    }))
 
   // Staff are re-checked against today's eligibility; the price snapshot is kept.
   const prepared = await prepareSelection(ctx.db, ctx.salonId, items, input.staffId, { publicOnly: opts.publicRules })
@@ -596,16 +638,25 @@ export async function rescheduleAppointment(
     const result = await ctx.db.transaction(async (tx) => {
       for (const day of [...new Set([oldDate, input.date])].sort()) await lockSalonDay(tx, ctx.salonId, day)
       const current = await lockAppointment(tx, ctx.salonId, appt.id)
-      if (current.status !== appt.status) throw new ServiceError('changed', 'Захиалга дөнгөж сая өөрчлөгдсөн байна. Хуудсаа шинэчилнэ үү.')
+      if (current.status !== appt.status)
+        throw new ServiceError('changed', 'Захиалга дөнгөж сая өөрчлөгдсөн байна. Хуудсаа шинэчилнэ үү.')
       // Release the old slot first so the new time may overlap it.
-      await tx.update(t.appointments).set({ status: 'rescheduled', updatedAt: now }).where(eq(t.appointments.id, appt.id))
+      await tx
+        .update(t.appointments)
+        .set({ status: 'rescheduled', updatedAt: now })
+        .where(eq(t.appointments.id, appt.id))
 
       const specials = await loadSpecialDays(tx, ctx.salonId, input.date, input.date)
       const hours = salonHoursFor(input.date, config.weekly, specials)
       if (opts.publicRules && preliminaryDayState(input.date, now, config.settings.maxAdvanceDays, hours) !== null) {
         throw new ServiceError('slot_unavailable', 'slot')
       }
-      const data = await loadStaffScheduleData(tx, { staffIds: candidates.map((c) => c.id), from: input.date, to: input.date, now })
+      const data = await loadStaffScheduleData(tx, {
+        staffIds: candidates.map((c) => c.id),
+        from: input.date,
+        to: input.date,
+        now,
+      })
       const request = {
         date: input.date,
         now,
@@ -662,11 +713,16 @@ export async function rescheduleAppointment(
         if (lineAddons.length) {
           await tx
             .insert(t.appointmentAddons)
-            .values(lineAddons.map((a) => ({ ...a, id: undefined, appointmentId: next.id, appointmentServiceId: svc.id })))
+            .values(
+              lineAddons.map((a) => ({ ...a, id: undefined, appointmentId: next.id, appointmentServiceId: svc.id })),
+            )
         }
       }
       // Payments follow the booking to its new time.
-      await tx.update(t.payments).set({ appointmentId: next.id, updatedAt: now }).where(eq(t.payments.appointmentId, appt.id))
+      await tx
+        .update(t.payments)
+        .set({ appointmentId: next.id, updatedAt: now })
+        .where(eq(t.payments.appointmentId, appt.id))
       const actorType = opts.actor === 'staff' ? 'staff' : 'customer'
       await tx.insert(t.appointmentEvents).values([
         {
@@ -701,7 +757,13 @@ export async function rescheduleAppointment(
           vars: vars({ ...info, status }),
         }),
       )
-      return { appointmentId: next.id, reference: next.reference, status, startsAt: startsAt.toISOString(), staffName: staff.displayName }
+      return {
+        appointmentId: next.id,
+        reference: next.reference,
+        status,
+        startsAt: startsAt.toISOString(),
+        staffName: staff.displayName,
+      }
     })
     for (const id of notificationIds) await deliverNotification(ctx.db, id)
     return result
@@ -729,7 +791,13 @@ export async function queueReminders(db: Database, salonId: string, now: Date, h
   let queued = 0
   for (const a of due) {
     const info = await notificationContext(db, a)
-    const id = await queueNotification(db, { salonId, appointmentId: a.id, kind: 'reminder', isDemo: a.isDemo, vars: vars({ ...info, status: a.status }) })
+    const id = await queueNotification(db, {
+      salonId,
+      appointmentId: a.id,
+      kind: 'reminder',
+      isDemo: a.isDemo,
+      vars: vars({ ...info, status: a.status }),
+    })
     if (id) {
       queued++
       await deliverNotification(db, id)
@@ -743,7 +811,9 @@ export async function expireUnhandledRequests(db: Database, salonId: string, now
   const rows = await db
     .update(t.appointments)
     .set({ status: 'expired', updatedAt: now })
-    .where(and(eq(t.appointments.salonId, salonId), eq(t.appointments.status, 'pending'), lt(t.appointments.startsAt, now)))
+    .where(
+      and(eq(t.appointments.salonId, salonId), eq(t.appointments.status, 'pending'), lt(t.appointments.startsAt, now)),
+    )
     .returning({ id: t.appointments.id })
   if (rows.length) {
     await db.insert(t.appointmentEvents).values(
@@ -761,7 +831,9 @@ export async function expireUnhandledRequests(db: Database, salonId: string, now
   return rows.length
 }
 
-export function isOwnDemoBooking(appt: Pick<AppointmentRow, 'demoVisitorHash'>, demoVisitorHash: string | null | undefined) {
+export function isOwnDemoBooking(
+  appt: Pick<AppointmentRow, 'demoVisitorHash'>,
+  demoVisitorHash: string | null | undefined,
+) {
   return Boolean(demoVisitorHash && appt.demoVisitorHash && appt.demoVisitorHash === demoVisitorHash)
 }
-

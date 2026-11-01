@@ -6,20 +6,42 @@ import { useState, useTransition } from 'react'
 import { ActionButton, FeedbackLine, feedbackFrom, type Feedback } from '@/components/admin/action-button'
 import { Button } from '@/components/ui/button'
 import { Field, Input, Select, Textarea } from '@/components/ui/field'
-import { allowedTransitions, CANCELLATION_REASONS, STATUS_ACTION_LABELS, type AppointmentStatus, type CancellationReason } from '@/lib/booking/status'
+import {
+  allowedTransitions,
+  CANCELLATION_REASONS,
+  STATUS_ACTION_LABELS,
+  type AppointmentStatus,
+  type CancellationReason,
+} from '@/lib/booking/status'
 import { formatDateKey, minutesToTime } from '@/lib/datetime'
 import { formatMoney } from '@/lib/money'
 import { cn } from '@/lib/cn'
-import { adminRescheduleAction, adminSlotsAction, recordPaymentAction, transitionAction, updateInternalNoteAction } from '@/server/actions/admin-appointments'
+import {
+  adminRescheduleAction,
+  adminSlotsAction,
+  recordPaymentAction,
+  transitionAction,
+  updateInternalNoteAction,
+} from '@/server/actions/admin-appointments'
 import type { PublicSlot } from '@/server/actions/booking'
 
-export function StatusActions({ appointmentId, status, started }: { appointmentId: string; status: AppointmentStatus; started: boolean }) {
+export function StatusActions({
+  appointmentId,
+  status,
+  started,
+}: {
+  appointmentId: string
+  status: AppointmentStatus
+  started: boolean
+}) {
   const [cancelling, setCancelling] = useState(false)
   const [reason, setReason] = useState<CancellationReason>('customer_request')
   const [note, setNote] = useState('')
   const [feedback, setFeedback] = useState<Feedback>(null)
   const [pending, start] = useTransition()
-  const options = allowedTransitions(status, 'staff').filter((s) => s !== 'rescheduled' && (started || (s !== 'completed' && s !== 'no_show')))
+  const options = allowedTransitions(status, 'staff').filter(
+    (s) => s !== 'rescheduled' && (started || (s !== 'completed' && s !== 'no_show')),
+  )
   if (!options.length) return <p className="text-sm text-ink-3">Энэ төлөвөөс өөрчлөх үйлдэл алга.</p>
   return (
     <div className="space-y-3">
@@ -30,9 +52,17 @@ export function StatusActions({ appointmentId, status, started }: { appointmentI
             <ActionButton
               key={s}
               action={() => transitionAction({ appointmentId, to: s })}
-              variant={s === 'confirmed' || s === 'completed' ? 'primary' : s === 'no_show' || s === 'rejected' ? 'danger' : 'secondary'}
+              variant={
+                s === 'confirmed' || s === 'completed'
+                  ? 'primary'
+                  : s === 'no_show' || s === 'rejected'
+                    ? 'danger'
+                    : 'secondary'
+              }
               size="md"
-              confirm={s === 'rejected' || s === 'no_show' ? `«${STATUS_ACTION_LABELS[s]}» — итгэлтэй байна уу?` : undefined}
+              confirm={
+                s === 'rejected' || s === 'no_show' ? `«${STATUS_ACTION_LABELS[s]}» — итгэлтэй байна уу?` : undefined
+              }
             >
               {STATUS_ACTION_LABELS[s]}
             </ActionButton>
@@ -106,7 +136,12 @@ export function ReschedulePanel({
     start(async () => {
       setSlot(null)
       setFeedback(null)
-      const res = await adminSlotsAction({ items, staffId: s === 'any' ? null : s, date: d, excludeAppointmentId: appointmentId })
+      const res = await adminSlotsAction({
+        items,
+        staffId: s === 'any' ? null : s,
+        date: d,
+        excludeAppointmentId: appointmentId,
+      })
       if (res.ok) setSlots(res.data.slots)
       else {
         setSlots([])
@@ -162,7 +197,12 @@ export function ReschedulePanel({
                 type="button"
                 aria-pressed={slot?.start === s.start}
                 onClick={() => setSlot(s)}
-                className={cn('h-10 rounded-xs border text-sm tabular', slot?.start === s.start ? 'border-cocoa-800 bg-cocoa-800 text-ivory' : 'border-line-strong bg-porcelain hover:border-cocoa-700')}
+                className={cn(
+                  'tabular h-10 rounded-xs border text-sm',
+                  slot?.start === s.start
+                    ? 'border-cocoa-800 bg-cocoa-800 text-ivory'
+                    : 'border-line-strong bg-porcelain hover:border-cocoa-700',
+                )}
               >
                 {s.label}
               </button>
@@ -175,7 +215,12 @@ export function ReschedulePanel({
           disabled={pending}
           onClick={() =>
             start(async () => {
-              const res = await adminRescheduleAction({ appointmentId, date, start: slot.start, staffId: who === 'any' ? null : who })
+              const res = await adminRescheduleAction({
+                appointmentId,
+                date,
+                start: slot.start,
+                staffId: who === 'any' ? null : who,
+              })
               setFeedback(feedbackFrom(res, 'Цаг шилжлээ.'))
               if (res.ok && !res.simulated) router.push(`/admin/appointments/${res.data.appointmentId}`)
             })
@@ -201,14 +246,30 @@ export function PaymentForm({ appointmentId, outstanding }: { appointmentId: str
       onSubmit={(e) => {
         e.preventDefault()
         start(async () => {
-          const res = await recordPaymentAction({ appointmentId, amount: Number(amount.replace(/[\s,₮]/g, '')), method, kind: 'balance', note: note || null })
+          const res = await recordPaymentAction({
+            appointmentId,
+            amount: Number(amount.replace(/[\s,₮]/g, '')),
+            method,
+            kind: 'balance',
+            note: note || null,
+          })
           setFeedback(feedbackFrom(res, 'Төлбөр бүртгэгдлээ.'))
         })
       }}
     >
       <div className="grid gap-3 sm:grid-cols-2">
-        <Field label="Дүн (₮)" htmlFor="pay-amount" hint={outstanding > 0 ? `Үлдэгдэл ${formatMoney(outstanding)}` : undefined}>
-          <Input id="pay-amount" inputMode="numeric" value={amount} onChange={(e) => setAmount(e.target.value)} required />
+        <Field
+          label="Дүн (₮)"
+          htmlFor="pay-amount"
+          hint={outstanding > 0 ? `Үлдэгдэл ${formatMoney(outstanding)}` : undefined}
+        >
+          <Input
+            id="pay-amount"
+            inputMode="numeric"
+            value={amount}
+            onChange={(e) => setAmount(e.target.value)}
+            required
+          />
         </Field>
         <Field label="Төлбөрийн хэлбэр" htmlFor="pay-method">
           <Select id="pay-method" value={method} onChange={(e) => setMethod(e.target.value as typeof method)}>
@@ -222,7 +283,10 @@ export function PaymentForm({ appointmentId, outstanding }: { appointmentId: str
       <Field label="Тэмдэглэл" htmlFor="pay-note" optional>
         <Input id="pay-note" value={note} onChange={(e) => setNote(e.target.value)} maxLength={300} />
       </Field>
-      <p className="text-xs text-ink-3">Салонд хүлээн авсан төлбөрийг ажилтан бүртгэнэ. Онлайн QPay төлбөрийг зөвхөн төлбөрийн системийн шалгалт баталгаажуулна.</p>
+      <p className="text-xs text-ink-3">
+        Салонд хүлээн авсан төлбөрийг ажилтан бүртгэнэ. Онлайн QPay төлбөрийг зөвхөн төлбөрийн системийн шалгалт
+        баталгаажуулна.
+      </p>
       <Button type="submit" variant="secondary" disabled={pending}>
         {pending ? <Loader2 className="size-4 animate-spin" aria-hidden /> : null}
         Төлбөр бүртгэх
@@ -241,13 +305,26 @@ export function NoteForm({ appointmentId, note }: { appointmentId: string; note:
       className="space-y-3"
       onSubmit={(e) => {
         e.preventDefault()
-        start(async () => setFeedback(feedbackFrom(await updateInternalNoteAction({ appointmentId, note: value || null }), 'Тэмдэглэл хадгалагдлаа.')))
+        start(async () =>
+          setFeedback(
+            feedbackFrom(
+              await updateInternalNoteAction({ appointmentId, note: value || null }),
+              'Тэмдэглэл хадгалагдлаа.',
+            ),
+          ),
+        )
       }}
     >
       <label htmlFor="internal-note" className="sr-only">
         Дотоод тэмдэглэл
       </label>
-      <Textarea id="internal-note" value={value} onChange={(e) => setValue(e.target.value)} maxLength={1000} placeholder="Зөвхөн ажилтанд харагдана" />
+      <Textarea
+        id="internal-note"
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+        maxLength={1000}
+        placeholder="Зөвхөн ажилтанд харагдана"
+      />
       <Button type="submit" variant="ghost" size="sm" disabled={pending}>
         Хадгалах
       </Button>

@@ -28,7 +28,15 @@ export function displayPhone(session: SessionActor, phone: string) {
 
 export async function listAppointments(
   session: SessionActor,
-  opts: { tab: ListTab; staffId: string | null; q: string | null; from: DateKey | null; to: DateKey | null; page: number; now: Date },
+  opts: {
+    tab: ListTab
+    staffId: string | null
+    q: string | null
+    from: DateKey | null
+    to: DateKey | null
+    page: number
+    now: Date
+  },
 ) {
   const where: (SQL | undefined)[] = [eq(t.appointments.salonId, session.salonId)]
   if (session.role === 'specialist' && session.staffId) where.push(eq(t.appointments.staffId, session.staffId))
@@ -36,13 +44,19 @@ export async function listAppointments(
   const today = dateKeyOf(opts.now)
   switch (opts.tab) {
     case 'upcoming':
-      where.push(gte(t.appointments.startsAt, opts.now), inArray(t.appointments.status, ['pending', 'confirmed', 'awaiting_deposit']))
+      where.push(
+        gte(t.appointments.startsAt, opts.now),
+        inArray(t.appointments.status, ['pending', 'confirmed', 'awaiting_deposit']),
+      )
       break
     case 'pending':
       where.push(inArray(t.appointments.status, ['pending', 'awaiting_deposit']))
       break
     case 'today':
-      where.push(gte(t.appointments.startsAt, dayBounds(today).start), lt(t.appointments.startsAt, dayBounds(today).end))
+      where.push(
+        gte(t.appointments.startsAt, dayBounds(today).start),
+        lt(t.appointments.startsAt, dayBounds(today).end),
+      )
       break
     case 'completed':
       where.push(eq(t.appointments.status, 'completed'))
@@ -58,7 +72,13 @@ export async function listAppointments(
   if (opts.to) where.push(lt(t.appointments.startsAt, dayBounds(opts.to).end))
   if (opts.q) {
     const q = `%${opts.q.replace(/[%_]/g, '')}%`
-    where.push(or(ilike(t.customers.name, q), ilike(t.appointments.reference, q), ilike(t.customers.phone, q.replace(/\s/g, ''))))
+    where.push(
+      or(
+        ilike(t.customers.name, q),
+        ilike(t.appointments.reference, q),
+        ilike(t.customers.phone, q.replace(/\s/g, '')),
+      ),
+    )
   }
   const pageSize = 25
   const ascending = opts.tab === 'upcoming' || opts.tab === 'pending' || opts.tab === 'today'
@@ -106,19 +126,41 @@ export async function loadAppointmentDetail(session: SessionActor, id: string) {
     .where(and(eq(t.appointments.id, id), eq(t.appointments.salonId, session.salonId)))
   if (!row) return null
   if (session.role === 'specialist' && row.a.staffId !== session.staffId) return null
-  const [lines, addons, payments, events, cancellations, notifications, replacement, previous, admins] = await Promise.all([
-    db.select().from(t.appointmentServices).where(eq(t.appointmentServices.appointmentId, id)).orderBy(asc(t.appointmentServices.sortOrder)),
-    db.select().from(t.appointmentAddons).where(eq(t.appointmentAddons.appointmentId, id)),
-    db.select().from(t.payments).where(eq(t.payments.appointmentId, id)).orderBy(asc(t.payments.createdAt)),
-    db.select().from(t.appointmentEvents).where(eq(t.appointmentEvents.appointmentId, id)).orderBy(desc(t.appointmentEvents.createdAt)),
-    db.select().from(t.cancellationRecords).where(eq(t.cancellationRecords.appointmentId, id)),
-    db.select().from(t.notifications).where(eq(t.notifications.appointmentId, id)).orderBy(desc(t.notifications.createdAt)),
-    db.select({ id: t.appointments.id, reference: t.appointments.reference }).from(t.appointments).where(eq(t.appointments.rescheduledFromId, id)),
-    row.a.rescheduledFromId
-      ? db.select({ id: t.appointments.id, reference: t.appointments.reference }).from(t.appointments).where(eq(t.appointments.id, row.a.rescheduledFromId))
-      : Promise.resolve([]),
-    db.select({ id: t.adminUsers.id, name: t.adminUsers.name }).from(t.adminUsers).where(eq(t.adminUsers.salonId, session.salonId)),
-  ])
+  const [lines, addons, payments, events, cancellations, notifications, replacement, previous, admins] =
+    await Promise.all([
+      db
+        .select()
+        .from(t.appointmentServices)
+        .where(eq(t.appointmentServices.appointmentId, id))
+        .orderBy(asc(t.appointmentServices.sortOrder)),
+      db.select().from(t.appointmentAddons).where(eq(t.appointmentAddons.appointmentId, id)),
+      db.select().from(t.payments).where(eq(t.payments.appointmentId, id)).orderBy(asc(t.payments.createdAt)),
+      db
+        .select()
+        .from(t.appointmentEvents)
+        .where(eq(t.appointmentEvents.appointmentId, id))
+        .orderBy(desc(t.appointmentEvents.createdAt)),
+      db.select().from(t.cancellationRecords).where(eq(t.cancellationRecords.appointmentId, id)),
+      db
+        .select()
+        .from(t.notifications)
+        .where(eq(t.notifications.appointmentId, id))
+        .orderBy(desc(t.notifications.createdAt)),
+      db
+        .select({ id: t.appointments.id, reference: t.appointments.reference })
+        .from(t.appointments)
+        .where(eq(t.appointments.rescheduledFromId, id)),
+      row.a.rescheduledFromId
+        ? db
+            .select({ id: t.appointments.id, reference: t.appointments.reference })
+            .from(t.appointments)
+            .where(eq(t.appointments.id, row.a.rescheduledFromId))
+        : Promise.resolve([]),
+      db
+        .select({ id: t.adminUsers.id, name: t.adminUsers.name })
+        .from(t.adminUsers)
+        .where(eq(t.adminUsers.salonId, session.salonId)),
+    ])
   const adminName = new Map(admins.map((a) => [a.id, a.name]))
   const [stats] = await db
     .select({
@@ -130,7 +172,11 @@ export async function loadAppointmentDetail(session: SessionActor, id: string) {
     .where(eq(t.appointments.customerId, row.customer.id))
   return {
     appointment: row.a,
-    customer: { ...row.customer, phone: displayPhone(session, row.customer.phone), email: canSeeContacts(session) ? row.customer.email : row.customer.email ? '•••@•••' : null },
+    customer: {
+      ...row.customer,
+      phone: displayPhone(session, row.customer.phone),
+      email: canSeeContacts(session) ? row.customer.email : row.customer.email ? '•••@•••' : null,
+    },
     customerStats: stats,
     staff: row.staff,
     lines: lines.map((l) => ({ ...l, addons: addons.filter((a) => a.appointmentServiceId === l.id) })),

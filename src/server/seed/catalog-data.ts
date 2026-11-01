@@ -298,7 +298,8 @@ export const SERVICES: ServiceSeed[] = [
     category: 'extensions',
     name: 'Хумс засвар',
     shortDescription: 'Хугарсан эсвэл цуурсан хумсыг сэргээнэ (1–2 хумс).',
-    description: 'Хугарсан, цуурсан сунгалт эсвэл байгалийн хумсыг сэргээж, бусад хумстай нь ижил хэлбэр, өнгөнд оруулна.',
+    description:
+      'Хугарсан, цуурсан сунгалт эсвэл байгалийн хумсыг сэргээж, бусад хумстай нь ижил хэлбэр, өнгөнд оруулна.',
     durationMinutes: 30,
     price: 15_000,
     priceType: 'from',
@@ -312,7 +313,8 @@ export const SERVICES: ServiceSeed[] = [
     category: 'design',
     name: 'Энгийн гар зураг',
     shortDescription: '2–4 хумсанд цэг, зураас, жижиг хээ.',
-    description: 'Гель будалт эсвэл сунгалтын дээр 2–4 хумсанд энгийн хээ, цэг, зураас зурна. Ихэвчлэн өөр үйлчилгээтэй хамт захиалдаг.',
+    description:
+      'Гель будалт эсвэл сунгалтын дээр 2–4 хумсанд энгийн хээ, цэг, зураас зурна. Ихэвчлэн өөр үйлчилгээтэй хамт захиалдаг.',
     durationMinutes: 20,
     price: 15_000,
     priceType: 'from',
@@ -340,7 +342,8 @@ export const SERVICES: ServiceSeed[] = [
     category: 'design',
     name: 'Франц дизайн',
     shortDescription: 'Сонгодог, өнгөт эсвэл микро франц үзүүр.',
-    description: 'Гель будалт эсвэл сунгалтын дээр сонгодог цагаан, өнгөт, микро франц эсвэл давхар шугамтай франц хийнэ.',
+    description:
+      'Гель будалт эсвэл сунгалтын дээр сонгодог цагаан, өнгөт, микро франц эсвэл давхар шугамтай франц хийнэ.',
     durationMinutes: 25,
     price: 20_000,
     priceType: 'fixed',
@@ -367,7 +370,8 @@ export const SERVICES: ServiceSeed[] = [
     category: 'design',
     name: 'Сувд, чулуун чимэглэл',
     shortDescription: 'Сувд, кристалл, металл чимэглэл — 10 хумс хүртэл.',
-    description: 'Жижиг сувд, кристалл, алтлаг металл элементээр хумсыг чимэглэнэ. Арчилгаа, хадгалалтын зөвлөгөө өгнө.',
+    description:
+      'Жижиг сувд, кристалл, алтлаг металл элементээр хумсыг чимэглэнэ. Арчилгаа, хадгалалтын зөвлөгөө өгнө.',
     durationMinutes: 30,
     price: 25_000,
     priceType: 'from',
@@ -396,7 +400,8 @@ export const SERVICES: ServiceSeed[] = [
     category: 'pedicure',
     name: 'Гель педикюр',
     shortDescription: 'Педикюр + 3–4 долоо хоног тогтох гель будалт.',
-    description: 'Бүрэн педикюрын дараа хөлийн хумсыг гель будгаар будна. Гель будалт хөлийн хумсанд 4 долоо хоног хүртэл тогтоно.',
+    description:
+      'Бүрэн педикюрын дараа хөлийн хумсыг гель будгаар будна. Гель будалт хөлийн хумсанд 4 долоо хоног хүртэл тогтоно.',
     durationMinutes: 90,
     price: 95_000,
     priceType: 'fixed',
@@ -427,7 +432,8 @@ export const SERVICES: ServiceSeed[] = [
     category: 'care',
     name: 'Гель авалт',
     shortDescription: 'Гель будалтыг хумс гэмтээлгүй авч, тосолно.',
-    description: 'Гель будалтыг хумсны гадаргууг гэмтээлгүй авч, хэлбэрийг засаад тосоор тосолно. Шинээр будахгүй үед сонгоно.',
+    description:
+      'Гель будалтыг хумсны гадаргууг гэмтээлгүй авч, хэлбэрийг засаад тосоор тосолно. Шинээр будахгүй үед сонгоно.',
     durationMinutes: 20,
     price: 15_000,
     priceType: 'fixed',
@@ -704,14 +710,26 @@ export const OPENING_HOURS = [
 export function fixedHolidays(year: number) {
   return [
     { date: `${year}-01-01`, kind: 'closed' as const, label: 'Шинэ жил' },
-    { date: `${year}-03-08`, kind: 'special_hours' as const, opensAt: h(9), closesAt: h(21), label: 'Олон улсын эмэгтэйчүүдийн өдөр — сунгасан цаг' },
+    {
+      date: `${year}-03-08`,
+      kind: 'special_hours' as const,
+      opensAt: h(9),
+      closesAt: h(21),
+      label: 'Олон улсын эмэгтэйчүүдийн өдөр — сунгасан цаг',
+    },
     { date: `${year}-06-01`, kind: 'closed' as const, label: 'Хүүхдийн баяр' },
     { date: `${year}-07-11`, kind: 'closed' as const, label: 'Үндэсний их баяр наадам' },
     { date: `${year}-07-12`, kind: 'closed' as const, label: 'Үндэсний их баяр наадам' },
     { date: `${year}-07-13`, kind: 'closed' as const, label: 'Үндэсний их баяр наадам' },
     { date: `${year}-11-26`, kind: 'closed' as const, label: 'Бүгд Найрамдах Улс тунхагласан өдөр' },
     { date: `${year}-12-29`, kind: 'closed' as const, label: 'Үндэсний эрх чөлөө, тусгаар тогтнолоо сэргээсний баяр' },
-    { date: `${year}-12-31`, kind: 'special_hours' as const, opensAt: h(10), closesAt: h(15), label: 'Шинэ жилийн өмнөх өдөр — богиносгосон цаг' },
+    {
+      date: `${year}-12-31`,
+      kind: 'special_hours' as const,
+      opensAt: h(10),
+      closesAt: h(15),
+      label: 'Шинэ жилийн өмнөх өдөр — богиносгосон цаг',
+    },
   ]
 }
 

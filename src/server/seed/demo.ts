@@ -95,16 +95,23 @@ export async function hasDemoData(db: Database, salonId: string): Promise<number
   return row?.n ?? 0
 }
 
-export async function seedDemo(db: Database, { salonId, now = new Date(), force = false }: { salonId: string; now?: Date; force?: boolean }) {
+export async function seedDemo(
+  db: Database,
+  { salonId, now = new Date(), force = false }: { salonId: string; now?: Date; force?: boolean },
+) {
   const existing = await hasDemoData(db, salonId)
-  if (existing > 0 && !force) return `Demo data already present (${existing} appointments) — skipped. Run npm run db:reset-demo to refresh it.`
+  if (existing > 0 && !force)
+    return `Demo data already present (${existing} appointments) — skipped. Run npm run db:reset-demo to refresh it.`
 
   const rng = createRng(20261101)
   const today = dateKeyOf(now)
   const config = await loadSalonConfig(db, salonId)
   const catalog = await loadBookingCatalog(db, salonId)
   const serviceBySlug = new Map([...catalog.services.values()].map((s) => [s.slug, s]))
-  const addonRows = await db.select({ id: t.serviceAddons.id, slug: t.serviceAddons.slug }).from(t.serviceAddons).where(eq(t.serviceAddons.salonId, salonId))
+  const addonRows = await db
+    .select({ id: t.serviceAddons.id, slug: t.serviceAddons.slug })
+    .from(t.serviceAddons)
+    .where(eq(t.serviceAddons.salonId, salonId))
   const addonBySlug = new Map(addonRows.map((a) => [a.slug, a.id]))
   const staffList = catalog.staff.filter((s) => s.isActive)
   const staffIds = staffList.map((s) => s.id)
@@ -138,7 +145,15 @@ export async function seedDemo(db: Database, { salonId, now = new Date(), force 
   const customerRows = await db
     .select({ id: t.customers.id, phone: t.customers.phone, name: t.customers.name })
     .from(t.customers)
-    .where(and(eq(t.customers.salonId, salonId), inArray(t.customers.phone, DEMO_CUSTOMERS.map((_, i) => demoPhone(i)))))
+    .where(
+      and(
+        eq(t.customers.salonId, salonId),
+        inArray(
+          t.customers.phone,
+          DEMO_CUSTOMERS.map((_, i) => demoPhone(i)),
+        ),
+      ),
+    )
   const customers = DEMO_CUSTOMERS.map((_, i) => customerRows.find((c) => c.phone === demoPhone(i))!)
 
   // ---- A special-hours day inside the booking window and some staff time off
@@ -146,13 +161,29 @@ export async function seedDemo(db: Database, { salonId, now = new Date(), force 
     schedules.find((s) => s.staffId === staffId && s.weekday === weekdayOf(date) && s.isWorking)
   const existingSpecials = await loadSpecialDays(db, salonId, addDays(today, -60), addDays(today, 90))
   let trainingDay = addDays(today, 9)
-  while (weekdayOf(trainingDay) === 1 || existingSpecials.some((s) => s.date === trainingDay)) trainingDay = addDays(trainingDay, 1)
+  while (weekdayOf(trainingDay) === 1 || existingSpecials.some((s) => s.date === trainingDay))
+    trainingDay = addDays(trainingDay, 1)
   await db
     .insert(t.specialDays)
-    .values({ salonId, date: trainingDay, kind: 'special_hours', opensAt: 13 * 60, closesAt: 20 * 60, label: 'Мастеруудын сургалт — 13:00 цагаас нээнэ', isDemo: true })
+    .values({
+      salonId,
+      date: trainingDay,
+      kind: 'special_hours',
+      opensAt: 13 * 60,
+      closesAt: 20 * 60,
+      label: 'Мастеруудын сургалт — 13:00 цагаас нээнэ',
+      isDemo: true,
+    })
     .onConflictDoNothing()
 
-  const timeOffPlan: { slug: string; offset: number; from?: number; to?: number; kind: 'vacation' | 'training' | 'sick'; note: string }[] = [
+  const timeOffPlan: {
+    slug: string
+    offset: number
+    from?: number
+    to?: number
+    kind: 'vacation' | 'training' | 'sick'
+    note: string
+  }[] = [
     { slug: 'nomin', offset: 5, kind: 'vacation', note: 'Ээлжийн амралт' },
     { slug: 'khulan', offset: 3, from: 14 * 60 + 30, to: 19 * 60, kind: 'training', note: 'Аппарат педикюрын сургалт' },
     { slug: 'anu', offset: -12, kind: 'sick', note: 'Өвчтэй' },
@@ -164,7 +195,9 @@ export async function seedDemo(db: Database, { salonId, now = new Date(), force 
     for (let i = 0; i < 7 && !workingOn(staff.id, date); i++) date = addDays(date, plan.offset >= 0 ? 1 : -1)
     const start = plan.from !== undefined ? ubToUtc(date, plan.from) : dayBounds(date).start
     const end = plan.to !== undefined ? ubToUtc(date, plan.to) : dayBounds(date).end
-    await db.insert(t.staffTimeOff).values({ staffId: staff.id, startsAt: start, endsAt: end, kind: plan.kind, note: plan.note, isDemo: true })
+    await db
+      .insert(t.staffTimeOff)
+      .values({ staffId: staff.id, startsAt: start, endsAt: end, kind: plan.kind, note: plan.note, isDemo: true })
   }
 
   const rangeFrom = addDays(today, -40)
@@ -173,7 +206,13 @@ export async function seedDemo(db: Database, { salonId, now = new Date(), force 
   const timeOff = await db
     .select()
     .from(t.staffTimeOff)
-    .where(and(inArray(t.staffTimeOff.staffId, staffIds), gte(t.staffTimeOff.endsAt, dayBounds(rangeFrom).start), lte(t.staffTimeOff.startsAt, dayBounds(rangeTo).end)))
+    .where(
+      and(
+        inArray(t.staffTimeOff.staffId, staffIds),
+        gte(t.staffTimeOff.endsAt, dayBounds(rangeFrom).start),
+        lte(t.staffTimeOff.startsAt, dayBounds(rangeTo).end),
+      ),
+    )
 
   // ---- Appointment generation
   const busy = new Map<string, { start: number; end: number }[]>()
@@ -191,9 +230,14 @@ export async function seedDemo(db: Database, { salonId, now = new Date(), force 
     return {
       staffId,
       shift: shift?.isWorking ? { startsAt: shift.startsAt, endsAt: shift.endsAt } : null,
-      breaks: breaks.filter((b) => b.staffId === staffId && (b.weekday === null || b.weekday === weekday)).map((b) => ({ startsAt: b.startsAt, endsAt: b.endsAt })),
+      breaks: breaks
+        .filter((b) => b.staffId === staffId && (b.weekday === null || b.weekday === weekday))
+        .map((b) => ({ startsAt: b.startsAt, endsAt: b.endsAt })),
       busy: (busy.get(staffId) ?? []).filter(inDay),
-      timeOff: timeOff.filter((r) => r.staffId === staffId).map((r) => ({ start: r.startsAt.getTime(), end: r.endsAt.getTime() })).filter(inDay),
+      timeOff: timeOff
+        .filter((r) => r.staffId === staffId)
+        .map((r) => ({ start: r.startsAt.getTime(), end: r.endsAt.getTime() }))
+        .filter(inDay),
     }
   }
 
@@ -216,14 +260,23 @@ export async function seedDemo(db: Database, { salonId, now = new Date(), force 
     return null
   }
 
-  const quoteFor = (combo: (typeof COMBOS)[number][0], startsAt: Date): { quote: Quote; serviceIds: string[] } | null => {
+  const quoteFor = (
+    combo: (typeof COMBOS)[number][0],
+    startsAt: Date,
+  ): { quote: Quote; serviceIds: string[] } | null => {
     const items: SelectionItem[] = []
     for (const slug of combo.services) {
       const svc = serviceBySlug.get(slug)
       if (!svc) return null
-      items.push({ serviceId: svc.id, addonIds: (combo.addons?.[slug] ?? []).map((a) => addonBySlug.get(a)).filter((a): a is string => Boolean(a)) })
+      items.push({
+        serviceId: svc.id,
+        addonIds: (combo.addons?.[slug] ?? []).map((a) => addonBySlug.get(a)).filter((a): a is string => Boolean(a)),
+      })
     }
-    const quote = buildQuote(items, catalog, { defaultBufferMinutes: config.settings.defaultBufferMinutes, deposit: policy })
+    const quote = buildQuote(items, catalog, {
+      defaultBufferMinutes: config.settings.defaultBufferMinutes,
+      deposit: policy,
+    })
     if (startsAt < priceChangeAt) {
       // History: gel polish cost 60,000₮ before the price change.
       let delta = 0
@@ -239,7 +292,8 @@ export async function seedDemo(db: Database, { salonId, now = new Date(), force 
     return { quote, serviceIds: items.map((i) => i.serviceId) }
   }
 
-  const eligibleFor = (serviceIds: string[]) => staffList.filter((s) => serviceIds.every((id) => s.serviceIds.includes(id))).map((s) => s.id)
+  const eligibleFor = (serviceIds: string[]) =>
+    staffList.filter((s) => serviceIds.every((id) => s.serviceIds.includes(id))).map((s) => s.id)
   const pickCustomer = () => rng.weighted(customers.map((_, i) => [i, i < 8 ? 5 : 1] as const))
 
   const addBusy = (g: GenAppointment) => {
@@ -258,7 +312,15 @@ export async function seedDemo(db: Database, { salonId, now = new Date(), force 
     const date = addDays(today, offset)
     if (!salonHoursFor(date, config.weekly, specials)) continue
     const target =
-      offset < -7 ? rng.int(1, 2) : offset < 0 ? rng.int(2, 3) : offset === 0 ? rng.int(3, 5) : offset <= 7 ? rng.int(2, 3) : rng.int(0, 1)
+      offset < -7
+        ? rng.int(1, 2)
+        : offset < 0
+          ? rng.int(2, 3)
+          : offset === 0
+            ? rng.int(3, 5)
+            : offset <= 7
+              ? rng.int(2, 3)
+              : rng.int(0, 1)
     for (let k = 0; k < target; k++) {
       const combo = rng.weighted(COMBOS)
       const probe = quoteFor(combo, ubToUtc(date, 12 * 60))
@@ -298,7 +360,8 @@ export async function seedDemo(db: Database, { salonId, now = new Date(), force 
       ] as const)
       const online = source === 'website' || source === 'assistant' || source === 'messenger'
       if (status === 'pending' && !online) source = 'website'
-      const deposit = (source === 'website' || source === 'assistant') && quote.total >= policy.minTotal ? quote.deposit : 0
+      const deposit =
+        (source === 'website' || source === 'assistant') && quote.total >= policy.minTotal ? quote.deposit : 0
       if (status === 'expired' && deposit === 0) status = 'completed'
       const createdAt =
         source === 'walk_in'
@@ -314,7 +377,13 @@ export async function seedDemo(db: Database, { salonId, now = new Date(), force 
             ? new Date(createdAt.getTime() + 4 * MINUTE)
             : instantConfirm
               ? createdAt
-              : new Date(Math.min(createdAt.getTime() + rng.int(15, 240) * MINUTE, startsAt.getTime() - 30 * MINUTE, now.getTime()))
+              : new Date(
+                  Math.min(
+                    createdAt.getTime() + rng.int(15, 240) * MINUTE,
+                    startsAt.getTime() - 30 * MINUTE,
+                    now.getTime(),
+                  ),
+                )
       const g: GenAppointment = {
         id: randomUUID(),
         reference: nextRef(),
@@ -357,7 +426,9 @@ export async function seedDemo(db: Database, { salonId, now = new Date(), force 
       const shiftDays = rng.int(1, 4)
       const newDate = addDays(date, shiftDays)
       const candidatesNew = eligibleFor(serviceIds).filter((id) => staffDay(id, newDate).shift)
-      const moved = candidatesNew.length ? findSlot(candidatesNew.includes(slot.staffId) ? [slot.staffId] : candidatesNew, newDate, quote) : null
+      const moved = candidatesNew.length
+        ? findSlot(candidatesNew.includes(slot.staffId) ? [slot.staffId] : candidatesNew, newDate, quote)
+        : null
       if (!moved) {
         g.status = finished ? 'completed' : 'confirmed'
         g.completedAt = g.status === 'completed' ? endsAt : null
@@ -367,7 +438,13 @@ export async function seedDemo(db: Database, { salonId, now = new Date(), force 
       }
       const newStart = ubToUtc(newDate, moved.start)
       const newEnd = new Date(newStart.getTime() + quote.durationMinutes * MINUTE)
-      const rescheduledAt = new Date(Math.min(startsAt.getTime() - 6 * HOUR, now.getTime() - 30 * MINUTE, createdAt.getTime() + rng.int(6, 48) * HOUR))
+      const rescheduledAt = new Date(
+        Math.min(
+          startsAt.getTime() - 6 * HOUR,
+          now.getTime() - 30 * MINUTE,
+          createdAt.getTime() + rng.int(6, 48) * HOUR,
+        ),
+      )
       g.rescheduledAt = rescheduledAt < createdAt ? new Date(createdAt.getTime() + 10 * MINUTE) : rescheduledAt
       g.confirmedAt ??= g.createdAt
       const replacement: GenAppointment = {
@@ -409,7 +486,10 @@ export async function seedDemo(db: Database, { salonId, now = new Date(), force 
     declinable.status = 'rejected'
     declinable.cancelledAt = new Date(Math.min(declinable.createdAt.getTime() + 2 * HOUR, now.getTime()))
     const list = busy.get(declinable.staffId) ?? []
-    busy.set(declinable.staffId, list.filter((b) => b.start !== declinable.startsAt.getTime()))
+    busy.set(
+      declinable.staffId,
+      list.filter((b) => b.start !== declinable.startsAt.getTime()),
+    )
   }
 
   // ---- Rows
@@ -481,8 +561,18 @@ export async function seedDemo(db: Database, { salonId, now = new Date(), force 
     }
 
     const services = g.quote.lines.map((l) => l.name).join(', ')
-    const actorType = g.source === 'phone' || g.source === 'walk_in' || g.source === 'admin' ? 'staff' : g.source === 'assistant' ? 'assistant' : 'customer'
-    const initialStatus: AppointmentStatus = g.deposit > 0 ? 'awaiting_deposit' : g.confirmedAt && g.confirmedAt.getTime() === g.createdAt.getTime() ? 'confirmed' : 'pending'
+    const actorType =
+      g.source === 'phone' || g.source === 'walk_in' || g.source === 'admin'
+        ? 'staff'
+        : g.source === 'assistant'
+          ? 'assistant'
+          : 'customer'
+    const initialStatus: AppointmentStatus =
+      g.deposit > 0
+        ? 'awaiting_deposit'
+        : g.confirmedAt && g.confirmedAt.getTime() === g.createdAt.getTime()
+          ? 'confirmed'
+          : 'pending'
     eventRows.push({
       appointmentId: g.id,
       kind: 'created',
@@ -512,13 +602,26 @@ export async function seedDemo(db: Database, { salonId, now = new Date(), force 
         createdAt: at,
       })
     const when = formatDateTime(g.startsAt)
-    notify('booking_created', g.createdAt, 'customer', `Сувд: Таны ${when}-ийн захиалга (${g.reference}) бүртгэгдлээ. Төлөв: ${STATUS_LABELS[initialStatus]}.`)
-    notify('staff_new_booking', g.createdAt, 'staff', `Шинэ захиалга ${g.reference}: ${customer.name}, ${services}, ${when}, мастер ${staffName.get(g.staffId)}.`)
+    notify(
+      'booking_created',
+      g.createdAt,
+      'customer',
+      `Сувд: Таны ${when}-ийн захиалга (${g.reference}) бүртгэгдлээ. Төлөв: ${STATUS_LABELS[initialStatus]}.`,
+    )
+    notify(
+      'staff_new_booking',
+      g.createdAt,
+      'staff',
+      `Шинэ захиалга ${g.reference}: ${customer.name}, ${services}, ${when}, мастер ${staffName.get(g.staffId)}.`,
+    )
 
     if (g.deposit > 0) {
       const paymentId = randomUUID()
       const paid = g.status !== 'expired'
-      const refunded = g.status === 'cancelled' && g.cancelledAt && (g.startsAt.getTime() - g.cancelledAt.getTime()) / HOUR >= config.settings.cancellationNoticeHours
+      const refunded =
+        g.status === 'cancelled' &&
+        g.cancelledAt &&
+        (g.startsAt.getTime() - g.cancelledAt.getTime()) / HOUR >= config.settings.cancellationNoticeHours
       paymentRows.push({
         id: paymentId,
         salonId,
@@ -538,7 +641,12 @@ export async function seedDemo(db: Database, { salonId, now = new Date(), force 
       })
       recordRows.push({ paymentId, event: 'invoice_created', detail: { mode: 'mock' }, createdAt: g.createdAt })
       if (paid) {
-        recordRows.push({ paymentId, event: 'check_paid', detail: { source: 'callback', mode: 'mock' }, createdAt: new Date(g.createdAt.getTime() + 4 * MINUTE) })
+        recordRows.push({
+          paymentId,
+          event: 'check_paid',
+          detail: { source: 'callback', mode: 'mock' },
+          createdAt: new Date(g.createdAt.getTime() + 4 * MINUTE),
+        })
         eventRows.push({
           appointmentId: g.id,
           kind: 'deposit_paid',
@@ -548,7 +656,12 @@ export async function seedDemo(db: Database, { salonId, now = new Date(), force 
           note: `Урьдчилгаа ${g.deposit.toLocaleString('en-US')}₮ төлбөрийн системээр баталгаажсан (туршилтын).`,
           createdAt: new Date(g.createdAt.getTime() + 4 * MINUTE),
         })
-        notify('deposit_paid', new Date(g.createdAt.getTime() + 4 * MINUTE), 'customer', `Сувд: ${g.deposit.toLocaleString('en-US')}₮ урьдчилгаа баталгаажлаа. ${g.reference} баталгаажсан.`)
+        notify(
+          'deposit_paid',
+          new Date(g.createdAt.getTime() + 4 * MINUTE),
+          'customer',
+          `Сувд: ${g.deposit.toLocaleString('en-US')}₮ урьдчилгаа баталгаажлаа. ${g.reference} баталгаажсан.`,
+        )
       } else {
         eventRows.push({
           appointmentId: g.id,
@@ -560,19 +673,54 @@ export async function seedDemo(db: Database, { salonId, now = new Date(), force 
           createdAt: new Date(g.createdAt.getTime() + config.settings.holdMinutes * MINUTE),
         })
       }
-      if (refunded) recordRows.push({ paymentId, event: 'refunded', detail: { note: 'Цуцлалтын бодлогын дагуу' }, createdAt: g.cancelledAt! })
+      if (refunded)
+        recordRows.push({
+          paymentId,
+          event: 'refunded',
+          detail: { note: 'Цуцлалтын бодлогын дагуу' },
+          createdAt: g.cancelledAt!,
+        })
     } else if (g.confirmedAt && initialStatus === 'pending') {
-      eventRows.push({ appointmentId: g.id, kind: 'confirmed', fromStatus: 'pending', toStatus: 'confirmed', actorType: 'staff', actorAdminId: owner?.id ?? null, createdAt: g.confirmedAt })
+      eventRows.push({
+        appointmentId: g.id,
+        kind: 'confirmed',
+        fromStatus: 'pending',
+        toStatus: 'confirmed',
+        actorType: 'staff',
+        actorAdminId: owner?.id ?? null,
+        createdAt: g.confirmedAt,
+      })
     }
     if (g.confirmedAt && g.status !== 'expired') {
-      notify('booking_confirmed', g.confirmedAt, 'customer', `Сувд: ${when}-д ${staffName.get(g.staffId)} мастерт захиалсан цаг тань баталгаажлаа (${g.reference}).`)
+      notify(
+        'booking_confirmed',
+        g.confirmedAt,
+        'customer',
+        `Сувд: ${when}-д ${staffName.get(g.staffId)} мастерт захиалсан цаг тань баталгаажлаа (${g.reference}).`,
+      )
     }
-    if (g.startsAt.getTime() - config.settings.reminderHoursBefore * HOUR < now.getTime() && (g.status === 'completed' || g.status === 'no_show' || g.status === 'confirmed')) {
-      notify('reminder', new Date(Math.max(g.startsAt.getTime() - config.settings.reminderHoursBefore * HOUR, g.createdAt.getTime())), 'customer', `Сувд: ${when}-д ${staffName.get(g.staffId)} мастер таныг хүлээж байна.`)
+    if (
+      g.startsAt.getTime() - config.settings.reminderHoursBefore * HOUR < now.getTime() &&
+      (g.status === 'completed' || g.status === 'no_show' || g.status === 'confirmed')
+    ) {
+      notify(
+        'reminder',
+        new Date(Math.max(g.startsAt.getTime() - config.settings.reminderHoursBefore * HOUR, g.createdAt.getTime())),
+        'customer',
+        `Сувд: ${when}-д ${staffName.get(g.staffId)} мастер таныг хүлээж байна.`,
+      )
     }
 
     if (g.status === 'completed') {
-      eventRows.push({ appointmentId: g.id, kind: 'completed', fromStatus: 'confirmed', toStatus: 'completed', actorType: 'staff', actorAdminId: owner?.id ?? null, createdAt: g.endsAt })
+      eventRows.push({
+        appointmentId: g.id,
+        kind: 'completed',
+        fromStatus: 'confirmed',
+        toStatus: 'completed',
+        actorType: 'staff',
+        actorAdminId: owner?.id ?? null,
+        createdAt: g.endsAt,
+      })
       const balance = g.quote.total - g.deposit
       if (balance > 0) {
         const paymentId = randomUUID()
@@ -596,7 +744,12 @@ export async function seedDemo(db: Database, { salonId, now = new Date(), force 
           isDemo: true,
           createdAt: g.endsAt,
         })
-        recordRows.push({ paymentId, event: 'staff_recorded', detail: { method, amount: balance }, createdAt: g.endsAt })
+        recordRows.push({
+          paymentId,
+          event: 'staff_recorded',
+          detail: { method, amount: balance },
+          createdAt: g.endsAt,
+        })
       }
     }
     if (g.status === 'no_show') {
@@ -620,7 +773,12 @@ export async function seedDemo(db: Database, { salonId, now = new Date(), force 
         cancelledBy: byCustomer ? 'customer' : 'staff',
         actorAdminId: byCustomer ? null : (owner?.id ?? null),
         reasonCode: g.status === 'rejected' ? 'rejected' : byCustomer ? 'customer_request' : 'staff_unavailable',
-        reasonText: g.status === 'rejected' ? 'Тухайн цагт мастер өөр захиалгатай давхцсан.' : byCustomer ? rng.pick(CANCEL_TEXTS) : 'Мастер өвчтэй болсон.',
+        reasonText:
+          g.status === 'rejected'
+            ? 'Тухайн цагт мастер өөр захиалгатай давхцсан.'
+            : byCustomer
+              ? rng.pick(CANCEL_TEXTS)
+              : 'Мастер өвчтэй болсон.',
         noticeHours,
         withinPolicy,
         depositOutcome: g.deposit > 0 ? (withinPolicy ? 'refund' : 'forfeit') : 'none',
@@ -659,8 +817,10 @@ export async function seedDemo(db: Database, { salonId, now = new Date(), force 
   }
 
   await db.transaction(async (tx) => {
-    for (const rows of chunk(appointmentRows.filter((a) => !a.rescheduledFromId))) await tx.insert(t.appointments).values(rows)
-    for (const rows of chunk(appointmentRows.filter((a) => a.rescheduledFromId))) await tx.insert(t.appointments).values(rows)
+    for (const rows of chunk(appointmentRows.filter((a) => !a.rescheduledFromId)))
+      await tx.insert(t.appointments).values(rows)
+    for (const rows of chunk(appointmentRows.filter((a) => a.rescheduledFromId)))
+      await tx.insert(t.appointments).values(rows)
     for (const rows of chunk(lineRows)) await tx.insert(t.appointmentServices).values(rows)
     for (const rows of chunk(addonLineRows)) await tx.insert(t.appointmentAddons).values(rows)
     for (const rows of chunk(eventRows)) await tx.insert(t.appointmentEvents).values(rows)
@@ -694,7 +854,12 @@ export async function seedDemo(db: Database, { salonId, now = new Date(), force 
       })
       .returning({ id: t.chatSessions.id })
     await db.insert(t.chatMessages).values(
-      chat.messages.map((m, j) => ({ sessionId: session.id, role: m.role, content: m.content, createdAt: new Date(startedAt.getTime() + j * MINUTE) })),
+      chat.messages.map((m, j) => ({
+        sessionId: session.id,
+        role: m.role,
+        content: m.content,
+        createdAt: new Date(startedAt.getTime() + j * MINUTE),
+      })),
     )
   }
   const gel = serviceBySlug.get('gel-polish')
@@ -745,17 +910,26 @@ export async function deleteDemoData(db: Database, salonId: string) {
       .where(and(eq(t.appointments.salonId, salonId), eq(t.appointments.isDemo, true)))
     await tx.delete(t.notifications).where(and(eq(t.notifications.salonId, salonId), eq(t.notifications.isDemo, true)))
     await tx.delete(t.payments).where(and(eq(t.payments.salonId, salonId), eq(t.payments.isDemo, true)))
-    await tx.update(t.chatSessions).set({ appointmentId: null }).where(inArray(t.chatSessions.appointmentId, demoAppointments))
+    await tx
+      .update(t.chatSessions)
+      .set({ appointmentId: null })
+      .where(inArray(t.chatSessions.appointmentId, demoAppointments))
     // Replacements reference originals; clear the link before deleting.
-    await tx.update(t.appointments).set({ rescheduledFromId: null }).where(and(eq(t.appointments.salonId, salonId), eq(t.appointments.isDemo, true)))
+    await tx
+      .update(t.appointments)
+      .set({ rescheduledFromId: null })
+      .where(and(eq(t.appointments.salonId, salonId), eq(t.appointments.isDemo, true)))
     await tx.delete(t.appointments).where(and(eq(t.appointments.salonId, salonId), eq(t.appointments.isDemo, true)))
     await tx.delete(t.customers).where(and(eq(t.customers.salonId, salonId), eq(t.customers.isDemo, true)))
     await tx.delete(t.chatSessions).where(and(eq(t.chatSessions.salonId, salonId), eq(t.chatSessions.isDemo, true)))
     await tx.delete(t.specialDays).where(and(eq(t.specialDays.salonId, salonId), eq(t.specialDays.isDemo, true)))
     const staffIds = tx.select({ id: t.staff.id }).from(t.staff).where(eq(t.staff.salonId, salonId))
-    await tx.delete(t.staffTimeOff).where(and(inArray(t.staffTimeOff.staffId, staffIds), eq(t.staffTimeOff.isDemo, true)))
-    await tx.delete(t.auditLog).where(and(eq(t.auditLog.salonId, salonId), sql`${t.auditLog.detail} ->> 'demo' = 'true'`))
+    await tx
+      .delete(t.staffTimeOff)
+      .where(and(inArray(t.staffTimeOff.staffId, staffIds), eq(t.staffTimeOff.isDemo, true)))
+    await tx
+      .delete(t.auditLog)
+      .where(and(eq(t.auditLog.salonId, salonId), sql`${t.auditLog.detail} ->> 'demo' = 'true'`))
     await tx.delete(t.adminSessions).where(eq(t.adminSessions.isDemo, true))
   })
 }
-

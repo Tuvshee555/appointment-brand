@@ -178,7 +178,11 @@ export async function deliverNotification(db: Database, notificationId: string |
     })
     await db
       .update(t.notifications)
-      .set(res.ok ? { status: 'sent', sentAt: new Date(), error: null } : { status: 'failed', error: `Telegram HTTP ${res.status}` })
+      .set(
+        res.ok
+          ? { status: 'sent', sentAt: new Date(), error: null }
+          : { status: 'failed', error: `Telegram HTTP ${res.status}` },
+      )
       .where(eq(t.notifications.id, notificationId))
   } catch (err) {
     await db

@@ -22,7 +22,12 @@ export interface CalendarAppointment {
   isDemo: boolean
 }
 
-export async function loadCalendar(session: SessionActor, from: DateKey, to: DateKey, opts: { staffId: string | null; showCancelled: boolean }) {
+export async function loadCalendar(
+  session: SessionActor,
+  from: DateKey,
+  to: DateKey,
+  opts: { staffId: string | null; showCancelled: boolean },
+) {
   const salonId = session.salonId
   const ownOnly = session.role === 'specialist' ? session.staffId : null
   const staffFilter = ownOnly ?? opts.staffId
@@ -31,7 +36,9 @@ export async function loadCalendar(session: SessionActor, from: DateKey, to: Dat
     db
       .select({ id: t.staff.id, name: t.staff.displayName, color: t.staff.calendarColor, photoUrl: t.staff.photoUrl })
       .from(t.staff)
-      .where(and(eq(t.staff.salonId, salonId), eq(t.staff.isActive, true), ownOnly ? eq(t.staff.id, ownOnly) : undefined))
+      .where(
+        and(eq(t.staff.salonId, salonId), eq(t.staff.isActive, true), ownOnly ? eq(t.staff.id, ownOnly) : undefined),
+      )
       .orderBy(asc(t.staff.sortOrder)),
     loadSpecialDays(db, salonId, from, to),
   ])
@@ -74,14 +81,32 @@ export async function loadCalendar(session: SessionActor, from: DateKey, to: Dat
         db
           .select()
           .from(t.staffTimeOff)
-          .where(and(inArray(t.staffTimeOff.staffId, ids), lt(t.staffTimeOff.startsAt, end), gt(t.staffTimeOff.endsAt, start))),
+          .where(
+            and(
+              inArray(t.staffTimeOff.staffId, ids),
+              lt(t.staffTimeOff.startsAt, end),
+              gt(t.staffTimeOff.endsAt, start),
+            ),
+          ),
       ])
     : [[], [], [], []]
 
   const days: { date: DateKey; hours: MinuteRange | null; special: string | null }[] = []
   for (let d = from; diffDays(d, to) <= 0; d = addDays(d, 1)) {
-    days.push({ date: d, hours: salonHoursFor(d, config.weekly, specials), special: specials.find((s) => s.date === d)?.label ?? null })
+    days.push({
+      date: d,
+      hours: salonHoursFor(d, config.weekly, specials),
+      special: specials.find((s) => s.date === d)?.label ?? null,
+    })
   }
-  return { staff, allStaff, appointments: appointments as CalendarAppointment[], schedules, breaks, timeOff, days, weekly: config.weekly }
+  return {
+    staff,
+    allStaff,
+    appointments: appointments as CalendarAppointment[],
+    schedules,
+    breaks,
+    timeOff,
+    days,
+    weekly: config.weekly,
+  }
 }
-

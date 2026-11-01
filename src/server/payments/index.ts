@@ -28,7 +28,8 @@ export function getPaymentProvider(db: Database): OnlinePaymentProvider {
   const mode = paymentMode()
   if (mode === 'mock') return new SimulatedQPay(db)
   const creds = qpayCredentials()
-  if (!creds) throw new PaymentProviderError('QPay тохиргоо дутуу байна (QPAY_USERNAME, QPAY_PASSWORD, QPAY_INVOICE_CODE).')
+  if (!creds)
+    throw new PaymentProviderError('QPay тохиргоо дутуу байна (QPAY_USERNAME, QPAY_PASSWORD, QPAY_INVOICE_CODE).')
   // Only use QPAY_BASE_URL when it matches the selected mode.
   const base = process.env.QPAY_BASE_URL
   const matches = base && (mode === 'sandbox' ? base.includes('sandbox') : !base.includes('sandbox'))

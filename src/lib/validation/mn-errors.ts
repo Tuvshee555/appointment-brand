@@ -8,7 +8,9 @@ type Issue = z.core.$ZodRawIssue
 
 function bound(issue: Issue, which: 'minimum' | 'maximum'): string {
   const value = (issue as unknown as Record<string, unknown>)[which]
-  return typeof value === 'bigint' || typeof value === 'number' ? Number(value).toLocaleString('en-US') : String(value ?? '')
+  return typeof value === 'bigint' || typeof value === 'number'
+    ? Number(value).toLocaleString('en-US')
+    : String(value ?? '')
 }
 
 export function mongolianError(issue: Issue): string {
@@ -23,7 +25,10 @@ export function mongolianError(issue: Issue): string {
       return 'Утга буруу байна.'
     }
     case 'too_small':
-      if (origin === 'string') return Number(bound(issue, 'minimum')) <= 1 ? 'Заавал бөглөнө үү.' : `Хамгийн багадаа ${bound(issue, 'minimum')} тэмдэгт оруулна уу.`
+      if (origin === 'string')
+        return Number(bound(issue, 'minimum')) <= 1
+          ? 'Заавал бөглөнө үү.'
+          : `Хамгийн багадаа ${bound(issue, 'minimum')} тэмдэгт оруулна уу.`
       if (origin === 'array' || origin === 'set') return `Дор хаяж ${bound(issue, 'minimum')}-ийг сонгоно уу.`
       return `${bound(issue, 'minimum')}-аас бага байж болохгүй.`
     case 'too_big':

@@ -3,7 +3,17 @@
 // the shared tools/database. When unsure, it hands off to staff — it never
 // guesses (the same rule the Ursgal Messenger engine follows).
 import type { ChatAction, ChatPart, QuickReply } from '@/lib/assistant/types'
-import { addDays, dateKeyOf, formatDateKey, formatDuration, isDateKey, minutesToTime, relativeDayLabel, weekdayOf, type DateKey } from '@/lib/datetime'
+import {
+  addDays,
+  dateKeyOf,
+  formatDateKey,
+  formatDuration,
+  isDateKey,
+  minutesToTime,
+  relativeDayLabel,
+  weekdayOf,
+  type DateKey,
+} from '@/lib/datetime'
 import { formatMoney } from '@/lib/money'
 import { formatPhone, normalizePhone } from '@/lib/phone'
 import type { ServiceContext } from '@/server/context'
@@ -34,7 +44,11 @@ const LATIN: [RegExp, string][] = [
 ]
 
 export function normalize(text: string) {
-  let s = text.toLowerCase().replace(/[!?.,;]+/g, ' ').replace(/\s+/g, ' ').trim()
+  let s = text
+    .toLowerCase()
+    .replace(/[!?.,;]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
   for (const [re, to] of LATIN) s = s.replace(re, to)
   return s
 }
@@ -138,18 +152,31 @@ export async function greeting(ctx: ServiceContext): Promise<RuleReply> {
 
 async function servicePicker(ctx: ServiceContext, text: string): Promise<RuleReply> {
   const index = await catalogIndex(ctx)
-  const popular = ['gel-polish', 'classic-manicure', 'french-manicure', 'gel-extensions', 'nail-refill', 'gel-pedicure', 'basic-pedicure']
+  const popular = [
+    'gel-polish',
+    'classic-manicure',
+    'french-manicure',
+    'gel-extensions',
+    'nail-refill',
+    'gel-pedicure',
+    'basic-pedicure',
+  ]
   const options = popular
     .map((slug) => index.services.find((s) => s.slug === slug))
     .filter((s): s is Index['services'][number] => Boolean(s))
-    .map((s) => ({ label: `${s.name} · ${formatMoney(s.price)}`, action: { type: 'pick_service', serviceId: s.id } as ChatAction }))
+    .map((s) => ({
+      label: `${s.name} · ${formatMoney(s.price)}`,
+      action: { type: 'pick_service', serviceId: s.id } as ChatAction,
+    }))
   return { parts: [{ type: 'text', text }, quick(options)] }
 }
 
 async function staffPicker(ctx: ServiceContext, state: ChatState, serviceId: string): Promise<RuleReply> {
   const index = await catalogIndex(ctx)
   const svc = index.services.find((s) => s.id === serviceId)!
-  const eligible = index.staff.filter((st) => index.staffServices.some((r) => r.staffId === st.id && r.serviceId === serviceId))
+  const eligible = index.staff.filter((st) =>
+    index.staffServices.some((r) => r.staffId === st.id && r.serviceId === serviceId),
+  )
   state.flow = { step: 'staff', serviceIds: [serviceId] }
   return {
     parts: [
@@ -168,16 +195,32 @@ async function staffPicker(ctx: ServiceContext, state: ChatState, serviceId: str
 async function datePicker(ctx: ServiceContext, state: ChatState): Promise<RuleReply> {
   const flow = state.flow!
   const today = dateKeyOf(ctx.now)
-  const prepared = await prepareSelection(ctx.db, ctx.salonId, flow.serviceIds.map((id) => ({ serviceId: id, addonIds: [] })), flow.staffId ?? null, { publicOnly: true })
+  const prepared = await prepareSelection(
+    ctx.db,
+    ctx.salonId,
+    flow.serviceIds.map((id) => ({ serviceId: id, addonIds: [] })),
+    flow.staffId ?? null,
+    { publicOnly: true },
+  )
   const months = [today.slice(0, 7), addDays(`${today.slice(0, 7)}-28`, 7).slice(0, 7)]
   const days = (await Promise.all(months.map((m) => monthAvailability(ctx.db, prepared, m, { now: ctx.now })))).flat()
   const open = days.filter((d) => d.state === 'available').slice(0, 6)
   flow.step = 'date'
-  if (!open.length) return { parts: [{ type: 'text', text: 'Ойрын хугацаанд сул цаг олдсонгүй. Өөр мастер сонгох эсвэл салон руу залгана уу.' }] }
+  if (!open.length)
+    return {
+      parts: [
+        { type: 'text', text: 'Ойрын хугацаанд сул цаг олдсонгүй. Өөр мастер сонгох эсвэл салон руу залгана уу.' },
+      ],
+    }
   return {
     parts: [
       { type: 'text', text: 'Аль өдөр тохирох вэ? Сул цагтай ойрын өдрүүд:' },
-      quick(open.map((d) => ({ label: `${relativeDayLabel(d.date, today)} (${d.slotCount})`, action: { type: 'pick_date', date: d.date } as ChatAction }))),
+      quick(
+        open.map((d) => ({
+          label: `${relativeDayLabel(d.date, today)} (${d.slotCount})`,
+          action: { type: 'pick_date', date: d.date } as ChatAction,
+        })),
+      ),
     ],
   }
 }
@@ -189,8 +232,10 @@ async function slotList(ctx: ServiceContext, state: ChatState, date: DateKey): P
   flow.date = date
   flow.step = 'time'
   if (data.error) return { parts: [{ type: 'text', text: data.error }] }
-  if (data.salon_closed) return { parts: [{ type: 'text', text: `${formatDateKey(date)} салон амарна. Өөр өдөр сонгоно уу.` }] }
-  if (!data.free_start_times?.length) return { parts: [{ type: 'text', text: `${formatDateKey(date)} сул цаг үлдсэнгүй. Өөр өдөр сонгоно уу.` }] }
+  if (data.salon_closed)
+    return { parts: [{ type: 'text', text: `${formatDateKey(date)} салон амарна. Өөр өдөр сонгоно уу.` }] }
+  if (!data.free_start_times?.length)
+    return { parts: [{ type: 'text', text: `${formatDateKey(date)} сул цаг үлдсэнгүй. Өөр өдөр сонгоно уу.` }] }
   return { parts: [{ type: 'text', text: 'Сул цагаас сонгоно уу:' }, ...(result.parts ?? [])] }
 }
 
@@ -213,7 +258,14 @@ export async function handleRuleAction(ctx: ServiceContext, state: ChatState, ac
     case 'choose_slot': {
       if (!state.flow?.serviceIds.length) return servicePicker(ctx, 'Эхлээд үйлчилгээгээ сонгоно уу.')
       state.flow = { ...state.flow, date: action.date, start: action.start, step: 'name' }
-      return { parts: [{ type: 'text', text: `${formatDateKey(action.date)} ${minutesToTime(action.start)}. Захиалгыг хэний нэр дээр хийх вэ? (Демо: жишээ нэр бичиж болно.)` }] }
+      return {
+        parts: [
+          {
+            type: 'text',
+            text: `${formatDateKey(action.date)} ${minutesToTime(action.start)}. Захиалгыг хэний нэр дээр хийх вэ? (Демо: жишээ нэр бичиж болно.)`,
+          },
+        ],
+      }
     }
     default:
       return greeting(ctx)
@@ -230,7 +282,14 @@ export async function handleRuleText(ctx: ServiceContext, state: ChatState, raw:
   if (flow?.step === 'name' && s.length >= 2 && !s.includes('?')) {
     flow.name = raw.trim().slice(0, 80)
     flow.step = 'phone'
-    return { parts: [{ type: 'text', text: `Баярлалаа, ${flow.name}. Утасны дугаараа бичнэ үү (8 орон). Демо: 5000 1234 гэх мэт жишээ дугаар болно.` }] }
+    return {
+      parts: [
+        {
+          type: 'text',
+          text: `Баярлалаа, ${flow.name}. Утасны дугаараа бичнэ үү (8 орон). Демо: 5000 1234 гэх мэт жишээ дугаар болно.`,
+        },
+      ],
+    }
   }
   if (flow?.step === 'phone') {
     const phone = normalizePhone(raw)
@@ -250,7 +309,15 @@ export async function handleRuleText(ctx: ServiceContext, state: ChatState, raw:
       return { parts: [{ type: 'text', text: `${msg} Өөр цаг сонгоё.` }, ...(await datePicker(ctx, state)).parts] }
     }
     state.flow = undefined
-    return { parts: [{ type: 'text', text: 'Захиалгын хураангуйг шалгаад «Баталгаажуулах» дарна уу. Дарахаас өмнө захиалга үүсэхгүй.' }, ...(result.parts ?? [])] }
+    return {
+      parts: [
+        {
+          type: 'text',
+          text: 'Захиалгын хураангуйг шалгаад «Баталгаажуулах» дарна уу. Дарахаас өмнө захиалга үүсэхгүй.',
+        },
+        ...(result.parts ?? []),
+      ],
+    }
   }
 
   const service = matchService(index, s)
@@ -272,32 +339,75 @@ export async function handleRuleText(ctx: ServiceContext, state: ChatState, raw:
     }
   }
   if (has(s, ['миний захиалга'])) {
-    return { parts: [{ type: 'text', text: 'Цэсний «Миний захиалга» хэсэгт захиалгын дугаар (SV-…), утасны дугаараа оруулаад орно. Би одоо байгаа захиалгыг өөрчлөх эрхгүй.' }] }
+    return {
+      parts: [
+        {
+          type: 'text',
+          text: 'Цэсний «Миний захиалга» хэсэгт захиалгын дугаар (SV-…), утасны дугаараа оруулаад орно. Би одоо байгаа захиалгыг өөрчлөх эрхгүй.',
+        },
+      ],
+    }
   }
-  if (has(s, ['ажлын цаг', 'хэдэн цагаас', 'хэдэн цаг хүртэл', 'хэзээ нээ', 'онгойдог', 'хаадаг', 'нээлттэй', 'амралтын өдөр', 'ажилладаг'])) {
-    const info = JSON.parse((await salonInfo(ctx)).content) as { opening_hours: { day: string; hours: string }[]; special_days: { date: string; label: string; hours: string }[] }
+  if (
+    has(s, [
+      'ажлын цаг',
+      'хэдэн цагаас',
+      'хэдэн цаг хүртэл',
+      'хэзээ нээ',
+      'онгойдог',
+      'хаадаг',
+      'нээлттэй',
+      'амралтын өдөр',
+      'ажилладаг',
+    ])
+  ) {
+    const info = JSON.parse((await salonInfo(ctx)).content) as {
+      opening_hours: { day: string; hours: string }[]
+      special_days: { date: string; label: string; hours: string }[]
+    }
     const special = info.special_days.slice(0, 2).map((d) => `${formatDateKey(d.date)}: ${d.hours} (${d.label})`)
     return {
       parts: [
-        { type: 'text', text: `Ажлын цаг:\n${info.opening_hours.map((h) => `${h.day}: ${h.hours}`).join('\n')}${special.length ? `\n\nОнцгой өдрүүд:\n${special.join('\n')}` : ''}` },
+        {
+          type: 'text',
+          text: `Ажлын цаг:\n${info.opening_hours.map((h) => `${h.day}: ${h.hours}`).join('\n')}${special.length ? `\n\nОнцгой өдрүүд:\n${special.join('\n')}` : ''}`,
+        },
       ],
     }
   }
   if (has(s, ['хаяг', 'байршил', 'хаана', 'яаж очих'])) {
-    const info = JSON.parse((await salonInfo(ctx)).content) as { address: string; address_note: string | null; phone: string }
-    return { parts: [{ type: 'text', text: `${info.address}${info.address_note ? ` (${info.address_note})` : ''}. Утас: ${info.phone}.` }] }
+    const info = JSON.parse((await salonInfo(ctx)).content) as {
+      address: string
+      address_note: string | null
+      phone: string
+    }
+    return {
+      parts: [
+        {
+          type: 'text',
+          text: `${info.address}${info.address_note ? ` (${info.address_note})` : ''}. Утас: ${info.phone}.`,
+        },
+      ],
+    }
   }
   if (has(s, ['урьдчилгаа', 'төлбөр', 'qpay', 'карт', 'бэлэн'])) {
     const info = JSON.parse((await salonInfo(ctx)).content) as { deposit_policy: string }
     return { parts: [{ type: 'text', text: `${info.deposit_policy} Салонд карт, бэлэн мөнгө, QPay авна.` }] }
   }
 
-  const wantsBooking = has(s, ['захиал', 'цаг авах', 'сул цаг', 'цаг байна', 'боломжтой', 'чөлөөтэй']) || Boolean(date && (service || flow))
+  const wantsBooking =
+    has(s, ['захиал', 'цаг авах', 'сул цаг', 'цаг байна', 'боломжтой', 'чөлөөтэй']) ||
+    Boolean(date && (service || flow))
   if (wantsBooking) {
     const serviceId = service?.id ?? flow?.serviceIds[0]
     if (!serviceId) return servicePicker(ctx, 'Ямар үйлчилгээ авах вэ? Сонгоно уу эсвэл нэрийг нь бичээрэй.')
     if (staffMention && !index.staffServices.some((r) => r.staffId === staffMention.id && r.serviceId === serviceId)) {
-      return { parts: [{ type: 'text', text: `${staffMention.displayName} мастер энэ үйлчилгээг хийдэггүй.` }, ...(await staffPicker(ctx, state, serviceId)).parts] }
+      return {
+        parts: [
+          { type: 'text', text: `${staffMention.displayName} мастер энэ үйлчилгээг хийдэггүй.` },
+          ...(await staffPicker(ctx, state, serviceId)).parts,
+        ],
+      }
     }
     if (staffMention || date) {
       state.flow = { step: 'date', serviceIds: [serviceId], staffId: staffMention?.id ?? state.flow?.staffId ?? null }
@@ -307,11 +417,18 @@ export async function handleRuleText(ctx: ServiceContext, state: ChatState, raw:
   }
 
   if (has(s, ['мастер', 'хэн хийдэг', 'хэн хийх', 'ажилтан'])) {
-    const list = index.staff.filter((st) => !service || index.staffServices.some((r) => r.staffId === st.id && r.serviceId === service.id))
+    const list = index.staff.filter(
+      (st) => !service || index.staffServices.some((r) => r.staffId === st.id && r.serviceId === service.id),
+    )
     return {
       parts: [
-        { type: 'text', text: `${service ? `«${service.name}» үйлчилгээг хийдэг мастерууд` : 'Манай мастерууд'}: ${list.map((x) => `${x.displayName} (${x.title})`).join(', ')}.` },
-        ...(service ? [quick([{ label: 'Цаг захиалах', action: { type: 'pick_service', serviceId: service.id } }])] : []),
+        {
+          type: 'text',
+          text: `${service ? `«${service.name}» үйлчилгээг хийдэг мастерууд` : 'Манай мастерууд'}: ${list.map((x) => `${x.displayName} (${x.title})`).join(', ')}.`,
+        },
+        ...(service
+          ? [quick([{ label: 'Цаг захиалах', action: { type: 'pick_service', serviceId: service.id } }])]
+          : []),
       ],
     }
   }
@@ -321,14 +438,30 @@ export async function handleRuleText(ctx: ServiceContext, state: ChatState, raw:
     const text = wantsDuration
       ? `${service.name} ${formatDuration(service.durationMinutes)} үргэлжилнэ. Үнэ ${formatMoney(service.price)}${service.priceType === 'from' ? '-өөс' : ''}.`
       : `${service.name}: ${formatMoney(service.price)}${service.priceType === 'from' ? '-өөс (эцсийн үнэ дизайнаас хамаарна)' : ''}, ${formatDuration(service.durationMinutes)}. ${service.shortDescription}`
-    return { parts: [{ type: 'text', text }, quick([{ label: 'Сул цаг харах', action: { type: 'pick_service', serviceId: service.id } }, { label: 'Бусад үйлчилгээ', message: 'Ямар үйлчилгээ байдаг вэ?' }])] }
+    return {
+      parts: [
+        { type: 'text', text },
+        quick([
+          { label: 'Сул цаг харах', action: { type: 'pick_service', serviceId: service.id } },
+          { label: 'Бусад үйлчилгээ', message: 'Ямар үйлчилгээ байдаг вэ?' },
+        ]),
+      ],
+    }
   }
 
   if (has(s, ['үнэ', 'хэд вэ', 'хэдээр', 'төгрөг', 'үйлчилгээ', 'юу хийдэг', 'жагсаалт'])) {
-    const lines = index.services.slice(0, 10).map((x) => `• ${x.name} — ${formatMoney(x.price)}${x.priceType === 'from' ? '-өөс' : ''}, ${formatDuration(x.durationMinutes)}`)
+    const lines = index.services
+      .slice(0, 10)
+      .map(
+        (x) =>
+          `• ${x.name} — ${formatMoney(x.price)}${x.priceType === 'from' ? '-өөс' : ''}, ${formatDuration(x.durationMinutes)}`,
+      )
     return {
       parts: [
-        { type: 'text', text: `Түгээмэл үйлчилгээ:\n${lines.join('\n')}\n\nБүтэн жагсаалт «Үйлчилгээ, үнэ» хуудсанд бий. Аль үйлчилгээг сонирхож байна?` },
+        {
+          type: 'text',
+          text: `Түгээмэл үйлчилгээ:\n${lines.join('\n')}\n\nБүтэн жагсаалт «Үйлчилгээ, үнэ» хуудсанд бий. Аль үйлчилгээг сонирхож байна?`,
+        },
         quick([{ label: 'Цаг захиалах', message: 'Цаг захиалах' }]),
       ],
     }
@@ -345,4 +478,3 @@ export async function handleRuleText(ctx: ServiceContext, state: ChatState, raw:
     ],
   }
 }
-

@@ -73,7 +73,12 @@ export async function ensureDepositInvoice(ctx: ServiceContext, paymentId: strin
   })
   const [updated] = await ctx.db
     .update(t.payments)
-    .set({ providerInvoiceId: invoice.providerInvoiceId, qrText: invoice.qrText, shortUrl: invoice.shortUrl, updatedAt: ctx.now })
+    .set({
+      providerInvoiceId: invoice.providerInvoiceId,
+      qrText: invoice.qrText,
+      shortUrl: invoice.shortUrl,
+      updatedAt: ctx.now,
+    })
     .where(and(eq(t.payments.id, payment.id), sql`${t.payments.providerInvoiceId} is null`))
     .returning()
   await ctx.db.insert(t.paymentRecords).values({
@@ -136,7 +141,12 @@ export async function verifyPayment(
         createdAt: ctx.now,
       })
       const [info] = await tx
-        .select({ salonName: t.salons.name, customerName: t.customers.name, customerPhone: t.customers.phone, staffName: t.staff.displayName })
+        .select({
+          salonName: t.salons.name,
+          customerName: t.customers.name,
+          customerPhone: t.customers.phone,
+          staffName: t.staff.displayName,
+        })
         .from(t.appointments)
         .innerJoin(t.salons, eq(t.salons.id, t.appointments.salonId))
         .innerJoin(t.customers, eq(t.customers.id, t.appointments.customerId))
@@ -206,7 +216,12 @@ export async function simulateBankPayment(ctx: ServiceContext, paymentId: string
 export async function recordManualPayment(
   ctx: ServiceContext,
   appointmentId: string,
-  input: { amount: number; method: 'cash' | 'card' | 'bank_transfer' | 'qpay'; kind: 'balance' | 'full' | 'deposit'; note: string | null },
+  input: {
+    amount: number
+    method: 'cash' | 'card' | 'bank_transfer' | 'qpay'
+    kind: 'balance' | 'full' | 'deposit'
+    note: string | null
+  },
 ) {
   const [appt] = await ctx.db
     .select()
@@ -256,9 +271,16 @@ export async function refundPayment(ctx: ServiceContext, paymentId: string, note
   if (payment.status !== 'paid') throw new ServiceError('not_paid', 'Зөвхөн төлөгдсөн төлбөрийг буцаана.')
   if (payment.provider === 'qpay') {
     if (!payment.providerPaymentId) throw new ServiceError('missing_provider_id', 'QPay гүйлгээний дугаар алга.')
-    await getPaymentProvider(ctx.db).refundPayment(payment.providerPaymentId, note ?? 'Буцаан олголт', appUrl('/api/payments/qpay/callback'))
+    await getPaymentProvider(ctx.db).refundPayment(
+      payment.providerPaymentId,
+      note ?? 'Буцаан олголт',
+      appUrl('/api/payments/qpay/callback'),
+    )
   }
-  await ctx.db.update(t.payments).set({ status: 'refunded', note, updatedAt: ctx.now }).where(eq(t.payments.id, payment.id))
+  await ctx.db
+    .update(t.payments)
+    .set({ status: 'refunded', note, updatedAt: ctx.now })
+    .where(eq(t.payments.id, payment.id))
   await ctx.db.insert(t.paymentRecords).values({
     paymentId: payment.id,
     event: 'refunded',

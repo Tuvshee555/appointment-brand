@@ -17,7 +17,14 @@ import type { PublicSlot } from './booking'
 const transitionSchema = z.object({
   appointmentId: id,
   to: z.enum(APPOINTMENT_STATUSES),
-  reason: z.enum(Object.keys(CANCELLATION_REASONS) as [keyof typeof CANCELLATION_REASONS, ...(keyof typeof CANCELLATION_REASONS)[]]).optional(),
+  reason: z
+    .enum(
+      Object.keys(CANCELLATION_REASONS) as [
+        keyof typeof CANCELLATION_REASONS,
+        ...(keyof typeof CANCELLATION_REASONS)[],
+      ],
+    )
+    .optional(),
   note: optionalText(500),
 })
 
@@ -29,7 +36,10 @@ export async function transitionAction(input: unknown) {
     'appointments.manage',
     async (ctx) => {
       if (ctx.actor.role === 'specialist') {
-        const [row] = await ctx.db.select({ staffId: t.appointments.staffId }).from(t.appointments).where(eq(t.appointments.id, parsed.appointmentId))
+        const [row] = await ctx.db
+          .select({ staffId: t.appointments.staffId })
+          .from(t.appointments)
+          .where(eq(t.appointments.id, parsed.appointmentId))
         if (row?.staffId !== ctx.actor.staffId) throw new ServiceError('forbidden', 'Зөвхөн өөрийн захиалгыг өөрчилнө.')
       }
       const result = await transitionAppointment(ctx, parsed.appointmentId, parsed.to, {
@@ -81,14 +91,32 @@ export async function adminRescheduleAction(input: unknown) {
 
 /** Free start times for staff use (no minimum notice; any active specialist). */
 export async function adminSlotsAction(input: unknown) {
-  const p = safeParse(z.object({ items: selectionItems, staffId: id.nullable(), date: dateKey, excludeAppointmentId: id.optional() }), input)
+  const p = safeParse(
+    z.object({ items: selectionItems, staffId: id.nullable(), date: dateKey, excludeAppointmentId: id.optional() }),
+    input,
+  )
   if (!p.ok) return p
   const parsed = p.data
   return runAdminAction('appointments.view', async (ctx) => {
     const prepared = await prepareSelection(ctx.db, ctx.salonId, parsed.items, parsed.staffId, { publicOnly: false })
-    const day = await dayAvailability(ctx.db, prepared, parsed.date, { now: ctx.now, publicRules: false, excludeAppointmentId: parsed.excludeAppointmentId })
-    const slots: PublicSlot[] = day.slots.map((s) => ({ start: s.start, label: minutesToTime(s.start), startsAt: s.startsAt, endsAt: s.endsAt, staffIds: s.staffIds }))
-    return { slots, quote: prepared.quote, staff: prepared.candidates.map((c) => ({ id: c.id, name: c.displayName })), closed: !day.hours }
+    const day = await dayAvailability(ctx.db, prepared, parsed.date, {
+      now: ctx.now,
+      publicRules: false,
+      excludeAppointmentId: parsed.excludeAppointmentId,
+    })
+    const slots: PublicSlot[] = day.slots.map((s) => ({
+      start: s.start,
+      label: minutesToTime(s.start),
+      startsAt: s.startsAt,
+      endsAt: s.endsAt,
+      staffIds: s.staffIds,
+    }))
+    return {
+      slots,
+      quote: prepared.quote,
+      staff: prepared.candidates.map((c) => ({ id: c.id, name: c.displayName })),
+      closed: !day.hours,
+    }
   })
 }
 
@@ -99,7 +127,13 @@ const createSchema = z.object({
   start: minuteOfDay,
   source: z.enum(['admin', 'phone', 'walk_in', 'messenger']),
   status: z.enum(['confirmed', 'pending']),
-  customer: z.object({ name: personName, phone, email: optionalEmail, note: optionalText(500), preferences: optionalText(300) }),
+  customer: z.object({
+    name: personName,
+    phone,
+    email: optionalEmail,
+    note: optionalText(500),
+    preferences: optionalText(300),
+  }),
   internalNote: optionalText(500),
 })
 
@@ -111,7 +145,13 @@ export async function adminCreateBookingAction(input: unknown) {
     const [salon] = await ctx.db.select({ isDemo: t.salons.isDemo }).from(t.salons).where(eq(t.salons.id, ctx.salonId))
     const result = await createBooking(
       ctx,
-      { items: parsed.items, staffId: parsed.staffId, date: parsed.date, start: parsed.start, customer: parsed.customer },
+      {
+        items: parsed.items,
+        staffId: parsed.staffId,
+        date: parsed.date,
+        start: parsed.start,
+        customer: parsed.customer,
+      },
       {
         source: parsed.source,
         actor: 'staff',
@@ -161,7 +201,12 @@ export async function recordPaymentAction(input: unknown) {
     'payments.manage',
     async (ctx) => {
       const row = await recordManualPayment(ctx, parsed.appointmentId, parsed)
-      await audit(ctx, { action: 'payment.record', entity: 'payment', entityId: row.id, summary: `${parsed.amount}₮ төлбөр бүртгэв (${parsed.method})` })
+      await audit(ctx, {
+        action: 'payment.record',
+        entity: 'payment',
+        entityId: row.id,
+        summary: `${parsed.amount}₮ төлбөр бүртгэв (${parsed.method})`,
+      })
       return { paymentId: row.id }
     },
     { ownAppointmentId: parsed.appointmentId },
@@ -174,7 +219,12 @@ export async function refundPaymentAction(input: unknown) {
   const parsed = p.data
   return runAdminAction('payments.manage', async (ctx) => {
     await refundPayment(ctx, parsed.paymentId, parsed.note)
-    await audit(ctx, { action: 'payment.refund', entity: 'payment', entityId: parsed.paymentId, summary: `Төлбөр буцаав${parsed.note ? `: ${parsed.note}` : ''}` })
+    await audit(ctx, {
+      action: 'payment.refund',
+      entity: 'payment',
+      entityId: parsed.paymentId,
+      summary: `Төлбөр буцаав${parsed.note ? `: ${parsed.note}` : ''}`,
+    })
     return null
   })
 }

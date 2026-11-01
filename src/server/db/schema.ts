@@ -150,7 +150,10 @@ export const businessSettings = salonSchema
     (t) => [
       check('settings_slot_interval', sql`${t.slotIntervalMinutes} in (5, 10, 15, 20, 30, 60)`),
       check('settings_deposit_bps', sql`${t.depositPercentBps} between 0 and 10000`),
-      check('settings_non_negative', sql`${t.depositFixedAmount} >= 0 and ${t.depositMinTotal} >= 0 and ${t.minAdvanceMinutes} >= 0`),
+      check(
+        'settings_non_negative',
+        sql`${t.depositFixedAmount} >= 0 and ${t.depositMinTotal} >= 0 and ${t.minAdvanceMinutes} >= 0`,
+      ),
     ],
   )
   .enableRLS()
@@ -171,7 +174,10 @@ export const openingHours = salonSchema
     (t) => [
       primaryKey({ columns: [t.salonId, t.weekday] }),
       check('opening_weekday', sql`${t.weekday} between 1 and 7`),
-      check('opening_range', sql`${t.isClosed} or (${t.opensAt} >= 0 and ${t.opensAt} < ${t.closesAt} and ${t.closesAt} <= 1440)`),
+      check(
+        'opening_range',
+        sql`${t.isClosed} or (${t.opensAt} >= 0 and ${t.opensAt} < ${t.closesAt} and ${t.closesAt} <= 1440)`,
+      ),
     ],
   )
   .enableRLS()
@@ -359,7 +365,10 @@ export const staff = salonSchema
       bio: text().notNull().default(''),
       experienceYears: smallint().notNull().default(0),
       experienceText: varchar({ length: 300 }).notNull().default(''),
-      specialties: text().array().notNull().default(sql`'{}'::text[]`),
+      specialties: text()
+        .array()
+        .notNull()
+        .default(sql`'{}'::text[]`),
       photoUrl: varchar({ length: 500 }),
       photoAlt: varchar({ length: 200 }),
       /** A photograph of the specialist's work, shown large on profile cards. */
@@ -387,7 +396,10 @@ export const staffSkills = salonSchema
         .references(() => skills.id, { onDelete: 'cascade' }),
       level: varchar({ length: 16 }).notNull().default('standard'),
     },
-    (t) => [primaryKey({ columns: [t.staffId, t.skillId] }), check('staff_skills_level', sql`${t.level} in ('standard', 'senior')`)],
+    (t) => [
+      primaryKey({ columns: [t.staffId, t.skillId] }),
+      check('staff_skills_level', sql`${t.level} in ('standard', 'senior')`),
+    ],
   )
   .enableRLS()
 
@@ -423,7 +435,10 @@ export const staffSchedules = salonSchema
     (t) => [
       primaryKey({ columns: [t.staffId, t.weekday] }),
       check('staff_schedules_weekday', sql`${t.weekday} between 1 and 7`),
-      check('staff_schedules_range', sql`not ${t.isWorking} or (${t.startsAt} >= 0 and ${t.startsAt} < ${t.endsAt} and ${t.endsAt} <= 1440)`),
+      check(
+        'staff_schedules_range',
+        sql`not ${t.isWorking} or (${t.startsAt} >= 0 and ${t.startsAt} < ${t.endsAt} and ${t.endsAt} <= 1440)`,
+      ),
     ],
   )
   .enableRLS()
@@ -466,7 +481,10 @@ export const staffTimeOff = salonSchema
       isDemo: boolean().notNull().default(false),
       createdAt: createdAt(),
     },
-    (t) => [index('staff_time_off_staff_range').on(t.staffId, t.startsAt), check('staff_time_off_range', sql`${t.startsAt} < ${t.endsAt}`)],
+    (t) => [
+      index('staff_time_off_staff_range').on(t.staffId, t.startsAt),
+      check('staff_time_off_range', sql`${t.startsAt} < ${t.endsAt}`),
+    ],
   )
   .enableRLS()
 
@@ -493,7 +511,10 @@ export const customers = salonSchema
       createdAt: createdAt(),
       updatedAt: updatedAt(),
     },
-    (t) => [uniqueIndex('customers_salon_phone').on(t.salonId, t.phone), index('customers_salon_name').on(t.salonId, t.name)],
+    (t) => [
+      uniqueIndex('customers_salon_phone').on(t.salonId, t.phone),
+      index('customers_salon_name').on(t.salonId, t.name),
+    ],
   )
   .enableRLS()
 
@@ -555,7 +576,10 @@ export const appointments = salonSchema
       index('appointments_rescheduled_from').on(t.rescheduledFromId),
       index('appointments_demo_visitor').on(t.demoVisitorHash),
       check('appointments_times', sql`${t.startsAt} < ${t.endsAt} and ${t.endsAt} <= ${t.occupiedUntil}`),
-      check('appointments_money', sql`${t.totalPrice} >= 0 and ${t.depositAmount} >= 0 and ${t.depositAmount} <= ${t.totalPrice}`),
+      check(
+        'appointments_money',
+        sql`${t.totalPrice} >= 0 and ${t.depositAmount} >= 0 and ${t.depositAmount} <= ${t.totalPrice}`,
+      ),
     ],
   )
   .enableRLS()
@@ -576,7 +600,10 @@ export const appointmentServices = salonSchema
       priceType: priceType().notNull(),
       sortOrder: smallint().notNull().default(0),
     },
-    (t) => [index('appointment_services_appointment').on(t.appointmentId), index('appointment_services_service').on(t.serviceId)],
+    (t) => [
+      index('appointment_services_appointment').on(t.appointmentId),
+      index('appointment_services_service').on(t.serviceId),
+    ],
   )
   .enableRLS()
 
@@ -619,7 +646,10 @@ export const appointmentEvents = salonSchema
       meta: jsonb().$type<Record<string, unknown>>(),
       createdAt: createdAt(),
     },
-    (t) => [index('appointment_events_appointment').on(t.appointmentId, t.createdAt), index('appointment_events_created').on(t.createdAt)],
+    (t) => [
+      index('appointment_events_appointment').on(t.appointmentId, t.createdAt),
+      index('appointment_events_created').on(t.createdAt),
+    ],
   )
   .enableRLS()
 
@@ -683,7 +713,10 @@ export const payments = salonSchema
       index('payments_salon_created').on(t.salonId, t.createdAt),
       uniqueIndex('payments_provider_invoice').on(t.providerInvoiceId),
       check('payments_amount', sql`${t.amount} > 0`),
-      check('payments_paid_is_verified', sql`${t.status} <> 'paid' or (${t.paidAt} is not null and ${t.verifiedBy} is not null)`),
+      check(
+        'payments_paid_is_verified',
+        sql`${t.status} <> 'paid' or (${t.paidAt} is not null and ${t.verifiedBy} is not null)`,
+      ),
     ],
   )
   .enableRLS()
@@ -712,7 +745,10 @@ export const adminRoles = salonSchema
     key: varchar({ length: 32 }).primaryKey(),
     name: varchar({ length: 60 }).notNull(),
     description: varchar({ length: 300 }).notNull().default(''),
-    permissions: text().array().notNull().default(sql`'{}'::text[]`),
+    permissions: text()
+      .array()
+      .notNull()
+      .default(sql`'{}'::text[]`),
   })
   .enableRLS()
 
@@ -809,7 +845,10 @@ export const notifications = salonSchema
       createdAt: createdAt(),
       sentAt: timestamp({ withTimezone: true }),
     },
-    (t) => [index('notifications_salon_created').on(t.salonId, t.createdAt), index('notifications_appointment').on(t.appointmentId)],
+    (t) => [
+      index('notifications_salon_created').on(t.salonId, t.createdAt),
+      index('notifications_appointment').on(t.appointmentId),
+    ],
   )
   .enableRLS()
 
@@ -835,7 +874,10 @@ export const chatSessions = salonSchema
       createdAt: createdAt(),
       lastMessageAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
     },
-    (t) => [index('chat_sessions_visitor').on(t.salonId, t.visitorHash), index('chat_sessions_last').on(t.lastMessageAt)],
+    (t) => [
+      index('chat_sessions_visitor').on(t.salonId, t.visitorHash),
+      index('chat_sessions_last').on(t.lastMessageAt),
+    ],
   )
   .enableRLS()
 

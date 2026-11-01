@@ -38,7 +38,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="mn" className={`${golos.variable} ${cormorant.variable}`}>
+    <html lang="mn" className={`${golos.variable} ${cormorant.variable}`} data-scroll-behavior="smooth">
       <body className="min-h-dvh antialiased">{children}</body>
     </html>
   )

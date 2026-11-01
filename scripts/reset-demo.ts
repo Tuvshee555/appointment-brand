@@ -10,7 +10,10 @@ async function main() {
   const url = loadEnv()
   await withDb(url, async (db) => {
     const slug = process.env.SALON_SLUG ?? 'suvd'
-    const [salon] = await db.select().from(t.salons).where(and(eq(t.salons.slug, slug), eq(t.salons.isDemo, true)))
+    const [salon] = await db
+      .select()
+      .from(t.salons)
+      .where(and(eq(t.salons.slug, slug), eq(t.salons.isDemo, true)))
     if (!salon) {
       console.error(`[reset-demo] Salon "${slug}" is not a demo salon — nothing was changed.`)
       process.exit(1)

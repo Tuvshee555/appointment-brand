@@ -31,7 +31,13 @@ export interface StaffScheduleData {
 /** Schedules, breaks, time off and slot-holding appointments for staff over [from, to]. */
 export async function loadStaffScheduleData(
   db: Database,
-  { staffIds, from, to, now, excludeAppointmentId }: { staffIds: string[]; from: DateKey; to: DateKey; now: Date; excludeAppointmentId?: string },
+  {
+    staffIds,
+    from,
+    to,
+    now,
+    excludeAppointmentId,
+  }: { staffIds: string[]; from: DateKey; to: DateKey; now: Date; excludeAppointmentId?: string },
 ): Promise<StaffScheduleData> {
   if (staffIds.length === 0) return { schedules: [], breaks: [], timeOff: [], busy: [] }
   const rangeStart = dayBounds(from).start
@@ -42,7 +48,13 @@ export async function loadStaffScheduleData(
     db
       .select()
       .from(t.staffTimeOff)
-      .where(and(inArray(t.staffTimeOff.staffId, staffIds), lt(t.staffTimeOff.startsAt, rangeEnd), gt(t.staffTimeOff.endsAt, rangeStart))),
+      .where(
+        and(
+          inArray(t.staffTimeOff.staffId, staffIds),
+          lt(t.staffTimeOff.startsAt, rangeEnd),
+          gt(t.staffTimeOff.endsAt, rangeStart),
+        ),
+      ),
     db
       .select({
         id: t.appointments.id,
@@ -59,7 +71,11 @@ export async function loadStaffScheduleData(
           gt(t.appointments.occupiedUntil, rangeStart),
           inArray(t.appointments.status, [...SLOT_HOLDING_STATUSES]),
           // An unpaid deposit hold stops blocking the slot once it expires.
-          or(ne(t.appointments.status, 'awaiting_deposit'), isNull(t.appointments.holdExpiresAt), gt(t.appointments.holdExpiresAt, now)),
+          or(
+            ne(t.appointments.status, 'awaiting_deposit'),
+            isNull(t.appointments.holdExpiresAt),
+            gt(t.appointments.holdExpiresAt, now),
+          ),
           excludeAppointmentId ? ne(t.appointments.id, excludeAppointmentId) : undefined,
         ),
       ),
@@ -99,7 +115,8 @@ export function bookedMinutesOn(data: StaffScheduleData, date: DateKey): Map<str
   const { start, end } = dayBounds(date)
   const out = new Map<string, number>()
   for (const b of data.busy) {
-    if (b.start >= start.getTime() && b.start < end.getTime()) out.set(b.staffId, (out.get(b.staffId) ?? 0) + b.durationMinutes)
+    if (b.start >= start.getTime() && b.start < end.getTime())
+      out.set(b.staffId, (out.get(b.staffId) ?? 0) + b.durationMinutes)
   }
   return out
 }
@@ -187,7 +204,13 @@ export async function monthAvailability(
   const last = addDays(first, daysInMonth(first) - 1)
   const [specials, data] = await Promise.all([
     loadSpecialDays(db, config.salon.id, first, last),
-    loadStaffScheduleData(db, { staffIds: candidates.map((c) => c.id), from: first, to: last, now, excludeAppointmentId }),
+    loadStaffScheduleData(db, {
+      staffIds: candidates.map((c) => c.id),
+      from: first,
+      to: last,
+      now,
+      excludeAppointmentId,
+    }),
   ])
   const days: CalendarDay[] = []
   for (let date = first; diffDays(date, last) <= 0; date = addDays(date, 1)) {
@@ -208,7 +231,12 @@ export async function monthAvailability(
       minAdvanceMinutes: config.settings.minAdvanceMinutes,
       staff: candidates.map((c) => staffDayFor(data, c.id, date)),
     })
-    days.push({ date, state: slots.length ? 'available' : 'full', slotCount: slots.length, label: special?.label ?? null })
+    days.push({
+      date,
+      state: slots.length ? 'available' : 'full',
+      slotCount: slots.length,
+      label: special?.label ?? null,
+    })
   }
   return days
 }
@@ -236,4 +264,3 @@ export async function nextAvailableSlots(
 export async function lockSalonDay(tx: Database, salonId: string, date: DateKey) {
   await tx.execute(sql`select pg_advisory_xact_lock(hashtextextended(${`salon-day:${salonId}:${date}`}, 0))`)
 }
-

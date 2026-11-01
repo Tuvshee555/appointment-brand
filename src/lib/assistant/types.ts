@@ -21,7 +21,13 @@ export interface QuickReply {
 }
 
 export interface DraftSummary {
-  services: { name: string; price: number; from: boolean; durationMinutes: number; addons: { name: string; price: number }[] }[]
+  services: {
+    name: string
+    price: number
+    from: boolean
+    durationMinutes: number
+    addons: { name: string; price: number }[]
+  }[]
   staffName: string
   dateLabel: string
   timeRange: string

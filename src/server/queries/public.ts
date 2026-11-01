@@ -26,7 +26,13 @@ export interface PublicSalon {
   instagram: string | null
   facebook: string | null
   hours: { weekday: number; isClosed: boolean; opensAt: number; closesAt: number }[]
-  specialDays: { date: string; kind: 'closed' | 'special_hours'; opensAt: number | null; closesAt: number | null; label: string }[]
+  specialDays: {
+    date: string
+    kind: 'closed' | 'special_hours'
+    opensAt: number | null
+    closesAt: number | null
+    label: string
+  }[]
   rules: {
     slotIntervalMinutes: number
     minAdvanceMinutes: number
@@ -60,7 +66,13 @@ export async function getPublicSalon(): Promise<PublicSalon> {
     db
       .select()
       .from(t.specialDays)
-      .where(and(eq(t.specialDays.salonId, salonId), gte(t.specialDays.date, today), lte(t.specialDays.date, addDays(today, 75))))
+      .where(
+        and(
+          eq(t.specialDays.salonId, salonId),
+          gte(t.specialDays.date, today),
+          lte(t.specialDays.date, addDays(today, 75)),
+        ),
+      )
       .orderBy(asc(t.specialDays.date)),
   ])
   return {
@@ -78,7 +90,13 @@ export async function getPublicSalon(): Promise<PublicSalon> {
     instagram: s.instagram,
     facebook: s.facebook,
     hours: hours.map((h) => ({ weekday: h.weekday, isClosed: h.isClosed, opensAt: h.opensAt, closesAt: h.closesAt })),
-    specialDays: specialDays.map((d) => ({ date: d.date, kind: d.kind, opensAt: d.opensAt, closesAt: d.closesAt, label: d.label })),
+    specialDays: specialDays.map((d) => ({
+      date: d.date,
+      kind: d.kind,
+      opensAt: d.opensAt,
+      closesAt: d.closesAt,
+      label: d.label,
+    })),
     rules: {
       slotIntervalMinutes: s.slotIntervalMinutes,
       minAdvanceMinutes: s.minAdvanceMinutes,
@@ -204,7 +222,13 @@ export async function getPublicCatalog(): Promise<PublicCatalog> {
       .innerJoin(t.staff, eq(t.staff.id, t.staffServices.staffId))
       .where(eq(t.staff.salonId, salonId)),
     db
-      .select({ staffId: t.staffSchedules.staffId, weekday: t.staffSchedules.weekday, isWorking: t.staffSchedules.isWorking, startsAt: t.staffSchedules.startsAt, endsAt: t.staffSchedules.endsAt })
+      .select({
+        staffId: t.staffSchedules.staffId,
+        weekday: t.staffSchedules.weekday,
+        isWorking: t.staffSchedules.isWorking,
+        startsAt: t.staffSchedules.startsAt,
+        endsAt: t.staffSchedules.endsAt,
+      })
       .from(t.staffSchedules)
       .innerJoin(t.staff, eq(t.staff.id, t.staffSchedules.staffId))
       .where(eq(t.staff.salonId, salonId)),
@@ -275,7 +299,9 @@ export async function getPublicCatalog(): Promise<PublicCatalog> {
       photoAlt: s.photoAlt,
       coverUrl: s.coverUrl,
       acceptsOnlineBookings: s.acceptsOnlineBookings,
-      serviceIds: staffServices.filter((r) => r.staffId === s.id && serviceIds.has(r.serviceId)).map((r) => r.serviceId),
+      serviceIds: staffServices
+        .filter((r) => r.staffId === s.id && serviceIds.has(r.serviceId))
+        .map((r) => r.serviceId),
       workDays: schedules
         .filter((r) => r.staffId === s.id && r.isWorking)
         .map((r) => ({ weekday: r.weekday, startsAt: r.startsAt, endsAt: r.endsAt }))

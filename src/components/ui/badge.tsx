@@ -11,15 +11,37 @@ const tones: Record<StatusTone, string> = {
   muted: 'bg-sand text-ink-3 ring-line-strong',
 }
 
-export function Badge({ tone = 'neutral', children, className }: { tone?: StatusTone; children: ReactNode; className?: string }) {
+export function Badge({
+  tone = 'neutral',
+  children,
+  className,
+}: {
+  tone?: StatusTone
+  children: ReactNode
+  className?: string
+}) {
   return (
-    <span className={cn('inline-flex items-center gap-1 rounded-xs px-2 py-0.5 text-xs font-medium ring-1 ring-inset', tones[tone], className)}>
+    <span
+      className={cn(
+        'inline-flex items-center gap-1 rounded-xs px-2 py-0.5 text-xs font-medium ring-1 ring-inset',
+        tones[tone],
+        className,
+      )}
+    >
       {children}
     </span>
   )
 }
 
-export function StatusBadge({ status, className, label }: { status: AppointmentStatus; className?: string; label?: string }) {
+export function StatusBadge({
+  status,
+  className,
+  label,
+}: {
+  status: AppointmentStatus
+  className?: string
+  label?: string
+}) {
   return (
     <Badge tone={STATUS_TONES[status]} className={className}>
       <span aria-hidden className="size-1.5 rounded-full bg-current opacity-70" />
@@ -31,7 +53,12 @@ export function StatusBadge({ status, className, label }: { status: AppointmentS
 /** Marks sample data wherever it appears. */
 export function DemoTag({ className }: { className?: string }) {
   return (
-    <span className={cn('inline-flex items-center rounded-xs bg-blush-100 px-1.5 py-0.5 text-[0.68rem] font-semibold tracking-wide text-blush-700 uppercase', className)}>
+    <span
+      className={cn(
+        'inline-flex items-center rounded-xs bg-blush-100 px-1.5 py-0.5 text-[0.68rem] font-semibold tracking-wide text-blush-700 uppercase',
+        className,
+      )}
+    >
       Жишээ
     </span>
   )

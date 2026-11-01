@@ -4,11 +4,17 @@ import { formatMoney } from '@/lib/money'
 /** Daily revenue bars (accessible: each bar has a text label; table fallback for screen readers). */
 export function RevenueBars({ data, height = 140 }: { data: { day: string; total: number }[]; height?: number }) {
   const max = Math.max(1, ...data.map((d) => d.total))
+  // At most ~8 date labels whatever the range, so the axis fits a phone screen.
+  const labelEvery = Math.max(1, Math.ceil(data.length / 8))
   return (
     <figure>
-      <div className="flex items-end gap-1.5" style={{ height }} aria-hidden>
+      <div className="flex items-end gap-1 sm:gap-1.5" style={{ height }} aria-hidden>
         {data.map((d) => (
-          <div key={d.day} className="group relative flex flex-1 flex-col items-center justify-end" style={{ height: '100%' }}>
+          <div
+            key={d.day}
+            className="group relative flex flex-1 flex-col items-center justify-end"
+            style={{ height: '100%' }}
+          >
             <div
               className="w-full rounded-t-[3px] bg-cocoa-300 transition-colors group-hover:bg-cocoa-600"
               style={{ height: `${Math.max(2, (d.total / max) * 100)}%` }}
@@ -17,10 +23,10 @@ export function RevenueBars({ data, height = 140 }: { data: { day: string; total
           </div>
         ))}
       </div>
-      <div className="mt-2 flex gap-1.5 text-[0.62rem] text-ink-3" aria-hidden>
+      <div className="mt-2 flex gap-1 text-[0.62rem] text-ink-3 sm:gap-1.5" aria-hidden>
         {data.map((d, i) => (
-          <span key={d.day} className="flex-1 text-center tabular">
-            {i % 2 === 0 ? formatShortDate(d.day) : ''}
+          <span key={d.day} className="tabular min-w-0 flex-1 text-center whitespace-nowrap">
+            {i % labelEvery === 0 ? formatShortDate(d.day) : ''}
           </span>
         ))}
       </div>
@@ -40,7 +46,13 @@ export function RevenueBars({ data, height = 140 }: { data: { day: string; total
 }
 
 /** Horizontal bars for ranked lists (popular services, staff performance). */
-export function RankBars({ rows, format = (n: number) => String(n) }: { rows: { label: string; value: number; hint?: string }[]; format?: (n: number) => string }) {
+export function RankBars({
+  rows,
+  format = (n: number) => String(n),
+}: {
+  rows: { label: string; value: number; hint?: string }[]
+  format?: (n: number) => string
+}) {
   const max = Math.max(1, ...rows.map((r) => r.value))
   return (
     <ul className="space-y-3">
@@ -48,7 +60,7 @@ export function RankBars({ rows, format = (n: number) => String(n) }: { rows: { 
         <li key={r.label}>
           <div className="flex justify-between gap-3 text-sm">
             <span className="truncate text-ink">{r.label}</span>
-            <span className="shrink-0 text-ink-2 tabular">
+            <span className="tabular shrink-0 text-ink-2">
               {format(r.value)}
               {r.hint ? <span className="ml-1 text-xs text-ink-3">{r.hint}</span> : null}
             </span>

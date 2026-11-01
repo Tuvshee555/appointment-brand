@@ -22,7 +22,11 @@ export function hmac(value: string, key: 'SESSION_SECRET' | 'QPAY_CALLBACK_SECRE
   return createHmac('sha256', secret(key)).update(value).digest('base64url')
 }
 
-export function verifyHmac(value: string, signature: string, key: 'SESSION_SECRET' | 'QPAY_CALLBACK_SECRET' = 'SESSION_SECRET') {
+export function verifyHmac(
+  value: string,
+  signature: string,
+  key: 'SESSION_SECRET' | 'QPAY_CALLBACK_SECRET' = 'SESSION_SECRET',
+) {
   const expected = Buffer.from(hmac(value, key))
   const given = Buffer.from(signature)
   return expected.length === given.length && timingSafeEqual(expected, given)

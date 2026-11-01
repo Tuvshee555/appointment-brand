@@ -10,7 +10,16 @@ import { PHOTOS } from '@/lib/photo-manifest'
 import { hashPassword } from '@/server/auth/password'
 import type { Database } from '@/server/db/client'
 import * as t from '@/server/db/schema'
-import { ADDONS, CATEGORIES, OPENING_HOURS, SERVICES, SETTINGS_DEFAULTS, SKILLS, STAFF, fixedHolidays } from './catalog-data'
+import {
+  ADDONS,
+  CATEGORIES,
+  OPENING_HOURS,
+  SERVICES,
+  SETTINGS_DEFAULTS,
+  SKILLS,
+  STAFF,
+  fixedHolidays,
+} from './catalog-data'
 
 export const DEMO_VIEWER_EMAIL = 'demo-owner@suvd.example'
 export const DEMO_SPECIALIST_EMAIL = 'demo-specialist@suvd.example'
@@ -80,7 +89,10 @@ export async function seedBase(db: Database, { now = new Date() }: { now?: Date 
     .insert(t.skills)
     .values(SKILLS.map((s, i) => ({ salonId, key: s.key, name: s.name, description: s.description, sortOrder: i })))
     .onConflictDoNothing()
-  const skillRows = await db.select({ id: t.skills.id, key: t.skills.key }).from(t.skills).where(eq(t.skills.salonId, salonId))
+  const skillRows = await db
+    .select({ id: t.skills.id, key: t.skills.key })
+    .from(t.skills)
+    .where(eq(t.skills.salonId, salonId))
   const skillId = new Map(skillRows.map((r) => [r.key, r.id]))
 
   await db
@@ -149,7 +161,10 @@ export async function seedBase(db: Database, { now = new Date() }: { now?: Date 
       .values(def.skills.map((key) => ({ serviceId: row.id, skillId: skillId.get(key)! })))
       .onConflictDoNothing()
   }
-  const serviceRows = await db.select({ id: t.services.id, slug: t.services.slug }).from(t.services).where(eq(t.services.salonId, salonId))
+  const serviceRows = await db
+    .select({ id: t.services.id, slug: t.services.slug })
+    .from(t.services)
+    .where(eq(t.services.salonId, salonId))
   const serviceId = new Map(serviceRows.map((r) => [r.slug, r.id]))
 
   // ---- Staff
@@ -204,12 +219,24 @@ export async function seedBase(db: Database, { now = new Date() }: { now?: Date 
   }
 
   // ---- Access accounts
-  const anuId = (await db.select({ id: t.staff.id }).from(t.staff).where(sql`${t.staff.salonId} = ${salonId} and ${t.staff.slug} = 'anu'`))[0]?.id
+  const anuId = (
+    await db
+      .select({ id: t.staff.id })
+      .from(t.staff)
+      .where(sql`${t.staff.salonId} = ${salonId} and ${t.staff.slug} = 'anu'`)
+  )[0]?.id
   await db
     .insert(t.adminUsers)
     .values([
       { salonId, email: DEMO_VIEWER_EMAIL, name: 'Демо зочин', roleKey: 'demo_viewer', passwordHash: null },
-      { salonId, email: DEMO_SPECIALIST_EMAIL, name: 'Демо мастер (Ану)', roleKey: 'specialist', passwordHash: null, staffId: anuId ?? null },
+      {
+        salonId,
+        email: DEMO_SPECIALIST_EMAIL,
+        name: 'Демо мастер (Ану)',
+        roleKey: 'specialist',
+        passwordHash: null,
+        staffId: anuId ?? null,
+      },
     ])
     .onConflictDoNothing({ target: t.adminUsers.email })
 
@@ -220,7 +247,11 @@ export async function seedBase(db: Database, { now = new Date() }: { now?: Date 
 }
 
 /** Creates the owner account from ADMIN_EMAIL / ADMIN_PASSWORD (never overwrites an existing password). */
-export async function ensureOwner(db: Database, salonId: string, input: { email: string; password: string; name: string }) {
+export async function ensureOwner(
+  db: Database,
+  salonId: string,
+  input: { email: string; password: string; name: string },
+) {
   const email = input.email.trim().toLowerCase()
   const existing = await db.select({ id: t.adminUsers.id }).from(t.adminUsers).where(eq(t.adminUsers.email, email))
   if (existing.length) return 'exists' as const

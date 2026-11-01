@@ -37,7 +37,13 @@ const TONE: Record<string, { box: string; icon: typeof CalendarCheck2 }> = {
   awaiting_deposit: { box: 'border-amber-600/30 bg-amber-50 text-amber-700', icon: Clock3 },
 }
 
-async function BookingContent({ params, searchParams }: { params: Promise<{ reference: string }>; searchParams: Promise<{ t?: string; new?: string }> }) {
+async function BookingContent({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ reference: string }>
+  searchParams: Promise<{ t?: string; new?: string }>
+}) {
   const [{ reference: raw }, sp] = await Promise.all([params, searchParams])
   const reference = decodeURIComponent(raw).toUpperCase()
   const token = typeof sp.t === 'string' ? sp.t : null
@@ -61,8 +67,11 @@ async function BookingContent({ params, searchParams }: { params: Promise<{ refe
   const startsIn = hoursUntil(new Date(booking.startsAt), now)
   const active = booking.status === 'pending' || booking.status === 'confirmed' || booking.status === 'awaiting_deposit'
   const canCancel = active && startsIn > 0
-  const canReschedule = (booking.status === 'pending' || booking.status === 'confirmed') && startsIn >= salon.rules.rescheduleNoticeHours
-  const paidDeposit = booking.payments.filter((p) => p.kind === 'deposit' && p.status === 'paid').reduce((s, p) => s + p.amount, 0)
+  const canReschedule =
+    (booking.status === 'pending' || booking.status === 'confirmed') && startsIn >= salon.rules.rescheduleNoticeHours
+  const paidDeposit = booking.payments
+    .filter((p) => p.kind === 'deposit' && p.status === 'paid')
+    .reduce((s, p) => s + p.amount, 0)
   const tone = TONE[booking.status] ?? { box: 'border-line bg-sand text-ink-2', icon: XCircle }
   const Icon = tone.icon
 
@@ -77,7 +86,7 @@ async function BookingContent({ params, searchParams }: { params: Promise<{ refe
         <p className="eyebrow">Захиалгын дугаар</p>
         {booking.isDemo ? <DemoTag /> : null}
       </div>
-      <h1 className="display mt-2 text-5xl text-cocoa-900 tabular sm:text-6xl">{booking.reference}</h1>
+      <h1 className="display tabular mt-2 text-5xl text-cocoa-900 sm:text-6xl">{booking.reference}</h1>
 
       <div className={cn('mt-8 flex gap-4 rounded-card border p-5', tone.box)} role="status">
         <Icon className="mt-0.5 size-6 shrink-0" aria-hidden />
@@ -85,17 +94,29 @@ async function BookingContent({ params, searchParams }: { params: Promise<{ refe
           <p className="text-lg font-medium">{booking.statusLabel}</p>
           <p className="mt-1 text-sm opacity-90">{booking.explanation}</p>
           {booking.replacement ? (
-            <Link href={`/booking/${booking.replacement.reference}${token ? `?t=${encodeURIComponent(token)}` : ''}`} className="mt-2 inline-block text-sm font-medium underline underline-offset-4">
+            <Link
+              href={`/booking/${booking.replacement.reference}${token ? `?t=${encodeURIComponent(token)}` : ''}`}
+              className="mt-2 inline-block text-sm font-medium underline underline-offset-4"
+            >
               Шинэ захиалга: {booking.replacement.reference}
             </Link>
           ) : null}
-          {booking.previous ? <p className="mt-2 text-sm opacity-80">Өмнөх захиалга {booking.previous.reference}-ийн цагийг өөрчилж үүсгэсэн.</p> : null}
+          {booking.previous ? (
+            <p className="mt-2 text-sm opacity-80">
+              Өмнөх захиалга {booking.previous.reference}-ийн цагийг өөрчилж үүсгэсэн.
+            </p>
+          ) : null}
         </div>
       </div>
 
       {booking.status === 'awaiting_deposit' ? (
         <div className="mt-6">
-          <DepositPanel reference={booking.reference} token={token} amount={booking.depositAmount} holdExpiresAt={booking.holdExpiresAt} />
+          <DepositPanel
+            reference={booking.reference}
+            token={token}
+            amount={booking.depositAmount}
+            holdExpiresAt={booking.holdExpiresAt}
+          />
         </div>
       ) : null}
 
@@ -107,8 +128,9 @@ async function BookingContent({ params, searchParams }: { params: Promise<{ refe
           </div>
           <div>
             <dt className="text-xs font-medium tracking-wide text-ink-3 uppercase">Цаг</dt>
-            <dd className="mt-1 text-lg text-cocoa-900 tabular">
-              {formatTimeRange(booking.startsAt, booking.endsAt)} <span className="text-sm text-ink-3">({formatDuration(booking.durationMinutes)})</span>
+            <dd className="tabular mt-1 text-lg text-cocoa-900">
+              {formatTimeRange(booking.startsAt, booking.endsAt)}{' '}
+              <span className="text-sm text-ink-3">({formatDuration(booking.durationMinutes)})</span>
             </dd>
           </div>
           <div>
@@ -154,7 +176,15 @@ async function BookingContent({ params, searchParams }: { params: Promise<{ refe
                 <li key={p.id} className="flex justify-between gap-4">
                   <span>
                     {p.kind === 'deposit' ? 'Урьдчилгаа' : 'Төлбөр'} ·{' '}
-                    {p.status === 'paid' ? 'төлөгдсөн' : p.status === 'pending' ? 'хүлээгдэж буй' : p.status === 'refunded' ? 'буцаагдсан' : p.status === 'expired' ? 'хугацаа дууссан' : 'цуцлагдсан'}
+                    {p.status === 'paid'
+                      ? 'төлөгдсөн'
+                      : p.status === 'pending'
+                        ? 'хүлээгдэж буй'
+                        : p.status === 'refunded'
+                          ? 'буцаагдсан'
+                          : p.status === 'expired'
+                            ? 'хугацаа дууссан'
+                            : 'цуцлагдсан'}
                     {p.provider === 'simulated' ? ' (туршилтын)' : ''}
                   </span>
                   <span className="tabular">{formatMoney(p.amount)}</span>
@@ -219,7 +249,10 @@ async function BookingContent({ params, searchParams }: { params: Promise<{ refe
   )
 }
 
-export default function BookingPage(props: { params: Promise<{ reference: string }>; searchParams: Promise<{ t?: string; new?: string }> }) {
+export default function BookingPage(props: {
+  params: Promise<{ reference: string }>
+  searchParams: Promise<{ t?: string; new?: string }>
+}) {
   return (
     <div className="container-page pt-10 pb-24 lg:pt-14">
       <Suspense

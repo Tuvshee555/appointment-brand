@@ -9,7 +9,10 @@ export default async function SiteLayout({ children }: { children: React.ReactNo
   const salon = await getPublicSalon()
   return (
     <>
-      <a href="#main" className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-50 focus:bg-ivory focus:px-4 focus:py-2">
+      <a
+        href="#main"
+        className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-50 focus:bg-ivory focus:px-4 focus:py-2"
+      >
         Үндсэн агуулга руу шилжих
       </a>
       <DemoRibbon />

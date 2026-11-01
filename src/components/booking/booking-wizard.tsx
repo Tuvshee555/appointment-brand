@@ -9,12 +9,33 @@ import { Field, Input, Textarea } from '@/components/ui/field'
 import { Money } from '@/components/ui/money'
 import { Photo } from '@/components/ui/photo'
 import type { CalendarDay } from '@/lib/availability/engine'
-import { buildQuote, QuoteError, type CatalogAddon, type CatalogService, type Quote, type SelectionItem } from '@/lib/booking/pricing'
-import { addDays, addMonths, dateKeyOf, diffDays, formatDateKey, formatDuration, minutesToTime, timeToMinutes } from '@/lib/datetime'
+import {
+  buildQuote,
+  QuoteError,
+  type CatalogAddon,
+  type CatalogService,
+  type Quote,
+  type SelectionItem,
+} from '@/lib/booking/pricing'
+import {
+  addDays,
+  addMonths,
+  dateKeyOf,
+  diffDays,
+  formatDateKey,
+  formatDuration,
+  minutesToTime,
+  timeToMinutes,
+} from '@/lib/datetime'
 import { formatMoney } from '@/lib/money'
 import { normalizePhone } from '@/lib/phone'
 import { cn } from '@/lib/cn'
-import { createBookingAction, dayAvailabilityAction, monthAvailabilityAction, type PublicSlot } from '@/server/actions/booking'
+import {
+  createBookingAction,
+  dayAvailabilityAction,
+  monthAvailabilityAction,
+  type PublicSlot,
+} from '@/server/actions/booking'
 import type { PublicCatalog, PublicSalon } from '@/server/queries/public'
 import { MonthCalendar } from './month-calendar'
 
@@ -56,12 +77,18 @@ export function BookingWizard({ catalog, rules }: { catalog: PublicCatalog; rule
   const prefillDate = params.get('date')
   const prefillTime = timeToMinutes(params.get('time') ?? '')
 
-  const [items, setItems] = useState<SelectionItem[]>(() => (prefillService ? [{ serviceId: prefillService.id, addonIds: [] }] : []))
-  const [staffId, setStaffId] = useState<string | null | undefined>(() => prefillStaff?.id ?? (prefillService && prefillDate ? null : undefined))
+  const [items, setItems] = useState<SelectionItem[]>(() =>
+    prefillService ? [{ serviceId: prefillService.id, addonIds: [] }] : [],
+  )
+  const [staffId, setStaffId] = useState<string | null | undefined>(
+    () => prefillStaff?.id ?? (prefillService && prefillDate ? null : undefined),
+  )
   const [date, setDate] = useState<string | null>(prefillService && prefillDate ? prefillDate : null)
   const [slot, setSlot] = useState<PublicSlot | null>(null)
   const [pendingTime, setPendingTime] = useState<number | null>(prefillService && prefillDate ? prefillTime : null)
-  const [step, setStep] = useState<Step>(() => (prefillService && prefillDate ? 'time' : prefillService ? (prefillStaff ? 'date' : 'staff') : 'services'))
+  const [step, setStep] = useState<Step>(() =>
+    prefillService && prefillDate ? 'time' : prefillService ? (prefillStaff ? 'date' : 'staff') : 'services',
+  )
   const [customer, setCustomer] = useState<Customer>({ name: '', phone: '', email: '', note: '', preferences: '' })
   const [customerErrors, setCustomerErrors] = useState<Partial<Record<keyof Customer, string>>>({})
   const [category, setCategory] = useState<string | null>(prefillService?.categorySlug ?? null)
@@ -82,17 +109,35 @@ export function BookingWizard({ catalog, rules }: { catalog: PublicCatalog; rule
     const services = new Map<string, CatalogService>(
       catalog.services.map((s) => [
         s.id,
-        { id: s.id, name: s.name, categoryName: s.categoryName, durationMinutes: s.durationMinutes, price: s.price, priceType: s.priceType, bufferMinutes: s.bufferMinutes, addonIds: s.addonIds },
+        {
+          id: s.id,
+          name: s.name,
+          categoryName: s.categoryName,
+          durationMinutes: s.durationMinutes,
+          price: s.price,
+          priceType: s.priceType,
+          bufferMinutes: s.bufferMinutes,
+          addonIds: s.addonIds,
+        },
       ]),
     )
     const addons = new Map<string, CatalogAddon>(catalog.addons.map((a) => [a.id, a]))
     try {
       return {
-        quote: buildQuote(items, { services, addons }, {
-          defaultBufferMinutes: rules.defaultBufferMinutes,
-          deposit: { mode: rules.depositMode, fixedAmount: rules.depositFixedAmount, percentBps: rules.depositPercentBps, minTotal: rules.depositMinTotal },
-          maxServices: rules.maxServicesPerBooking,
-        }),
+        quote: buildQuote(
+          items,
+          { services, addons },
+          {
+            defaultBufferMinutes: rules.defaultBufferMinutes,
+            deposit: {
+              mode: rules.depositMode,
+              fixedAmount: rules.depositFixedAmount,
+              percentBps: rules.depositPercentBps,
+              minTotal: rules.depositMinTotal,
+            },
+            maxServices: rules.maxServicesPerBooking,
+          },
+        ),
         error: null,
       }
     } catch (err) {
@@ -104,7 +149,10 @@ export function BookingWizard({ catalog, rules }: { catalog: PublicCatalog; rule
   const loading = step === 'date' ? days === null : step === 'time' ? slots === null : false
 
   const eligibleStaff = useMemo(
-    () => catalog.staff.filter((s) => s.acceptsOnlineBookings && items.length > 0 && items.every((i) => s.serviceIds.includes(i.serviceId))),
+    () =>
+      catalog.staff.filter(
+        (s) => s.acceptsOnlineBookings && items.length > 0 && items.every((i) => s.serviceIds.includes(i.serviceId)),
+      ),
     [catalog.staff, items],
   )
   const chosenStaff = staffId ? staffById.get(staffId) : null
@@ -180,7 +228,14 @@ export function BookingWizard({ catalog, rules }: { catalog: PublicCatalog; rule
   const toggleAddon = (serviceId: string, addonId: string) =>
     setItems((prev) =>
       prev.map((i) =>
-        i.serviceId === serviceId ? { ...i, addonIds: i.addonIds.includes(addonId) ? i.addonIds.filter((a) => a !== addonId) : [...i.addonIds, addonId] } : i,
+        i.serviceId === serviceId
+          ? {
+              ...i,
+              addonIds: i.addonIds.includes(addonId)
+                ? i.addonIds.filter((a) => a !== addonId)
+                : [...i.addonIds, addonId],
+            }
+          : i,
       ),
     )
 
@@ -188,7 +243,8 @@ export function BookingWizard({ catalog, rules }: { catalog: PublicCatalog; rule
     const errs: Partial<Record<keyof Customer, string>> = {}
     if (customer.name.trim().length < 2) errs.name = 'Нэрээ бүтэн оруулна уу.'
     if (!normalizePhone(customer.phone)) errs.phone = 'Утасны дугаар 8 оронтой байх ёстой. Жишээ: 9911 2233'
-    if (customer.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customer.email.trim())) errs.email = 'И-мэйл хаяг буруу байна.'
+    if (customer.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customer.email.trim()))
+      errs.email = 'И-мэйл хаяг буруу байна.'
     setCustomerErrors(errs)
     return Object.keys(errs).length === 0
   }
@@ -258,7 +314,9 @@ export function BookingWizard({ catalog, rules }: { catalog: PublicCatalog; rule
   const stepIndex = STEPS.findIndex((s) => s.key === step)
   const canContinue: Record<Step, boolean> = {
     services: Boolean(quote),
-    staff: staffId !== undefined && (staffId === null ? eligibleStaff.length > 0 : eligibleStaff.some((s) => s.id === staffId)),
+    staff:
+      staffId !== undefined &&
+      (staffId === null ? eligibleStaff.length > 0 : eligibleStaff.some((s) => s.id === staffId)),
     date: Boolean(date),
     time: Boolean(slot),
     details: true,
@@ -275,7 +333,10 @@ export function BookingWizard({ catalog, rules }: { catalog: PublicCatalog; rule
   }
 
   const visibleServices = catalog.services.filter(
-    (s) => s.onlineBookable && (!category || s.categorySlug === category) && (!onlyStaffServices || !prefillStaff || prefillStaff.serviceIds.includes(s.id)),
+    (s) =>
+      s.onlineBookable &&
+      (!category || s.categorySlug === category) &&
+      (!onlyStaffServices || !prefillStaff || prefillStaff.serviceIds.includes(s.id)),
   )
 
   const firstMonth = today.slice(0, 7)
@@ -290,7 +351,10 @@ export function BookingWizard({ catalog, rules }: { catalog: PublicCatalog; rule
             Алхам {stepIndex + 1}/{STEPS.length} · <span className="text-cocoa-900">{STEPS[stepIndex].label}</span>
           </p>
           <div className="mt-2 h-1 rounded-full bg-sand">
-            <div className="h-1 rounded-full bg-cocoa-700 transition-all" style={{ width: `${((stepIndex + 1) / STEPS.length) * 100}%` }} />
+            <div
+              className="h-1 rounded-full bg-cocoa-700 transition-all"
+              style={{ width: `${((stepIndex + 1) / STEPS.length) * 100}%` }}
+            />
           </div>
         </div>
         <nav aria-label="Захиалгын алхам" className="hidden sm:block">
@@ -304,7 +368,16 @@ export function BookingWizard({ catalog, rules }: { catalog: PublicCatalog; rule
                     s.key === step ? 'bg-cocoa-800 text-ivory' : i < stepIndex ? 'text-cocoa-800' : 'text-ink-3',
                   )}
                 >
-                  <span className={cn('flex size-5 items-center justify-center rounded-full text-[0.7rem]', s.key === step ? 'bg-ivory text-cocoa-900' : i < stepIndex ? 'bg-cocoa-200 text-cocoa-900' : 'border border-line-strong')}>
+                  <span
+                    className={cn(
+                      'flex size-5 items-center justify-center rounded-full text-[0.7rem]',
+                      s.key === step
+                        ? 'bg-ivory text-cocoa-900'
+                        : i < stepIndex
+                          ? 'bg-cocoa-200 text-cocoa-900'
+                          : 'border border-line-strong',
+                    )}
+                  >
                     {i < stepIndex ? <Check className="size-3" aria-hidden /> : i + 1}
                   </span>
                   {s.label}
@@ -317,7 +390,11 @@ export function BookingWizard({ catalog, rules }: { catalog: PublicCatalog; rule
 
         <div className="mt-8">
           {stepIndex > 0 ? (
-            <button type="button" onClick={back} className="mb-4 inline-flex items-center gap-1.5 text-sm text-ink-3 hover:text-cocoa-900">
+            <button
+              type="button"
+              onClick={back}
+              className="mb-4 inline-flex items-center gap-1.5 text-sm text-ink-3 hover:text-cocoa-900"
+            >
               <ArrowLeft className="size-4" aria-hidden /> Буцах
             </button>
           ) : null}
@@ -331,7 +408,10 @@ export function BookingWizard({ catalog, rules }: { catalog: PublicCatalog; rule
           </h2>
 
           {error ? (
-            <p role="alert" className="mt-5 rounded-xs border border-rose-600/30 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+            <p
+              role="alert"
+              className="mt-5 rounded-xs border border-rose-600/30 bg-rose-50 px-4 py-3 text-sm text-rose-700"
+            >
               {error}
             </p>
           ) : null}
@@ -340,11 +420,17 @@ export function BookingWizard({ catalog, rules }: { catalog: PublicCatalog; rule
           {step === 'services' && (
             <div className="mt-6">
               <p className="text-sm text-ink-3">
-                Хамгийн ихдээ {rules.maxServicesPerBooking} үйлчилгээ хослуулна. Нэмэлт сонголтын үнэ, хугацаа нийлбэрт шууд нэмэгдэнэ.
+                Хамгийн ихдээ {rules.maxServicesPerBooking} үйлчилгээ хослуулна. Нэмэлт сонголтын үнэ, хугацаа нийлбэрт
+                шууд нэмэгдэнэ.
               </p>
               {prefillStaff ? (
                 <label className="mt-4 flex items-center gap-2 text-sm text-ink-2">
-                  <input type="checkbox" className="size-4 accent-cocoa-700" checked={onlyStaffServices} onChange={(e) => setOnlyStaffServices(e.target.checked)} />
+                  <input
+                    type="checkbox"
+                    className="size-4 accent-cocoa-700"
+                    checked={onlyStaffServices}
+                    onChange={(e) => setOnlyStaffServices(e.target.checked)}
+                  />
                   Зөвхөн {prefillStaff.displayName} мастерын хийдэг үйлчилгээ
                 </label>
               ) : null}
@@ -357,7 +443,9 @@ export function BookingWizard({ catalog, rules }: { catalog: PublicCatalog; rule
                     onClick={() => setCategory(c.slug)}
                     className={cn(
                       'shrink-0 rounded-full border px-4 py-2 text-sm',
-                      category === c.slug ? 'border-cocoa-800 bg-cocoa-800 text-ivory' : 'border-line-strong text-ink-2 hover:border-cocoa-600',
+                      category === c.slug
+                        ? 'border-cocoa-800 bg-cocoa-800 text-ivory'
+                        : 'border-line-strong text-ink-2 hover:border-cocoa-600',
                     )}
                   >
                     {c.name}
@@ -369,7 +457,13 @@ export function BookingWizard({ catalog, rules }: { catalog: PublicCatalog; rule
                   const selected = items.find((i) => i.serviceId === s.id)
                   const full = !selected && items.length >= rules.maxServicesPerBooking
                   return (
-                    <li key={s.id} className={cn('surface overflow-hidden transition-colors', selected && 'border-cocoa-700 ring-1 ring-cocoa-700')}>
+                    <li
+                      key={s.id}
+                      className={cn(
+                        'surface overflow-hidden transition-colors',
+                        selected && 'border-cocoa-700 ring-1 ring-cocoa-700',
+                      )}
+                    >
                       <button
                         type="button"
                         onClick={() => toggleService(s.id)}
@@ -378,16 +472,24 @@ export function BookingWizard({ catalog, rules }: { catalog: PublicCatalog; rule
                         className="flex w-full items-center gap-4 p-3 text-left disabled:opacity-50 sm:p-4"
                       >
                         <span className="relative size-16 shrink-0 overflow-hidden rounded-xs bg-sand sm:size-20">
-                          {s.imageUrl ? <Photo src={s.imageUrl} alt="" fill sizes="80px" className="object-cover" /> : null}
+                          {s.imageUrl ? (
+                            <Photo src={s.imageUrl} alt="" fill sizes="80px" className="object-cover" />
+                          ) : null}
                         </span>
                         <span className="min-w-0 flex-1">
                           <span className="block font-medium text-cocoa-900">{s.name}</span>
-                          <span className="mt-0.5 line-clamp-2 block text-[0.83rem] text-ink-3">{s.shortDescription}</span>
+                          <span className="mt-0.5 line-clamp-2 block text-[0.83rem] text-ink-3">
+                            {s.shortDescription}
+                          </span>
                           <span className="mt-1.5 flex items-center gap-3 text-[0.83rem]">
                             <span className="inline-flex items-center gap-1 text-ink-3">
                               <Clock className="size-3.5" aria-hidden /> {formatDuration(s.durationMinutes)}
                             </span>
-                            <Money amount={s.price} from={s.priceType === 'from'} className="font-medium text-cocoa-900" />
+                            <Money
+                              amount={s.price}
+                              from={s.priceType === 'from'}
+                              className="font-medium text-cocoa-900"
+                            />
                           </span>
                         </span>
                         <span
@@ -415,7 +517,9 @@ export function BookingWizard({ catalog, rules }: { catalog: PublicCatalog; rule
                                   onClick={() => toggleAddon(s.id, id)}
                                   className={cn(
                                     'rounded-full border px-3 py-1.5 text-[0.8rem]',
-                                    on ? 'border-cocoa-800 bg-cocoa-50 text-cocoa-900' : 'border-line-strong text-ink-2 hover:border-cocoa-600',
+                                    on
+                                      ? 'border-cocoa-800 bg-cocoa-50 text-cocoa-900'
+                                      : 'border-line-strong text-ink-2 hover:border-cocoa-600',
                                   )}
                                 >
                                   {on ? '✓ ' : '+ '}
@@ -440,8 +544,13 @@ export function BookingWizard({ catalog, rules }: { catalog: PublicCatalog; rule
             <div className="mt-6">
               {eligibleStaff.length === 0 ? (
                 <div className="rounded-xs border border-amber-600/30 bg-amber-50 p-4 text-sm text-amber-700">
-                  Сонгосон үйлчилгээнүүдийг нэг мастер хамт хийдэггүй. Үйлчилгээгээ тусад нь захиалах эсвэл аль нэгийг хасна уу.
-                  <button type="button" onClick={() => goto('services')} className="mt-2 block font-medium underline underline-offset-4">
+                  Сонгосон үйлчилгээнүүдийг нэг мастер хамт хийдэггүй. Үйлчилгээгээ тусад нь захиалах эсвэл аль нэгийг
+                  хасна уу.
+                  <button
+                    type="button"
+                    onClick={() => goto('services')}
+                    className="mt-2 block font-medium underline underline-offset-4"
+                  >
                     Үйлчилгээ өөрчлөх
                   </button>
                 </div>
@@ -450,7 +559,8 @@ export function BookingWizard({ catalog, rules }: { catalog: PublicCatalog; rule
                   <p className="text-sm text-ink-3">Зөвхөн сонгосон бүх үйлчилгээг хийдэг мастерууд харагдаж байна.</p>
                   {prefillStaff && !eligibleStaff.some((s) => s.id === prefillStaff.id) ? (
                     <p className="mt-3 rounded-xs bg-amber-50 px-3 py-2 text-sm text-amber-700">
-                      {prefillStaff.displayName} мастер эдгээр үйлчилгээг бүгдийг нь хийдэггүй тул өөр мастер сонгоно уу.
+                      {prefillStaff.displayName} мастер эдгээр үйлчилгээг бүгдийг нь хийдэггүй тул өөр мастер сонгоно
+                      уу.
                     </p>
                   ) : null}
                   <ul className="mt-5 grid gap-3 sm:grid-cols-2">
@@ -469,7 +579,9 @@ export function BookingWizard({ catalog, rules }: { catalog: PublicCatalog; rule
                         </span>
                         <span>
                           <span className="block font-medium text-cocoa-900">Аль ч мастер</span>
-                          <span className="block text-[0.83rem] text-ink-3">Хамгийн олон сул цаг. Систем тухайн цагт сул мастерыг оноона.</span>
+                          <span className="block text-[0.83rem] text-ink-3">
+                            Хамгийн олон сул цаг. Систем тухайн цагт сул мастерыг оноона.
+                          </span>
                         </span>
                       </button>
                     </li>
@@ -503,8 +615,9 @@ export function BookingWizard({ catalog, rules }: { catalog: PublicCatalog; rule
           {step === 'date' && (
             <div className="mt-6">
               <p className="mb-5 text-sm text-ink-3">
-                Сул цаг нь {chosenStaff ? `${chosenStaff.displayName} мастерын` : 'мастеруудын'} ажлын хуваарь, завсарлага, амралт, одоо байгаа
-                захиалгаас бодогдоно. Ойрын {rules.maxAdvanceDays} хоногийн цаг нээлттэй.
+                Сул цаг нь {chosenStaff ? `${chosenStaff.displayName} мастерын` : 'мастеруудын'} ажлын хуваарь,
+                завсарлага, амралт, одоо байгаа захиалгаас бодогдоно. Ойрын {rules.maxAdvanceDays} хоногийн цаг
+                нээлттэй.
               </p>
               <MonthCalendar
                 month={month}
@@ -528,7 +641,11 @@ export function BookingWizard({ catalog, rules }: { catalog: PublicCatalog; rule
                 <p className="mt-4 text-sm text-ink-2">
                   Энэ сард сул цаг алга.{' '}
                   {month < lastMonth ? (
-                    <button type="button" className="font-medium underline underline-offset-4" onClick={() => setMonth(addMonths(`${month}-01`, 1).slice(0, 7))}>
+                    <button
+                      type="button"
+                      className="font-medium underline underline-offset-4"
+                      onClick={() => setMonth(addMonths(`${month}-01`, 1).slice(0, 7))}
+                    >
                       Дараагийн сарыг харах
                     </button>
                   ) : null}
@@ -559,7 +676,11 @@ export function BookingWizard({ catalog, rules }: { catalog: PublicCatalog; rule
               ) : slots.length === 0 ? (
                 <div className="mt-6 rounded-xs border border-line bg-porcelain p-5 text-sm text-ink-2">
                   Энэ өдөр сул цаг үлдсэнгүй.
-                  <button type="button" onClick={() => goto('date')} className="ml-2 font-medium underline underline-offset-4">
+                  <button
+                    type="button"
+                    onClick={() => goto('date')}
+                    className="ml-2 font-medium underline underline-offset-4"
+                  >
                     Өөр өдөр сонгох
                   </button>
                 </div>
@@ -582,8 +703,10 @@ export function BookingWizard({ catalog, rules }: { catalog: PublicCatalog; rule
                               aria-pressed={slot?.start === s.start}
                               onClick={() => setSlot(s)}
                               className={cn(
-                                'h-12 rounded-xs border text-[0.98rem] tabular transition-colors',
-                                slot?.start === s.start ? 'border-cocoa-800 bg-cocoa-800 text-ivory' : 'border-line-strong bg-porcelain text-cocoa-900 hover:border-cocoa-700',
+                                'tabular h-12 rounded-xs border text-[0.98rem] transition-colors',
+                                slot?.start === s.start
+                                  ? 'border-cocoa-800 bg-cocoa-800 text-ivory'
+                                  : 'border-line-strong bg-porcelain text-cocoa-900 hover:border-cocoa-700',
                               )}
                             >
                               {s.label}
@@ -617,7 +740,11 @@ export function BookingWizard({ catalog, rules }: { catalog: PublicCatalog; rule
             >
               <div className="flex flex-wrap items-center justify-between gap-3 rounded-xs bg-blush-50 px-4 py-3 text-sm text-blush-700">
                 <span>Демо: бодит нэр, утасны дугаар оруулах шаардлагагүй.</span>
-                <button type="button" onClick={fillDemoCustomer} className="inline-flex items-center gap-1.5 font-medium underline underline-offset-4">
+                <button
+                  type="button"
+                  onClick={fillDemoCustomer}
+                  className="inline-flex items-center gap-1.5 font-medium underline underline-offset-4"
+                >
                   <Sparkles className="size-4" aria-hidden /> Жишээ мэдээлэл бөглөх
                 </button>
               </div>
@@ -632,7 +759,12 @@ export function BookingWizard({ catalog, rules }: { catalog: PublicCatalog; rule
                     aria-describedby={customerErrors.name ? 'c-name-error' : undefined}
                   />
                 </Field>
-                <Field label="Утасны дугаар" htmlFor="c-phone" error={customerErrors.phone} hint="8 оронтой, жишээ: 9911 2233">
+                <Field
+                  label="Утасны дугаар"
+                  htmlFor="c-phone"
+                  error={customerErrors.phone}
+                  hint="8 оронтой, жишээ: 9911 2233"
+                >
                   <Input
                     id="c-phone"
                     type="tel"
@@ -655,11 +787,26 @@ export function BookingWizard({ catalog, rules }: { catalog: PublicCatalog; rule
                   aria-invalid={Boolean(customerErrors.email)}
                 />
               </Field>
-              <Field label="Хүсэлт, тэмдэглэл" htmlFor="c-note" optional hint="Жишээ: зургаа авчирна, хуучин гелээ авахуулна">
-                <Textarea id="c-note" maxLength={500} value={customer.note} onChange={(e) => setCustomer({ ...customer, note: e.target.value })} />
+              <Field
+                label="Хүсэлт, тэмдэглэл"
+                htmlFor="c-note"
+                optional
+                hint="Жишээ: зургаа авчирна, хуучин гелээ авахуулна"
+              >
+                <Textarea
+                  id="c-note"
+                  maxLength={500}
+                  value={customer.note}
+                  onChange={(e) => setCustomer({ ...customer, note: e.target.value })}
+                />
               </Field>
               <Field label="Хэлбэр, өнгөний сонголт" htmlFor="c-pref" optional hint="Жишээ: богино зуйван, нүцгэн өнгө">
-                <Input id="c-pref" maxLength={300} value={customer.preferences} onChange={(e) => setCustomer({ ...customer, preferences: e.target.value })} />
+                <Input
+                  id="c-pref"
+                  maxLength={300}
+                  value={customer.preferences}
+                  onChange={(e) => setCustomer({ ...customer, preferences: e.target.value })}
+                />
               </Field>
               <button type="submit" className="hidden" aria-hidden tabIndex={-1} />
             </form>
@@ -698,7 +845,8 @@ export function BookingWizard({ catalog, rules }: { catalog: PublicCatalog; rule
                   </span>
                 </ReviewRow>
                 <ReviewRow label="Өдөр, цаг" onEdit={() => goto('date')}>
-                  {formatDateKey(date)} · {minutesToTime(slot.start)}–{minutesToTime(slot.start + quote.durationMinutes)} ({formatDuration(quote.durationMinutes)})
+                  {formatDateKey(date)} · {minutesToTime(slot.start)}–
+                  {minutesToTime(slot.start + quote.durationMinutes)} ({formatDuration(quote.durationMinutes)})
                 </ReviewRow>
                 <ReviewRow label="Холбоо барих" onEdit={() => goto('details')}>
                   {customer.name}, {customer.phone}
@@ -716,7 +864,9 @@ export function BookingWizard({ catalog, rules }: { catalog: PublicCatalog; rule
                       <Money amount={quote.deposit} />
                     </div>
                   ) : null}
-                  {quote.hasFromPrice ? <p className="text-xs text-ink-3">«-өөс» үнэтэй үйлчилгээний эцсийн үнэ салонд тохирно.</p> : null}
+                  {quote.hasFromPrice ? (
+                    <p className="text-xs text-ink-3">«-өөс» үнэтэй үйлчилгээний эцсийн үнэ салонд тохирно.</p>
+                  ) : null}
                 </div>
               </div>
               <p className="flex gap-2.5 rounded-xs border border-sky-600/25 bg-sky-50 px-4 py-3 text-sm text-sky-700">
@@ -741,8 +891,9 @@ export function BookingWizard({ catalog, rules }: { catalog: PublicCatalog; rule
                 </div>
               ) : null}
               <p className="text-xs text-ink-3">
-                «Захиалах» дарснаар сервер сонгосон цаг сул эсэхийг дахин шалгаж, үнийг салоны каталогоос дахин тооцоолно. Цуцлалтын нөхцөл:{' '}
-                {rules.cancellationNoticeHours} цагаас өмнө цуцалбал урьдчилгаа бүтэн буцна.
+                «Захиалах» дарснаар сервер сонгосон цаг сул эсэхийг дахин шалгаж, үнийг салоны каталогоос дахин
+                тооцоолно. Цуцлалтын нөхцөл: {rules.cancellationNoticeHours} цагаас өмнө цуцалбал урьдчилгаа бүтэн
+                буцна.
               </p>
             </div>
           )}
@@ -766,7 +917,12 @@ export function BookingWizard({ catalog, rules }: { catalog: PublicCatalog; rule
       {/* ---- Summary (desktop) */}
       <aside className="hidden lg:block">
         <div className="sticky top-28">
-          <Summary quote={quote} staffLabel={staffId === null ? 'Аль ч мастер' : chosenStaff?.displayName} date={date} slot={slot} />
+          <Summary
+            quote={quote}
+            staffLabel={staffId === null ? 'Аль ч мастер' : chosenStaff?.displayName}
+            date={date}
+            slot={slot}
+          />
         </div>
       </aside>
 
@@ -776,7 +932,7 @@ export function BookingWizard({ catalog, rules }: { catalog: PublicCatalog; rule
           <div className="min-w-0 flex-1 text-sm">
             {quote ? (
               <>
-                <p className="font-medium text-cocoa-900 tabular">
+                <p className="tabular font-medium text-cocoa-900">
                   {formatMoney(quote.total)}
                   {quote.hasFromPrice ? '-өөс' : ''}
                 </p>
@@ -812,14 +968,28 @@ function ReviewRow({ label, onEdit, children }: { label: string; onEdit: () => v
         <p className="text-xs font-medium tracking-wide text-ink-3 uppercase">{label}</p>
         <div className="mt-1.5 text-[0.95rem] text-ink">{children}</div>
       </div>
-      <button type="button" onClick={onEdit} className="self-start text-sm text-cocoa-700 underline underline-offset-4 hover:text-cocoa-900">
+      <button
+        type="button"
+        onClick={onEdit}
+        className="self-start text-sm text-cocoa-700 underline underline-offset-4 hover:text-cocoa-900"
+      >
         Засах
       </button>
     </div>
   )
 }
 
-function Summary({ quote, staffLabel, date, slot }: { quote: Quote | null; staffLabel?: string; date: string | null; slot: PublicSlot | null }) {
+function Summary({
+  quote,
+  staffLabel,
+  date,
+  slot,
+}: {
+  quote: Quote | null
+  staffLabel?: string
+  date: string | null
+  slot: PublicSlot | null
+}) {
   return (
     <div className="surface p-5">
       <p className="eyebrow">Таны сонголт</p>

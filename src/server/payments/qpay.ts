@@ -43,7 +43,8 @@ interface Token {
   refreshExpiresAt: number
 }
 
-const str = (v: unknown): string | null => (typeof v === 'string' && v.length > 0 ? v : typeof v === 'number' ? String(v) : null)
+const str = (v: unknown): string | null =>
+  typeof v === 'string' && v.length > 0 ? v : typeof v === 'number' ? String(v) : null
 const num = (v: unknown): number | null => {
   const n = typeof v === 'string' ? Number(v) : v
   return typeof n === 'number' && Number.isFinite(n) ? n : null
@@ -162,7 +163,12 @@ export class QPayProvider implements OnlinePaymentProvider {
       qrImage: str(data.qr_image),
       shortUrl: str(data.qPay_shortUrl) ?? str(data.qpay_short_url) ?? str(data.short_url),
       deeplinks: urls
-        .map((u) => ({ name: str(u.name) ?? '', description: str(u.description), logo: str(u.logo), link: str(u.link) ?? '' }))
+        .map((u) => ({
+          name: str(u.name) ?? '',
+          description: str(u.description),
+          logo: str(u.logo),
+          link: str(u.link) ?? '',
+        }))
         .filter((u) => u.link),
     }
   }

@@ -2,14 +2,28 @@ import Link from 'next/link'
 import { Photo } from '@/components/ui/photo'
 import type { PublicStaff } from '@/server/queries/public'
 
-export function StaffAvatar({ staff, size = 56, className = '' }: { staff: Pick<PublicStaff, 'photoUrl' | 'photoAlt' | 'displayName'>; size?: number; className?: string }) {
+export function StaffAvatar({
+  staff,
+  size = 56,
+  className = '',
+}: {
+  staff: Pick<PublicStaff, 'photoUrl' | 'photoAlt' | 'displayName'>
+  size?: number
+  className?: string
+}) {
   return (
     <span
       className={`relative inline-flex shrink-0 items-center justify-center overflow-hidden rounded-full bg-cocoa-100 font-display text-cocoa-700 ring-2 ring-ivory ${className}`}
       style={{ width: size, height: size }}
     >
       {staff.photoUrl ? (
-        <Photo src={staff.photoUrl} alt={staff.photoAlt ?? staff.displayName} fill sizes={`${size}px`} className="object-cover object-top" />
+        <Photo
+          src={staff.photoUrl}
+          alt={staff.photoAlt ?? staff.displayName}
+          fill
+          sizes={`${size}px`}
+          className="object-cover object-top"
+        />
       ) : (
         <span className="text-lg">{staff.displayName.slice(0, 1)}</span>
       )}

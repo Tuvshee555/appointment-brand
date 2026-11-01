@@ -14,7 +14,15 @@ import { adminCreateBookingAction, adminSlotsAction } from '@/server/actions/adm
 import type { PublicSlot } from '@/server/actions/booking'
 import type { PublicCatalog } from '@/server/queries/public'
 
-export function NewAppointmentForm({ catalog, initialDate, initialStaff }: { catalog: PublicCatalog; initialDate: string; initialStaff: string | null }) {
+export function NewAppointmentForm({
+  catalog,
+  initialDate,
+  initialStaff,
+}: {
+  catalog: PublicCatalog
+  initialDate: string
+  initialStaff: string | null
+}) {
   const router = useRouter()
   const [items, setItems] = useState<{ serviceId: string; addonIds: string[] }[]>([])
   const [staffId, setStaffId] = useState<string>(initialStaff ?? 'any')
@@ -29,19 +37,44 @@ export function NewAppointmentForm({ catalog, initialDate, initialStaff }: { cat
   const [pending, start] = useTransition()
   const addonById = new Map(catalog.addons.map((a) => [a.id, a]))
   const serviceById = new Map(catalog.services.map((s) => [s.id, s]))
-  const eligible = useMemo(() => catalog.staff.filter((s) => items.length && items.every((i) => s.serviceIds.includes(i.serviceId))), [catalog.staff, items])
-  const total = items.reduce((sum, i) => sum + (serviceById.get(i.serviceId)?.price ?? 0) + i.addonIds.reduce((x, a) => x + (addonById.get(a)?.price ?? 0), 0), 0)
-  const minutes = items.reduce((sum, i) => sum + (serviceById.get(i.serviceId)?.durationMinutes ?? 0) + i.addonIds.reduce((x, a) => x + (addonById.get(a)?.durationMinutes ?? 0), 0), 0)
+  const eligible = useMemo(
+    () => catalog.staff.filter((s) => items.length && items.every((i) => s.serviceIds.includes(i.serviceId))),
+    [catalog.staff, items],
+  )
+  const total = items.reduce(
+    (sum, i) =>
+      sum +
+      (serviceById.get(i.serviceId)?.price ?? 0) +
+      i.addonIds.reduce((x, a) => x + (addonById.get(a)?.price ?? 0), 0),
+    0,
+  )
+  const minutes = items.reduce(
+    (sum, i) =>
+      sum +
+      (serviceById.get(i.serviceId)?.durationMinutes ?? 0) +
+      i.addonIds.reduce((x, a) => x + (addonById.get(a)?.durationMinutes ?? 0), 0),
+    0,
+  )
 
   const toggle = (id: string) => {
     setSlots(null)
     setSlot(null)
-    setItems((prev) => (prev.some((i) => i.serviceId === id) ? prev.filter((i) => i.serviceId !== id) : [...prev, { serviceId: id, addonIds: [] }]))
+    setItems((prev) =>
+      prev.some((i) => i.serviceId === id)
+        ? prev.filter((i) => i.serviceId !== id)
+        : [...prev, { serviceId: id, addonIds: [] }],
+    )
   }
   const toggleAddon = (sid: string, aid: string) => {
     setSlots(null)
     setSlot(null)
-    setItems((prev) => prev.map((i) => (i.serviceId === sid ? { ...i, addonIds: i.addonIds.includes(aid) ? i.addonIds.filter((x) => x !== aid) : [...i.addonIds, aid] } : i)))
+    setItems((prev) =>
+      prev.map((i) =>
+        i.serviceId === sid
+          ? { ...i, addonIds: i.addonIds.includes(aid) ? i.addonIds.filter((x) => x !== aid) : [...i.addonIds, aid] }
+          : i,
+      ),
+    )
   }
   const loadSlots = () =>
     start(async () => {
@@ -69,9 +102,20 @@ export function NewAppointmentForm({ catalog, initialDate, initialStaff }: { cat
                     .map((s) => {
                       const sel = items.find((i) => i.serviceId === s.id)
                       return (
-                        <div key={s.id} className={cn('rounded-xs border p-2.5 text-sm', sel ? 'border-cocoa-700 bg-cocoa-50' : 'border-line')}>
+                        <div
+                          key={s.id}
+                          className={cn(
+                            'rounded-xs border p-2.5 text-sm',
+                            sel ? 'border-cocoa-700 bg-cocoa-50' : 'border-line',
+                          )}
+                        >
                           <label className="flex cursor-pointer items-start gap-2">
-                            <input type="checkbox" checked={Boolean(sel)} onChange={() => toggle(s.id)} className="mt-0.5 size-4 accent-cocoa-700" />
+                            <input
+                              type="checkbox"
+                              checked={Boolean(sel)}
+                              onChange={() => toggle(s.id)}
+                              className="mt-0.5 size-4 accent-cocoa-700"
+                            />
                             <span className="flex-1">
                               {s.name}
                               <span className="block text-xs text-ink-3">
@@ -88,7 +132,12 @@ export function NewAppointmentForm({ catalog, initialDate, initialStaff }: { cat
                                   type="button"
                                   onClick={() => toggleAddon(s.id, aid)}
                                   aria-pressed={sel.addonIds.includes(aid)}
-                                  className={cn('rounded-full border px-2 py-0.5 text-xs', sel.addonIds.includes(aid) ? 'border-cocoa-800 bg-cocoa-800 text-ivory' : 'border-line-strong')}
+                                  className={cn(
+                                    'rounded-full border px-2 py-0.5 text-xs',
+                                    sel.addonIds.includes(aid)
+                                      ? 'border-cocoa-800 bg-cocoa-800 text-ivory'
+                                      : 'border-line-strong',
+                                  )}
                                 >
                                   + {addonById.get(aid)?.name}
                                 </button>
@@ -139,7 +188,9 @@ export function NewAppointmentForm({ catalog, initialDate, initialStaff }: { cat
               Сул цаг харах
             </Button>
           </div>
-          {items.length && !eligible.length ? <p className="mt-3 text-sm text-amber-700">Сонгосон үйлчилгээг бүгдийг нь хийдэг мастер алга.</p> : null}
+          {items.length && !eligible.length ? (
+            <p className="mt-3 text-sm text-amber-700">Сонгосон үйлчилгээг бүгдийг нь хийдэг мастер алга.</p>
+          ) : null}
           {slots ? (
             slots.length ? (
               <div className="mt-4 grid grid-cols-4 gap-2 sm:grid-cols-8">
@@ -149,14 +200,21 @@ export function NewAppointmentForm({ catalog, initialDate, initialStaff }: { cat
                     type="button"
                     aria-pressed={slot?.start === s.start}
                     onClick={() => setSlot(s)}
-                    className={cn('h-10 rounded-xs border text-sm tabular', slot?.start === s.start ? 'border-cocoa-800 bg-cocoa-800 text-ivory' : 'border-line-strong bg-porcelain hover:border-cocoa-700')}
+                    className={cn(
+                      'tabular h-10 rounded-xs border text-sm',
+                      slot?.start === s.start
+                        ? 'border-cocoa-800 bg-cocoa-800 text-ivory'
+                        : 'border-line-strong bg-porcelain hover:border-cocoa-700',
+                    )}
                   >
                     {s.label}
                   </button>
                 ))}
               </div>
             ) : (
-              <p className="mt-4 text-sm text-ink-3">{formatDateKey(date)} — сул цаг алга (ажлын хуваарь, завсарлага, бусад захиалгыг тооцсон).</p>
+              <p className="mt-4 text-sm text-ink-3">
+                {formatDateKey(date)} — сул цаг алга (ажлын хуваарь, завсарлага, бусад захиалгыг тооцсон).
+              </p>
             )
           ) : null}
         </Card>
@@ -166,13 +224,27 @@ export function NewAppointmentForm({ catalog, initialDate, initialStaff }: { cat
         <Card title="3. Үйлчлүүлэгч">
           <div className="space-y-4">
             <Field label="Нэр" htmlFor="na-name">
-              <Input id="na-name" value={customer.name} onChange={(e) => setCustomer({ ...customer, name: e.target.value })} />
+              <Input
+                id="na-name"
+                value={customer.name}
+                onChange={(e) => setCustomer({ ...customer, name: e.target.value })}
+              />
             </Field>
             <Field label="Утас" htmlFor="na-phone" hint="Ижил дугаартай харилцагч байвал түүн дээр нэмэгдэнэ">
-              <Input id="na-phone" type="tel" value={customer.phone} onChange={(e) => setCustomer({ ...customer, phone: e.target.value })} />
+              <Input
+                id="na-phone"
+                type="tel"
+                value={customer.phone}
+                onChange={(e) => setCustomer({ ...customer, phone: e.target.value })}
+              />
             </Field>
             <Field label="И-мэйл" htmlFor="na-email" optional>
-              <Input id="na-email" type="email" value={customer.email} onChange={(e) => setCustomer({ ...customer, email: e.target.value })} />
+              <Input
+                id="na-email"
+                type="email"
+                value={customer.email}
+                onChange={(e) => setCustomer({ ...customer, email: e.target.value })}
+              />
             </Field>
             <div className="grid grid-cols-2 gap-3">
               <Field label="Эх сурвалж" htmlFor="na-source">
@@ -197,9 +269,12 @@ export function NewAppointmentForm({ catalog, initialDate, initialStaff }: { cat
         </Card>
         <Card title="Хураангуй">
           <p className="text-sm text-ink-2">
-            {items.length} үйлчилгээ · {formatDuration(minutes || 0)} · <span className="font-medium">{formatMoney(total)}</span>
+            {items.length} үйлчилгээ · {formatDuration(minutes || 0)} ·{' '}
+            <span className="font-medium">{formatMoney(total)}</span>
           </p>
-          <p className="mt-1 text-sm text-ink-2">{slot ? `${formatDateKey(date)} · ${minutesToTime(slot.start)}` : 'Цаг сонгоогүй'}</p>
+          <p className="mt-1 text-sm text-ink-2">
+            {slot ? `${formatDateKey(date)} · ${minutesToTime(slot.start)}` : 'Цаг сонгоогүй'}
+          </p>
           <Button
             className="mt-4 w-full"
             disabled={!slot || pending}
@@ -212,7 +287,13 @@ export function NewAppointmentForm({ catalog, initialDate, initialStaff }: { cat
                   start: slot!.start,
                   source,
                   status,
-                  customer: { name: customer.name, phone: customer.phone, email: customer.email || null, note: null, preferences: null },
+                  customer: {
+                    name: customer.name,
+                    phone: customer.phone,
+                    email: customer.email || null,
+                    note: null,
+                    preferences: null,
+                  },
                   internalNote: note || null,
                 })
                 setFeedback(feedbackFrom(res, 'Захиалга үүслээ.'))
@@ -226,7 +307,9 @@ export function NewAppointmentForm({ catalog, initialDate, initialStaff }: { cat
           <div className="mt-3">
             <FeedbackLine feedback={feedback} />
           </div>
-          <p className="mt-3 text-xs text-ink-3">Сервер цагийг дахин шалгаж, давхцал байвал татгалзана. Үнийг каталогоос тооцно.</p>
+          <p className="mt-3 text-xs text-ink-3">
+            Сервер цагийг дахин шалгаж, давхцал байвал татгалзана. Үнийг каталогоос тооцно.
+          </p>
         </Card>
       </div>
     </div>

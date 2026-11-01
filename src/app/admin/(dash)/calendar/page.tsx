@@ -50,15 +50,40 @@ function href(params: { view: View; date: DateKey; staff: string | null; cancell
   return `/admin/calendar?${q.toString()}`
 }
 
-function Block({ a, color, top, height, left = 0, width = 100, compact }: { a: CalendarAppointment; color: string; top: number; height: number; left?: number; width?: number; compact?: boolean }) {
+function Block({
+  a,
+  color,
+  top,
+  height,
+  left = 0,
+  width = 100,
+  compact,
+}: {
+  a: CalendarAppointment
+  color: string
+  top: number
+  height: number
+  left?: number
+  width?: number
+  compact?: boolean
+}) {
   return (
     <Link
       href={`/admin/appointments/${a.id}`}
-      className={cn('absolute overflow-hidden rounded-xs border border-line px-2 py-1 text-[0.72rem] leading-tight shadow-sm hover:z-10 hover:shadow-soft', BLOCK_STYLE[a.status])}
-      style={{ top, height: Math.max(height, 22), left: `calc(${left}% + 2px)`, width: `calc(${width}% - 4px)`, borderLeftColor: color }}
+      className={cn(
+        'absolute overflow-hidden rounded-xs border border-line px-2 py-1 text-[0.72rem] leading-tight shadow-sm hover:z-10 hover:shadow-soft',
+        BLOCK_STYLE[a.status],
+      )}
+      style={{
+        top,
+        height: Math.max(height, 22),
+        left: `calc(${left}% + 2px)`,
+        width: `calc(${width}% - 4px)`,
+        borderLeftColor: color,
+      }}
       title={`${minutesToTime(minutesOfDay(a.startsAt))}–${minutesToTime(minutesOfDay(a.endsAt))} · ${a.customerName} · ${a.services} · ${STATUS_SHORT[a.status]}`}
     >
-      <span className="block font-medium text-ink tabular">
+      <span className="tabular block font-medium text-ink">
         {minutesToTime(minutesOfDay(a.startsAt))} {compact ? '' : `– ${minutesToTime(minutesOfDay(a.endsAt))}`}
       </span>
       <span className="block truncate text-ink-2">{a.customerName}</span>
@@ -80,7 +105,11 @@ function lanes(items: CalendarAppointment[]) {
   return { lane, count: Math.max(1, ends.length) }
 }
 
-export default async function CalendarPage({ searchParams }: { searchParams: Promise<{ view?: string; date?: string; staff?: string; cancelled?: string }> }) {
+export default async function CalendarPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ view?: string; date?: string; staff?: string; cancelled?: string }>
+}) {
   const session = await requireAdminPage('appointments.view')
   await connection()
   const sp = await searchParams
@@ -101,7 +130,11 @@ export default async function CalendarPage({ searchParams }: { searchParams: Pro
   const prev = view === 'month' ? addMonths(date, -1) : addDays(date, -step)
   const next = view === 'month' ? addMonths(date, 1) : addDays(date, step)
   const title =
-    view === 'day' ? formatDateKey(date) : view === 'week' ? `${formatShortDate(range.from)} – ${formatShortDate(range.to)}` : formatMonthYear(date)
+    view === 'day'
+      ? formatDateKey(date)
+      : view === 'week'
+        ? `${formatShortDate(range.from)} – ${formatShortDate(range.to)}`
+        : formatMonthYear(date)
   const nav = { view, staff: staffParam, cancelled: showCancelled }
 
   // Time axis for day/week views: earliest opening to latest closing in range.
@@ -115,7 +148,11 @@ export default async function CalendarPage({ searchParams }: { searchParams: Pro
     <>
       <PageHeader
         title="Хуанли"
-        description={session.role === 'specialist' ? 'Зөвхөн таны захиалга.' : 'Захиалга дээр дарж дэлгэрэнгүйг нээнэ. Хоосон цаг дээр дарж шинэ захиалга нэмнэ.'}
+        description={
+          session.role === 'specialist'
+            ? 'Зөвхөн таны захиалга.'
+            : 'Захиалга дээр дарж дэлгэрэнгүйг нээнэ. Хоосон цаг дээр дарж шинэ захиалга нэмнэ.'
+        }
         actions={
           session.role !== 'specialist' ? (
             <Link href={`/admin/appointments/new?date=${date}`} className={buttonClass('primary', 'md')}>
@@ -125,27 +162,45 @@ export default async function CalendarPage({ searchParams }: { searchParams: Pro
         }
       />
       <div className="mb-5 flex flex-wrap items-center gap-3">
-        <div className="inline-flex rounded-xs border border-line-strong bg-porcelain p-0.5" role="tablist" aria-label="Харагдац">
+        <div
+          className="inline-flex rounded-xs border border-line-strong bg-porcelain p-0.5"
+          role="tablist"
+          aria-label="Харагдац"
+        >
           {(['day', 'week', 'month'] as View[]).map((v) => (
             <Link
               key={v}
               href={href({ ...nav, view: v, date })}
               role="tab"
               aria-selected={view === v}
-              className={cn('rounded-[3px] px-3.5 py-1.5 text-sm', view === v ? 'bg-cocoa-800 text-ivory' : 'text-ink-2 hover:bg-sand')}
+              className={cn(
+                'rounded-[3px] px-3.5 py-1.5 text-sm',
+                view === v ? 'bg-cocoa-800 text-ivory' : 'text-ink-2 hover:bg-sand',
+              )}
             >
               {v === 'day' ? 'Өдөр' : v === 'week' ? 'Долоо хоног' : 'Сар'}
             </Link>
           ))}
         </div>
         <div className="flex items-center gap-1">
-          <Link href={href({ ...nav, date: prev })} className="inline-flex size-9 items-center justify-center rounded-xs border border-line-strong hover:bg-sand" aria-label="Өмнөх">
+          <Link
+            href={href({ ...nav, date: prev })}
+            className="inline-flex size-9 items-center justify-center rounded-xs border border-line-strong hover:bg-sand"
+            aria-label="Өмнөх"
+          >
             <ChevronLeft className="size-4" />
           </Link>
-          <Link href={href({ ...nav, date: today })} className="rounded-xs border border-line-strong px-3 py-1.5 text-sm hover:bg-sand">
+          <Link
+            href={href({ ...nav, date: today })}
+            className="rounded-xs border border-line-strong px-3 py-1.5 text-sm hover:bg-sand"
+          >
             Өнөөдөр
           </Link>
-          <Link href={href({ ...nav, date: next })} className="inline-flex size-9 items-center justify-center rounded-xs border border-line-strong hover:bg-sand" aria-label="Дараах">
+          <Link
+            href={href({ ...nav, date: next })}
+            className="inline-flex size-9 items-center justify-center rounded-xs border border-line-strong hover:bg-sand"
+            aria-label="Дараах"
+          >
             <ChevronRight className="size-4" />
           </Link>
         </div>
@@ -155,7 +210,10 @@ export default async function CalendarPage({ searchParams }: { searchParams: Pro
             <>
               <Link
                 href={href({ ...nav, date, staff: null })}
-                className={cn('rounded-full border px-3 py-1', !staffParam ? 'border-cocoa-800 bg-cocoa-800 text-ivory' : 'border-line-strong text-ink-2')}
+                className={cn(
+                  'rounded-full border px-3 py-1',
+                  !staffParam ? 'border-cocoa-800 bg-cocoa-800 text-ivory' : 'border-line-strong text-ink-2',
+                )}
               >
                 Бүх мастер
               </Link>
@@ -164,7 +222,12 @@ export default async function CalendarPage({ searchParams }: { searchParams: Pro
                     <Link
                       key={s.id}
                       href={href({ ...nav, date, staff: s.id })}
-                      className={cn('inline-flex items-center gap-1.5 rounded-full border px-3 py-1', staffParam === s.id ? 'border-cocoa-800 bg-cocoa-800 text-ivory' : 'border-line-strong text-ink-2')}
+                      className={cn(
+                        'inline-flex items-center gap-1.5 rounded-full border px-3 py-1',
+                        staffParam === s.id
+                          ? 'border-cocoa-800 bg-cocoa-800 text-ivory'
+                          : 'border-line-strong text-ink-2',
+                      )}
                     >
                       <span className="size-2 rounded-full" style={{ background: s.color }} aria-hidden />
                       {s.name}
@@ -173,7 +236,10 @@ export default async function CalendarPage({ searchParams }: { searchParams: Pro
                 : null}
             </>
           ) : null}
-          <Link href={href({ ...nav, date, cancelled: !showCancelled })} className="text-ink-3 underline underline-offset-4">
+          <Link
+            href={href({ ...nav, date, cancelled: !showCancelled })}
+            className="text-ink-3 underline underline-offset-4"
+          >
             {showCancelled ? 'Цуцлагдсаныг нуух' : 'Цуцлагдсаныг харуулах'}
           </Link>
         </div>
@@ -182,12 +248,18 @@ export default async function CalendarPage({ searchParams }: { searchParams: Pro
       {view === 'day' && (
         <div className="surface overflow-x-auto">
           {!data.days[0].hours ? (
-            <p className="p-8 text-center text-ink-3">Салон энэ өдөр амарна{data.days[0].special ? ` — ${data.days[0].special}` : ''}.</p>
+            <p className="p-8 text-center text-ink-3">
+              Салон энэ өдөр амарна{data.days[0].special ? ` — ${data.days[0].special}` : ''}.
+            </p>
           ) : (
             <div className="flex min-w-[48rem]">
               <div className="w-14 shrink-0 border-r border-line pt-11">
                 {hours.map((h) => (
-                  <div key={h} className="relative text-right text-[0.68rem] text-ink-3 tabular" style={{ height: h === axisEnd ? 0 : 60 * ppm }}>
+                  <div
+                    key={h}
+                    className="tabular relative text-right text-[0.68rem] text-ink-3"
+                    style={{ height: h === axisEnd ? 0 : 60 * ppm }}
+                  >
                     <span className="absolute -top-2 right-2">{minutesToTime(h)}</span>
                   </div>
                 ))}
@@ -208,19 +280,34 @@ export default async function CalendarPage({ searchParams }: { searchParams: Pro
                     </div>
                     <div className="relative" style={{ height: (axisEnd - axisStart) * ppm }}>
                       {hours.slice(0, -1).map((h) => (
-                        <div key={h} className="absolute inset-x-0 border-t border-line/70" style={{ top: (h - axisStart) * ppm }} />
+                        <div
+                          key={h}
+                          className="absolute inset-x-0 border-t border-line/70"
+                          style={{ top: (h - axisStart) * ppm }}
+                        />
                       ))}
                       {/* Outside the shift */}
                       {!shift?.isWorking ? (
-                        <div className="absolute inset-0 bg-sand/70 p-3 text-center text-xs text-ink-3">Амралтын өдөр</div>
+                        <div className="absolute inset-0 bg-sand/70 p-3 text-center text-xs text-ink-3">
+                          Амралтын өдөр
+                        </div>
                       ) : (
                         <>
-                          <div className="absolute inset-x-0 bg-sand/60" style={{ top: 0, height: Math.max(0, (shift.startsAt - axisStart) * ppm) }} />
-                          <div className="absolute inset-x-0 bottom-0 bg-sand/60" style={{ top: Math.max(0, (shift.endsAt - axisStart) * ppm) }} />
+                          <div
+                            className="absolute inset-x-0 bg-sand/60"
+                            style={{ top: 0, height: Math.max(0, (shift.startsAt - axisStart) * ppm) }}
+                          />
+                          <div
+                            className="absolute inset-x-0 bottom-0 bg-sand/60"
+                            style={{ top: Math.max(0, (shift.endsAt - axisStart) * ppm) }}
+                          />
                           <Link
                             href={`/admin/appointments/new?date=${date}&staff=${s.id}`}
                             className="absolute inset-x-0 hover:bg-blush-50/60"
-                            style={{ top: (shift.startsAt - axisStart) * ppm, height: (shift.endsAt - shift.startsAt) * ppm }}
+                            style={{
+                              top: (shift.startsAt - axisStart) * ppm,
+                              height: (shift.endsAt - shift.startsAt) * ppm,
+                            }}
                             aria-label={`${s.name}-д шинэ захиалга нэмэх`}
                           />
                         </>
@@ -238,7 +325,11 @@ export default async function CalendarPage({ searchParams }: { searchParams: Pro
                         const from = Math.max(axisStart, (o.startsAt.getTime() - dayStart) / 60_000)
                         const to = Math.min(axisEnd, (o.endsAt.getTime() - dayStart) / 60_000)
                         return to > from ? (
-                          <div key={o.id} className="absolute inset-x-0 flex items-start justify-center bg-rose-50/90 pt-2 text-[0.7rem] text-rose-700" style={{ top: (from - axisStart) * ppm, height: (to - from) * ppm }}>
+                          <div
+                            key={o.id}
+                            className="absolute inset-x-0 flex items-start justify-center bg-rose-50/90 pt-2 text-[0.7rem] text-rose-700"
+                            style={{ top: (from - axisStart) * ppm, height: (to - from) * ppm }}
+                          >
                             Чөлөө{o.note ? ` · ${o.note}` : ''}
                           </div>
                         ) : null
@@ -268,7 +359,11 @@ export default async function CalendarPage({ searchParams }: { searchParams: Pro
           <div className="flex min-w-[56rem]">
             <div className="w-12 shrink-0 border-r border-line pt-11">
               {hours.map((h) => (
-                <div key={h} className="relative text-right text-[0.65rem] text-ink-3 tabular" style={{ height: h === axisEnd ? 0 : 60 * ppm }}>
+                <div
+                  key={h}
+                  className="tabular relative text-right text-[0.65rem] text-ink-3"
+                  style={{ height: h === axisEnd ? 0 : 60 * ppm }}
+                >
                   <span className="absolute -top-2 right-1.5">{minutesToTime(h)}</span>
                 </div>
               ))}
@@ -280,17 +375,26 @@ export default async function CalendarPage({ searchParams }: { searchParams: Pro
                 <div key={d.date} className="min-w-28 flex-1 border-r border-line last:border-r-0">
                   <Link
                     href={href({ ...nav, view: 'day', date: d.date })}
-                    className={cn('flex h-11 flex-col justify-center border-b border-line px-2 text-xs hover:bg-sand', d.date === today ? 'bg-cocoa-800 text-ivory' : 'bg-porcelain')}
+                    className={cn(
+                      'flex h-11 flex-col justify-center border-b border-line px-2 text-xs hover:bg-sand',
+                      d.date === today ? 'bg-cocoa-800 text-ivory' : 'bg-porcelain',
+                    )}
                   >
                     <span className="font-medium">
                       {WEEKDAYS_SHORT_MN[weekdayOf(d.date) - 1]} {formatShortDate(d.date)}
                     </span>
-                    <span className={d.date === today ? 'text-blush-100' : 'text-ink-3'}>{d.hours ? `${items.length} захиалга` : 'Амарна'}</span>
+                    <span className={d.date === today ? 'text-blush-100' : 'text-ink-3'}>
+                      {d.hours ? `${items.length} захиалга` : 'Амарна'}
+                    </span>
                   </Link>
                   <div className="relative" style={{ height: (axisEnd - axisStart) * ppm }}>
                     {!d.hours ? <div className="absolute inset-0 bg-sand/70" /> : null}
                     {hours.slice(0, -1).map((h) => (
-                      <div key={h} className="absolute inset-x-0 border-t border-line/60" style={{ top: (h - axisStart) * ppm }} />
+                      <div
+                        key={h}
+                        className="absolute inset-x-0 border-t border-line/60"
+                        style={{ top: (h - axisStart) * ppm }}
+                      />
                     ))}
                     {items.map((a) => (
                       <Block
@@ -328,9 +432,22 @@ export default async function CalendarPage({ searchParams }: { searchParams: Pro
             {data.days.map((d) => {
               const items = data.appointments.filter((a) => dateKeyOf(a.startsAt) === d.date)
               return (
-                <div key={d.date} className={cn('min-h-28 border-r border-b border-line p-1.5', !d.hours && 'bg-sand/50')}>
-                  <Link href={href({ ...nav, view: 'day', date: d.date })} className="flex items-center justify-between text-xs">
-                    <span className={cn('inline-flex size-6 items-center justify-center rounded-full tabular', d.date === today && 'bg-cocoa-800 text-ivory')}>{Number(d.date.slice(8))}</span>
+                <div
+                  key={d.date}
+                  className={cn('min-h-28 border-r border-b border-line p-1.5', !d.hours && 'bg-sand/50')}
+                >
+                  <Link
+                    href={href({ ...nav, view: 'day', date: d.date })}
+                    className="flex items-center justify-between text-xs"
+                  >
+                    <span
+                      className={cn(
+                        'tabular inline-flex size-6 items-center justify-center rounded-full',
+                        d.date === today && 'bg-cocoa-800 text-ivory',
+                      )}
+                    >
+                      {Number(d.date.slice(8))}
+                    </span>
                     <span className="text-ink-3">{d.hours ? (items.length ? `${items.length}` : '') : 'Амарна'}</span>
                   </Link>
                   {d.special ? <p className="mt-0.5 truncate text-[0.62rem] text-blush-700">{d.special}</p> : null}
@@ -339,14 +456,19 @@ export default async function CalendarPage({ searchParams }: { searchParams: Pro
                       <li key={a.id}>
                         <Link
                           href={`/admin/appointments/${a.id}`}
-                          className={cn('block truncate rounded-[3px] border-l-2 bg-porcelain px-1 text-[0.66rem] hover:bg-sand', a.status === 'cancelled' && 'line-through opacity-60')}
+                          className={cn(
+                            'block truncate rounded-[3px] border-l-2 bg-porcelain px-1 text-[0.66rem] hover:bg-sand',
+                            a.status === 'cancelled' && 'line-through opacity-60',
+                          )}
                           style={{ borderLeftColor: colorOf.get(a.staffId) }}
                         >
                           {minutesToTime(minutesOfDay(a.startsAt))} {a.customerName}
                         </Link>
                       </li>
                     ))}
-                    {items.length > 3 ? <li className="px-1 text-[0.66rem] text-ink-3">+{items.length - 3} бусад</li> : null}
+                    {items.length > 3 ? (
+                      <li className="px-1 text-[0.66rem] text-ink-3">+{items.length - 3} бусад</li>
+                    ) : null}
                   </ul>
                 </div>
               )
@@ -356,12 +478,25 @@ export default async function CalendarPage({ searchParams }: { searchParams: Pro
       )}
 
       <ul className="mt-4 flex flex-wrap gap-x-5 gap-y-2 text-xs text-ink-3">
-        <li className="flex items-center gap-1.5"><span className="h-3 w-4 rounded-[2px] border border-line bg-porcelain" aria-hidden /> Баталгаажсан</li>
-        <li className="flex items-center gap-1.5"><span className="h-3 w-4 rounded-[2px] border border-dashed border-sky-600/40 bg-sky-50" aria-hidden /> Хүсэлт</li>
-        <li className="flex items-center gap-1.5"><span className="h-3 w-4 rounded-[2px] border border-dashed border-amber-600/40 bg-amber-50" aria-hidden /> Урьдчилгаа хүлээж буй</li>
-        <li className="flex items-center gap-1.5"><span className="h-3 w-4 rounded-[2px] bg-cocoa-50" aria-hidden /> Дууссан</li>
-        <li className="flex items-center gap-1.5"><span className="h-3 w-4 rounded-[2px] bg-rose-50" aria-hidden /> Ирээгүй / чөлөө</li>
-        <li className="flex items-center gap-1.5"><span className="h-3 w-4 rounded-[2px] bg-sand" aria-hidden /> Ажлын бус цаг</li>
+        <li className="flex items-center gap-1.5">
+          <span className="h-3 w-4 rounded-[2px] border border-line bg-porcelain" aria-hidden /> Баталгаажсан
+        </li>
+        <li className="flex items-center gap-1.5">
+          <span className="h-3 w-4 rounded-[2px] border border-dashed border-sky-600/40 bg-sky-50" aria-hidden /> Хүсэлт
+        </li>
+        <li className="flex items-center gap-1.5">
+          <span className="h-3 w-4 rounded-[2px] border border-dashed border-amber-600/40 bg-amber-50" aria-hidden />{' '}
+          Урьдчилгаа хүлээж буй
+        </li>
+        <li className="flex items-center gap-1.5">
+          <span className="h-3 w-4 rounded-[2px] bg-cocoa-50" aria-hidden /> Дууссан
+        </li>
+        <li className="flex items-center gap-1.5">
+          <span className="h-3 w-4 rounded-[2px] bg-rose-50" aria-hidden /> Ирээгүй / чөлөө
+        </li>
+        <li className="flex items-center gap-1.5">
+          <span className="h-3 w-4 rounded-[2px] bg-sand" aria-hidden /> Ажлын бус цаг
+        </li>
       </ul>
       <p className="sr-only">Нийт {diffDays(range.to, range.from) + 1} өдөр.</p>
     </>

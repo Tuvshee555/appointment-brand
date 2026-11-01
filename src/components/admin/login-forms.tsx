@@ -53,10 +53,24 @@ export function LoginForm() {
       }}
     >
       <Field label="И-мэйл" htmlFor="login-email">
-        <Input id="login-email" type="email" autoComplete="username" value={email} onChange={(e) => setEmail(e.target.value)} required />
+        <Input
+          id="login-email"
+          type="email"
+          autoComplete="username"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          required
+        />
       </Field>
       <Field label="Нууц үг" htmlFor="login-password">
-        <Input id="login-password" type="password" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} required />
+        <Input
+          id="login-password"
+          type="password"
+          autoComplete="current-password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          required
+        />
       </Field>
       {error ? (
         <p role="alert" className="text-sm text-rose-700">

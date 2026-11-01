@@ -20,7 +20,17 @@ async function callChat(body: { message?: string; action?: ChatAction }): Promis
   return data
 }
 
-function Part({ part, onAction, onQuick, busy }: { part: ChatPart; onAction: (a: ChatAction, label: string) => void; onQuick: (q: QuickReply) => void; busy: boolean }) {
+function Part({
+  part,
+  onAction,
+  onQuick,
+  busy,
+}: {
+  part: ChatPart
+  onAction: (a: ChatAction, label: string) => void
+  onQuick: (q: QuickReply) => void
+  busy: boolean
+}) {
   switch (part.type) {
     case 'text':
       return <p className="whitespace-pre-line">{part.text}</p>
@@ -55,7 +65,7 @@ function Part({ part, onAction, onQuick, busy }: { part: ChatPart; onAction: (a:
                 type="button"
                 disabled={busy}
                 onClick={() => onAction({ type: 'choose_slot', date: part.date, start: s.start }, s.label)}
-                className="rounded-xs border border-line-strong bg-porcelain py-2 text-sm tabular text-cocoa-900 hover:border-cocoa-700 disabled:opacity-50"
+                className="tabular rounded-xs border border-line-strong bg-porcelain py-2 text-sm text-cocoa-900 hover:border-cocoa-700 disabled:opacity-50"
               >
                 {s.label}
               </button>
@@ -97,7 +107,7 @@ function Part({ part, onAction, onQuick, busy }: { part: ChatPart; onAction: (a:
               {s.timeRange} ({formatDuration(s.durationMinutes)})
             </dd>
             <dt className="text-ink-3">Нийт</dt>
-            <dd className="font-medium tabular">
+            <dd className="tabular font-medium">
               {formatMoney(s.total)}
               {s.hasFromPrice ? '-өөс' : ''}
             </dd>
@@ -141,7 +151,10 @@ function Part({ part, onAction, onQuick, busy }: { part: ChatPart; onAction: (a:
             <CalendarCheck2 className="size-4" aria-hidden /> {part.reference} · {part.statusLabel}
           </p>
           <p className="text-[0.82rem] text-ink-2">{part.explanation}</p>
-          <Link href={part.link} className="inline-block text-[0.82rem] font-medium text-cocoa-800 underline underline-offset-4">
+          <Link
+            href={part.link}
+            className="inline-block text-[0.82rem] font-medium text-cocoa-800 underline underline-offset-4"
+          >
             Захиалгаа харах
           </Link>
         </div>
@@ -163,7 +176,8 @@ export function ChatWidget({ salonName }: { salonName: string }) {
   async function send(body: { message?: string; action?: ChatAction }, userLabel?: string) {
     setBusy(true)
     setError(null)
-    if (userLabel) setMessages((m) => [...m, { id: `u-${Date.now()}`, role: 'user', parts: [{ type: 'text', text: userLabel }] }])
+    if (userLabel)
+      setMessages((m) => [...m, { id: `u-${Date.now()}`, role: 'user', parts: [{ type: 'text', text: userLabel }] }])
     const res = await callChat(body)
     setBusy(false)
     if (res.error) setError(res.error)
@@ -197,7 +211,8 @@ export function ChatWidget({ salonName }: { salonName: string }) {
     void send({ message: text }, text)
   }
 
-  const onQuick = (q: QuickReply) => void send(q.action ? { action: q.action } : { message: q.message ?? q.label }, q.label)
+  const onQuick = (q: QuickReply) =>
+    void send(q.action ? { action: q.action } : { message: q.message ?? q.label }, q.label)
   const onAction = (a: ChatAction, label: string) => void send({ action: a }, label)
 
   return (
@@ -238,18 +253,29 @@ export function ChatWidget({ salonName }: { salonName: string }) {
               >
                 <RotateCcw className="size-4" />
               </button>
-              <button type="button" onClick={() => setOpen(false)} className="inline-flex size-9 items-center justify-center rounded-xs text-ink-2 hover:bg-sand" aria-label="Чат хаах">
+              <button
+                type="button"
+                onClick={() => setOpen(false)}
+                className="inline-flex size-9 items-center justify-center rounded-xs text-ink-2 hover:bg-sand"
+                aria-label="Чат хаах"
+              >
                 <X className="size-5" />
               </button>
             </div>
           </header>
-          <div ref={listRef} className="flex-1 space-y-3 overflow-y-auto px-4 py-4 text-[0.9rem] leading-relaxed" aria-live="polite">
+          <div
+            ref={listRef}
+            className="flex-1 space-y-3 overflow-y-auto px-4 py-4 text-[0.9rem] leading-relaxed"
+            aria-live="polite"
+          >
             {messages.map((m) => (
               <div key={m.id} className={cn('flex', m.role === 'user' ? 'justify-end' : 'justify-start')}>
                 <div
                   className={cn(
                     'max-w-[88%] space-y-2 rounded-card px-3.5 py-2.5',
-                    m.role === 'user' ? 'rounded-br-xs bg-cocoa-800 text-ivory' : 'rounded-bl-xs border border-line bg-porcelain text-ink',
+                    m.role === 'user'
+                      ? 'rounded-br-xs bg-cocoa-800 text-ivory'
+                      : 'rounded-bl-xs border border-line bg-porcelain text-ink',
                   )}
                 >
                   {m.parts.map((p, i) => (
@@ -289,7 +315,9 @@ export function ChatWidget({ salonName }: { salonName: string }) {
                 <Send className="size-4" />
               </button>
             </div>
-            <p className="mt-2 text-[0.68rem] text-ink-3">Демо: зохиомол салон. Бодит хувийн мэдээлэл бүү оруулна уу.</p>
+            <p className="mt-2 text-[0.68rem] text-ink-3">
+              Демо: зохиомол салон. Бодит хувийн мэдээлэл бүү оруулна уу.
+            </p>
           </form>
         </section>
       )}

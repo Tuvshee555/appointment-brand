@@ -70,7 +70,10 @@ export async function loadBookingCatalog(db: Database, salonId: string): Promise
     })
   }
   const addons = new Map<string, CatalogAddon>(
-    addonRows.map((a) => [a.id, { id: a.id, name: a.name, durationMinutes: a.durationMinutes, price: a.price, priceType: a.priceType }]),
+    addonRows.map((a) => [
+      a.id,
+      { id: a.id, name: a.name, durationMinutes: a.durationMinutes, price: a.price, priceType: a.priceType },
+    ]),
   )
   const staff: StaffSummary[] = staffRows.map((s) => ({
     id: s.id,
@@ -92,9 +95,14 @@ export async function loadBookingCatalog(db: Database, salonId: string): Promise
  * see active specialists who accept online bookings; staff may assign any
  * active specialist.
  */
-export function eligibleStaff(catalog: BookingCatalog, items: SelectionItem[], { publicOnly }: { publicOnly: boolean }): StaffSummary[] {
+export function eligibleStaff(
+  catalog: BookingCatalog,
+  items: SelectionItem[],
+  { publicOnly }: { publicOnly: boolean },
+): StaffSummary[] {
   return catalog.staff.filter(
-    (s) => s.isActive && (!publicOnly || s.acceptsOnlineBookings) && items.every((i) => s.serviceIds.includes(i.serviceId)),
+    (s) =>
+      s.isActive && (!publicOnly || s.acceptsOnlineBookings) && items.every((i) => s.serviceIds.includes(i.serviceId)),
   )
 }
 
@@ -112,7 +120,10 @@ export function candidateStaff(
   if (staffId) {
     const chosen = eligible.find((s) => s.id === staffId)
     if (!chosen) {
-      throw new ServiceError('staff_not_eligible', 'Сонгосон мастер эдгээр үйлчилгээг бүгдийг нь хийдэггүй. Өөр мастер эсвэл «Аль ч мастер» сонгоно уу.')
+      throw new ServiceError(
+        'staff_not_eligible',
+        'Сонгосон мастер эдгээр үйлчилгээг бүгдийг нь хийдэггүй. Өөр мастер эсвэл «Аль ч мастер» сонгоно уу.',
+      )
     }
     return [chosen]
   }
@@ -127,6 +138,9 @@ export function candidateStaff(
 
 export async function staffNames(db: Database, ids: string[]) {
   if (ids.length === 0) return new Map<string, string>()
-  const rows = await db.select({ id: t.staff.id, displayName: t.staff.displayName }).from(t.staff).where(inArray(t.staff.id, ids))
+  const rows = await db
+    .select({ id: t.staff.id, displayName: t.staff.displayName })
+    .from(t.staff)
+    .where(inArray(t.staff.id, ids))
   return new Map(rows.map((r) => [r.id, r.displayName]))
 }

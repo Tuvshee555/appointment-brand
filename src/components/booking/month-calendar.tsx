@@ -69,9 +69,16 @@ export function MonthCalendar({
           </span>
         ))}
       </div>
-      <div role="grid" aria-label={`${formatMonthYear(first)} — өдөр сонгох`} aria-busy={loading} className="mt-1 grid grid-cols-7 gap-1">
+      <div
+        role="grid"
+        aria-label={`${formatMonthYear(first)} — өдөр сонгох`}
+        aria-busy={loading}
+        className="mt-1 grid grid-cols-7 gap-1"
+      >
         {loading && !days
-          ? Array.from({ length: 35 }, (_, i) => <span key={i} className="aspect-square animate-pulse rounded-xs bg-sand sm:aspect-[1.15]" />)
+          ? Array.from({ length: 35 }, (_, i) => (
+              <span key={i} className="aspect-square animate-pulse rounded-xs bg-sand sm:aspect-[1.15]" />
+            ))
           : cells.map((d, i) => {
               if (!d) return <span key={`lead-${i}`} />
               const dayNum = Number(d.date.slice(8))
@@ -88,8 +95,10 @@ export function MonthCalendar({
                   title={d.label ?? undefined}
                   onClick={() => onSelect(d.date)}
                   className={cn(
-                    'relative flex aspect-square min-h-11 flex-col items-center justify-center rounded-xs text-[0.95rem] tabular transition-colors sm:aspect-[1.15]',
-                    enabled && !isSelected && 'border border-line-strong bg-porcelain text-cocoa-900 hover:border-cocoa-700',
+                    'tabular relative flex aspect-square min-h-11 flex-col items-center justify-center rounded-xs text-[0.95rem] transition-colors sm:aspect-[1.15]',
+                    enabled &&
+                      !isSelected &&
+                      'border border-line-strong bg-porcelain text-cocoa-900 hover:border-cocoa-700',
                     isSelected && 'bg-cocoa-800 text-ivory',
                     d.state === 'full' && 'bg-sand/70 text-ink-3 line-through decoration-ink-3/40',
                     d.state === 'closed' && 'text-ink-3/50',
@@ -97,9 +106,24 @@ export function MonthCalendar({
                   )}
                 >
                   {dayNum}
-                  {d.label ? <span className={cn('absolute top-1 right-1 size-1.5 rounded-full', isSelected ? 'bg-blush-200' : 'bg-blush-500')} aria-hidden /> : null}
+                  {d.label ? (
+                    <span
+                      className={cn(
+                        'absolute top-1 right-1 size-1.5 rounded-full',
+                        isSelected ? 'bg-blush-200' : 'bg-blush-500',
+                      )}
+                      aria-hidden
+                    />
+                  ) : null}
                   {enabled ? (
-                    <span className={cn('mt-0.5 hidden text-[0.62rem] sm:block', isSelected ? 'text-blush-100' : 'text-sage-600')}>{d.slotCount} цаг</span>
+                    <span
+                      className={cn(
+                        'mt-0.5 hidden text-[0.62rem] sm:block',
+                        isSelected ? 'text-blush-100' : 'text-sage-600',
+                      )}
+                    >
+                      {d.slotCount} цаг
+                    </span>
                   ) : d.state === 'full' ? (
                     <span className="mt-0.5 hidden text-[0.62rem] no-underline sm:block">дүүрсэн</span>
                   ) : d.state === 'closed' ? (

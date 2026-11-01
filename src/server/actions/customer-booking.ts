@@ -24,12 +24,16 @@ async function authorized(input: unknown): Promise<{ ctx: ServiceContext; appoin
   const { reference, token } = access.parse(input)
   const ctx = await publicContext()
   const ok = await authorizeBooking({ reference, token })
-  if (!ok) throw new ServiceError('forbidden', 'Энэ захиалгыг харах эрх алга. Захиалгын дугаар, утсаараа дахин нэвтэрнэ үү.')
+  if (!ok)
+    throw new ServiceError('forbidden', 'Энэ захиалгыг харах эрх алга. Захиалгын дугаар, утсаараа дахин нэвтэрнэ үү.')
   return { ctx, appointmentId: ok.id }
 }
 
 async function loadAppointment(ctx: ServiceContext, id: string) {
-  const [appt] = await ctx.db.select().from(t.appointments).where(and(eq(t.appointments.id, id), eq(t.appointments.salonId, ctx.salonId)))
+  const [appt] = await ctx.db
+    .select()
+    .from(t.appointments)
+    .where(and(eq(t.appointments.id, id), eq(t.appointments.salonId, ctx.salonId)))
   if (!appt) throw ERR.notFound('Захиалга')
   return appt
 }
@@ -46,7 +50,8 @@ export async function lookupBookingAction(input: unknown): Promise<ActionResult<
       .innerJoin(t.customers, eq(t.customers.id, t.appointments.customerId))
       .where(and(eq(t.appointments.salonId, ctx.salonId), eq(t.appointments.reference, reference)))
     // Same message for "no such booking" and "wrong phone": no enumeration.
-    if (!row || row.phone !== phone) throw new ServiceError('not_found', 'Захиалгын дугаар эсвэл утасны дугаар таарсангүй.')
+    if (!row || row.phone !== phone)
+      throw new ServiceError('not_found', 'Захиалгын дугаар эсвэл утасны дугаар таарсангүй.')
     await grantLookup(reference)
     return { ok: true, data: { reference } }
   } catch (err) {
@@ -54,14 +59,24 @@ export async function lookupBookingAction(input: unknown): Promise<ActionResult<
   }
 }
 
-export async function cancelBookingAction(input: unknown): Promise<ActionResult<{ status: string; depositOutcome?: string }>> {
+export async function cancelBookingAction(
+  input: unknown,
+): Promise<ActionResult<{ status: string; depositOutcome?: string }>> {
   try {
     const { reason } = z.object({ reason: optionalText(300) }).parse(input)
     const { ctx, appointmentId } = await authorized(input)
     await enforceRateLimit(ctx.db, LIMITS.customerChange, ctx.ipHash)
     const appt = await loadAppointment(ctx, appointmentId)
-    if (appt.startsAt <= ctx.now) throw new ServiceError('started', 'Эхэлсэн эсвэл өнгөрсөн цагийг онлайнаар цуцлах боломжгүй. Салон руу залгана уу.')
-    const result = await transitionAppointment(ctx, appointmentId, 'cancelled', { actor: 'customer', reason: 'customer_request', note: reason })
+    if (appt.startsAt <= ctx.now)
+      throw new ServiceError(
+        'started',
+        'Эхэлсэн эсвэл өнгөрсөн цагийг онлайнаар цуцлах боломжгүй. Салон руу залгана уу.',
+      )
+    const result = await transitionAppointment(ctx, appointmentId, 'cancelled', {
+      actor: 'customer',
+      reason: 'customer_request',
+      note: reason,
+    })
     return { ok: true, data: result }
   } catch (err) {
     return toFailure(err)
@@ -80,12 +95,20 @@ async function rescheduleSelection(ctx: ServiceContext, appointmentId: string) {
       `Цаг эхлэхээс ${config.settings.rescheduleNoticeHours} цагийн дотор онлайнаар өөрчлөх боломжгүй. Салон руу залгана уу.`,
     )
   }
-  const lines = await ctx.db.select().from(t.appointmentServices).where(eq(t.appointmentServices.appointmentId, appt.id)).orderBy(asc(t.appointmentServices.sortOrder))
+  const lines = await ctx.db
+    .select()
+    .from(t.appointmentServices)
+    .where(eq(t.appointmentServices.appointmentId, appt.id))
+    .orderBy(asc(t.appointmentServices.sortOrder))
   const addons = await ctx.db.select().from(t.appointmentAddons).where(eq(t.appointmentAddons.appointmentId, appt.id))
   const items = lines
     .filter((l) => l.serviceId)
-    .map((l) => ({ serviceId: l.serviceId!, addonIds: addons.filter((a) => a.appointmentServiceId === l.id && a.addonId).map((a) => a.addonId!) }))
-  if (items.length !== lines.length) throw new ServiceError('service_removed', 'Үйлчилгээ шинэчлэгдсэн тул салон руу залгаж цагаа өөрчилнө үү.')
+    .map((l) => ({
+      serviceId: l.serviceId!,
+      addonIds: addons.filter((a) => a.appointmentServiceId === l.id && a.addonId).map((a) => a.addonId!),
+    }))
+  if (items.length !== lines.length)
+    throw new ServiceError('service_removed', 'Үйлчилгээ шинэчлэгдсэн тул салон руу залгаж цагаа өөрчилнө үү.')
   // A customer who chose a specialist keeps them; "any" stays "any".
   const staffId = appt.staffRequested ? appt.staffId : null
   return { appt, items, staffId }
@@ -112,24 +135,43 @@ export async function rescheduleDayAction(input: unknown): Promise<ActionResult<
     await enforceRateLimit(ctx.db, LIMITS.availability, ctx.ipHash)
     const { items, staffId } = await rescheduleSelection(ctx, appointmentId)
     const prepared = await prepareSelection(ctx.db, ctx.salonId, items, staffId, { publicOnly: true })
-    const day = await dayAvailability(ctx.db, prepared, date, { now: ctx.now, publicRules: true, excludeAppointmentId: appointmentId })
+    const day = await dayAvailability(ctx.db, prepared, date, {
+      now: ctx.now,
+      publicRules: true,
+      excludeAppointmentId: appointmentId,
+    })
     return {
       ok: true,
-      data: { slots: day.slots.map((s) => ({ start: s.start, label: minutesToTime(s.start), startsAt: s.startsAt, endsAt: s.endsAt, staffIds: s.staffIds })) },
+      data: {
+        slots: day.slots.map((s) => ({
+          start: s.start,
+          label: minutesToTime(s.start),
+          startsAt: s.startsAt,
+          endsAt: s.endsAt,
+          staffIds: s.staffIds,
+        })),
+      },
     }
   } catch (err) {
     return toFailure(err)
   }
 }
 
-export async function rescheduleBookingAction(input: unknown): Promise<ActionResult<{ reference: string; status: string }>> {
+export async function rescheduleBookingAction(
+  input: unknown,
+): Promise<ActionResult<{ reference: string; status: string }>> {
   try {
     const { date, start } = z.object({ date: dateKey, start: minuteOfDay }).parse(input)
     const { ctx, appointmentId } = await authorized(input)
     await enforceRateLimit(ctx.db, LIMITS.customerChange, ctx.ipHash)
     const { token } = access.parse(input)
     const { staffId } = await rescheduleSelection(ctx, appointmentId)
-    const result = await rescheduleAppointment(ctx, appointmentId, { date, start, staffId }, { actor: 'customer', publicRules: true })
+    const result = await rescheduleAppointment(
+      ctx,
+      appointmentId,
+      { date, start, staffId },
+      { actor: 'customer', publicRules: true },
+    )
     // The new booking keeps the same private link; lookup-cookie visitors get access to it too.
     if (!token) await grantLookup(result.reference)
     return { ok: true, data: { reference: result.reference, status: result.status } }

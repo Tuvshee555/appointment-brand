@@ -16,7 +16,13 @@ export interface CreateInvoiceInput {
   receiverCode: string
   callbackUrl: string
   /** Present when eBarimt 3.0 data must travel with the invoice. */
-  ebarimt?: { districtCode: string; classificationCode: string; taxType: string; calculateVat: boolean; lines: InvoiceLine[] } | null
+  ebarimt?: {
+    districtCode: string
+    classificationCode: string
+    taxType: string
+    calculateVat: boolean
+    lines: InvoiceLine[]
+  } | null
 }
 
 export interface ProviderInvoice {

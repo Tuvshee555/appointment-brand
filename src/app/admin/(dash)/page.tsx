@@ -30,6 +30,8 @@ const EVENT_LABELS: Record<string, string> = {
   late_payment: 'хоцорсон төлбөр',
 }
 
+const REQUESTS_SHOWN = 5
+
 export default async function DashboardPage({ searchParams }: { searchParams: Promise<{ denied?: string }> }) {
   const session = await requireAdminPage('dashboard.view')
   await connection()
@@ -55,15 +57,27 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
           ) : null
         }
       />
-      {sp.denied ? <p className="mb-6 rounded-xs bg-amber-50 px-4 py-3 text-sm text-amber-700">Тэр хэсгийг харах эрх танд алга.</p> : null}
+      {sp.denied ? (
+        <p className="mb-6 rounded-xs bg-amber-50 px-4 py-3 text-sm text-amber-700">Тэр хэсгийг харах эрх танд алга.</p>
+      ) : null}
 
       <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
         <StatCard label="Өнөөдөр" value={data.counts.today} hint="захиалга" tone="accent" />
         <StatCard label="Ойрын 7 хоног" value={data.counts.upcoming} hint="идэвхтэй захиалга" />
-        <StatCard label="Хүлээгдэж буй" value={data.counts.pending} hint="баталгаажуулах хүсэлт" tone={data.counts.pending ? 'warning' : 'default'} />
+        <StatCard
+          label="Хүлээгдэж буй"
+          value={data.counts.pending}
+          hint="баталгаажуулах хүсэлт"
+          tone={data.counts.pending ? 'warning' : 'default'}
+        />
         <StatCard label="Дууссан" value={data.counts.completedMonth} hint="энэ сард" />
         <StatCard label="Цуцалсан" value={data.counts.cancelledMonth} hint="энэ сард" />
-        <StatCard label="Ирээгүй" value={data.counts.noShowMonth} hint="энэ сард" tone={data.counts.noShowMonth ? 'danger' : 'default'} />
+        <StatCard
+          label="Ирээгүй"
+          value={data.counts.noShowMonth}
+          hint="энэ сард"
+          tone={data.counts.noShowMonth ? 'danger' : 'default'}
+        />
       </div>
 
       {data.revenue ? (
@@ -78,7 +92,10 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
         <Card
           title="Өнөөдрийн цагийн хуваарь"
           action={
-            <Link href="/admin/calendar" className="inline-flex items-center gap-1 text-sm text-cocoa-700 hover:text-cocoa-900">
+            <Link
+              href="/admin/calendar"
+              className="inline-flex items-center gap-1 text-sm text-cocoa-700 hover:text-cocoa-900"
+            >
               Хуанли <ArrowRight className="size-4" aria-hidden />
             </Link>
           }
@@ -92,8 +109,13 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
             <ul className="divide-y divide-line">
               {data.todayList.map((a) => (
                 <li key={a.id}>
-                  <Link href={`/admin/appointments/${a.id}`} className="flex items-center gap-4 px-5 py-3 hover:bg-ivory">
-                    <span className="w-24 shrink-0 text-sm text-cocoa-900 tabular">{formatTimeRange(a.startsAt, a.endsAt)}</span>
+                  <Link
+                    href={`/admin/appointments/${a.id}`}
+                    className="flex items-center gap-4 px-5 py-3 hover:bg-ivory"
+                  >
+                    <span className="tabular w-24 shrink-0 text-sm text-cocoa-900">
+                      {formatTimeRange(a.startsAt, a.endsAt)}
+                    </span>
                     <span className="h-9 w-1 shrink-0 rounded-full" style={{ background: a.staffColor }} aria-hidden />
                     <span className="min-w-0 flex-1">
                       <span className="block truncate text-sm font-medium text-ink">
@@ -111,21 +133,36 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
           )}
         </Card>
 
-        <Card title={`Баталгаажуулах хүсэлт (${data.pendingRequests.length})`} bodyClassName="p-0">
+        <Card
+          title={`Баталгаажуулах хүсэлт (${data.pendingRequests.length})`}
+          action={
+            data.pendingRequests.length > REQUESTS_SHOWN ? (
+              <Link
+                href="/admin/appointments?tab=pending"
+                className="inline-flex items-center gap-1 text-sm text-ink-2 hover:text-cocoa-900"
+              >
+                Бүгд <ArrowRight className="size-3.5" aria-hidden />
+              </Link>
+            ) : null
+          }
+          bodyClassName="p-0"
+        >
           {data.pendingRequests.length === 0 ? (
             <div className="p-5">
               <EmptyState title="Хүлээгдэж буй хүсэлт алга" />
             </div>
           ) : (
             <ul className="divide-y divide-line">
-              {data.pendingRequests.map((r) => (
+              {data.pendingRequests.slice(0, REQUESTS_SHOWN).map((r) => (
                 <li key={r.id} className="px-5 py-3.5">
                   <div className="flex items-start justify-between gap-3">
                     <Link href={`/admin/appointments/${r.id}`} className="min-w-0 hover:underline">
                       <span className="block text-sm font-medium text-ink">
                         {r.customerName}
                         {r.demoVisitorHash && session.demoVisitorHash === r.demoVisitorHash ? (
-                          <span className="ml-2 rounded-xs bg-sage-50 px-1.5 py-0.5 text-[0.68rem] text-sage-700">таны туршилт</span>
+                          <span className="ml-2 rounded-xs bg-sage-50 px-1.5 py-0.5 text-[0.68rem] text-sage-700">
+                            таны туршилт
+                          </span>
                         ) : null}
                       </span>
                       <span className="block text-xs text-ink-3">
@@ -136,11 +173,19 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
                   </div>
                   {r.status === 'pending' && session.permissions.includes('appointments.view') && !scoped ? (
                     <div className="mt-2.5 flex flex-wrap gap-2">
-                      <ActionButton action={transitionAction.bind(null, { appointmentId: r.id, to: 'confirmed' })} variant="primary" okText="Баталгаажлаа.">
+                      <ActionButton
+                        action={transitionAction.bind(null, { appointmentId: r.id, to: 'confirmed' })}
+                        variant="primary"
+                        okText="Баталгаажлаа."
+                      >
                         Баталгаажуулах
                       </ActionButton>
                       <ActionButton
-                        action={transitionAction.bind(null, { appointmentId: r.id, to: 'rejected', note: 'Тухайн цагт боломжгүй' })}
+                        action={transitionAction.bind(null, {
+                          appointmentId: r.id,
+                          to: 'rejected',
+                          note: 'Тухайн цагт боломжгүй',
+                        })}
                         variant="ghost"
                         okText="Татгалзлаа."
                         confirm="Энэ хүсэлтээс татгалзах уу?"
@@ -160,11 +205,17 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
         {data.revenue ? (
           <Card title="Сүүлийн 14 хоногийн орлого">
             <RevenueBars data={data.revenue.daily} />
-            <p className="mt-3 text-xs text-ink-3">Төлбөрийн системээр баталгаажсан болон ажилтны бүртгэсэн төлбөр. Буцаасан төлбөр орохгүй.</p>
+            <p className="mt-3 text-xs text-ink-3">
+              Төлбөрийн системээр баталгаажсан болон ажилтны бүртгэсэн төлбөр. Буцаасан төлбөр орохгүй.
+            </p>
           </Card>
         ) : null}
         <Card title="Эрэлттэй үйлчилгээ (30 хоног)">
-          {data.popular.length ? <RankBars rows={data.popular.map((p) => ({ label: p.name, value: p.n }))} format={(n) => `${n} удаа`} /> : <EmptyState title="Мэдээлэл алга" />}
+          {data.popular.length ? (
+            <RankBars rows={data.popular.map((p) => ({ label: p.name, value: p.n }))} format={(n) => `${n} удаа`} />
+          ) : (
+            <EmptyState title="Мэдээлэл алга" />
+          )}
         </Card>
         <Card title="Өнөөдрийн мастерууд">
           <ul className="space-y-3">
@@ -181,7 +232,10 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
                         : 'Амралтын өдөр'}
                   </p>
                 </div>
-                <span className={`size-2 rounded-full ${s.working ? 'bg-sage-600' : 'bg-line-strong'}`} aria-label={s.working ? 'ажиллаж байна' : 'ажиллахгүй'} />
+                <span
+                  className={`size-2 rounded-full ${s.working ? 'bg-sage-600' : 'bg-line-strong'}`}
+                  aria-label={s.working ? 'ажиллаж байна' : 'ажиллахгүй'}
+                />
               </li>
             ))}
           </ul>
@@ -192,12 +246,13 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
         <ul className="divide-y divide-line">
           {data.activity.map((a, i) => (
             <li key={i} className="flex items-start gap-4 px-5 py-3 text-sm">
-              <span className="w-28 shrink-0 text-xs text-ink-3 tabular">
+              <span className="tabular w-28 shrink-0 text-xs text-ink-3">
                 {dateKeyOf(a.at) === data.today ? formatTime(a.at) : formatDateTime(a.at)}
               </span>
               {a.type === 'event' ? (
                 <Link href={`/admin/appointments/${a.appointmentId}`} className="min-w-0 flex-1 hover:underline">
-                  <span className="font-medium text-ink">{a.reference}</span> · {a.customerName} — {EVENT_LABELS[a.kind] ?? a.kind}
+                  <span className="font-medium text-ink">{a.reference}</span> · {a.customerName} —{' '}
+                  {EVENT_LABELS[a.kind] ?? a.kind}
                   {a.actorType === 'assistant' ? ' (AI туслахаар)' : a.actorType === 'customer' ? ' (үйлчлүүлэгч)' : ''}
                 </Link>
               ) : (

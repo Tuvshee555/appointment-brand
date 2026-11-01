@@ -35,5 +35,4 @@ export async function verifyPassword(password: string, stored: string | null | u
 }
 
 /** A hash that never matches — used to keep login timing constant for unknown accounts. */
-export const DUMMY_PASSWORD_HASH =
-  'scrypt$16384$8$1$AAAAAAAAAAAAAAAAAAAAAA==$' + Buffer.alloc(64).toString('base64')
+export const DUMMY_PASSWORD_HASH = 'scrypt$16384$8$1$AAAAAAAAAAAAAAAAAAAAAA==$' + Buffer.alloc(64).toString('base64')

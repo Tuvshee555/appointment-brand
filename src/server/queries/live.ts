@@ -19,7 +19,9 @@ export async function getNextOpenings(serviceSlug: string, limit = 3) {
     .where(and(eq(t.services.salonId, salonId), eq(t.services.slug, serviceSlug), eq(t.services.isActive, true)))
   if (!service) return null
   try {
-    const prepared = await prepareSelection(db, salonId, [{ serviceId: service.id, addonIds: [] }], null, { publicOnly: true })
+    const prepared = await prepareSelection(db, salonId, [{ serviceId: service.id, addonIds: [] }], null, {
+      publicOnly: true,
+    })
     const slots = await nextAvailableSlots(db, prepared, dateKeyOf(now), { now, limit, days: 10 })
     return { serviceName: service.name, serviceSlug, slots, checkedAt: now.toISOString() }
   } catch {

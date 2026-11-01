@@ -48,7 +48,8 @@ export async function authorizeBooking(access: BookingAccess): Promise<{ id: str
     .from(t.appointments)
     .where(and(eq(t.appointments.salonId, salonId), eq(t.appointments.reference, access.reference)))
   if (!appt) return null
-  if (access.token && appt.manageTokenHash && sha256Hex(access.token) === appt.manageTokenHash) return { id: appt.id, salonId }
+  if (access.token && appt.manageTokenHash && sha256Hex(access.token) === appt.manageTokenHash)
+    return { id: appt.id, salonId }
   const jar = await cookies()
   if (readLookup(jar.get(LOOKUP_COOKIE)?.value).includes(access.reference)) return { id: appt.id, salonId }
   return null
@@ -73,7 +74,14 @@ export interface CustomerBooking {
   hasFromPrice: boolean
   depositAmount: number
   holdExpiresAt: string | null
-  lines: { name: string; price: number; priceType: 'fixed' | 'from'; durationMinutes: number; serviceId: string | null; addons: { name: string; price: number; addonId: string | null }[] }[]
+  lines: {
+    name: string
+    price: number
+    priceType: 'fixed' | 'from'
+    durationMinutes: number
+    serviceId: string | null
+    addons: { name: string; price: number; addonId: string | null }[]
+  }[]
   payments: { id: string; kind: string; status: string; amount: number; provider: string; paidAt: string | null }[]
   history: { kind: string; at: string; note: string | null; toStatus: string | null }[]
   replacement: { reference: string } | null
@@ -82,9 +90,17 @@ export interface CustomerBooking {
   ownDemoBooking: boolean
 }
 
-export async function loadCustomerBooking(appointmentId: string, demoVisitorHash: string | null): Promise<CustomerBooking | null> {
+export async function loadCustomerBooking(
+  appointmentId: string,
+  demoVisitorHash: string | null,
+): Promise<CustomerBooking | null> {
   const [row] = await db
-    .select({ a: t.appointments, staffName: t.staff.name, customerName: t.customers.name, customerPhone: t.customers.phone })
+    .select({
+      a: t.appointments,
+      staffName: t.staff.name,
+      customerName: t.customers.name,
+      customerPhone: t.customers.phone,
+    })
     .from(t.appointments)
     .innerJoin(t.staff, eq(t.staff.id, t.appointments.staffId))
     .innerJoin(t.customers, eq(t.customers.id, t.appointments.customerId))
@@ -92,16 +108,44 @@ export async function loadCustomerBooking(appointmentId: string, demoVisitorHash
   if (!row) return null
   const a = row.a
   const [lines, addons, payments, events, replacement, previous] = await Promise.all([
-    db.select().from(t.appointmentServices).where(eq(t.appointmentServices.appointmentId, a.id)).orderBy(asc(t.appointmentServices.sortOrder)),
+    db
+      .select()
+      .from(t.appointmentServices)
+      .where(eq(t.appointmentServices.appointmentId, a.id))
+      .orderBy(asc(t.appointmentServices.sortOrder)),
     db.select().from(t.appointmentAddons).where(eq(t.appointmentAddons.appointmentId, a.id)),
     db.select().from(t.payments).where(eq(t.payments.appointmentId, a.id)).orderBy(asc(t.payments.createdAt)),
     db
       .select()
       .from(t.appointmentEvents)
-      .where(and(eq(t.appointmentEvents.appointmentId, a.id), inArray(t.appointmentEvents.kind, ['created', 'confirmed', 'deposit_paid', 'cancelled', 'rejected', 'rescheduled', 'completed', 'no_show', 'hold_expired', 'request_expired'])))
+      .where(
+        and(
+          eq(t.appointmentEvents.appointmentId, a.id),
+          inArray(t.appointmentEvents.kind, [
+            'created',
+            'confirmed',
+            'deposit_paid',
+            'cancelled',
+            'rejected',
+            'rescheduled',
+            'completed',
+            'no_show',
+            'hold_expired',
+            'request_expired',
+          ]),
+        ),
+      )
       .orderBy(desc(t.appointmentEvents.createdAt)),
-    db.select({ reference: t.appointments.reference }).from(t.appointments).where(eq(t.appointments.rescheduledFromId, a.id)),
-    a.rescheduledFromId ? db.select({ reference: t.appointments.reference }).from(t.appointments).where(eq(t.appointments.id, a.rescheduledFromId)) : Promise.resolve([]),
+    db
+      .select({ reference: t.appointments.reference })
+      .from(t.appointments)
+      .where(eq(t.appointments.rescheduledFromId, a.id)),
+    a.rescheduledFromId
+      ? db
+          .select({ reference: t.appointments.reference })
+          .from(t.appointments)
+          .where(eq(t.appointments.id, a.rescheduledFromId))
+      : Promise.resolve([]),
   ])
   return {
     id: a.id,
@@ -128,10 +172,24 @@ export async function loadCustomerBooking(appointmentId: string, demoVisitorHash
       priceType: l.priceType,
       durationMinutes: l.durationMinutes,
       serviceId: l.serviceId,
-      addons: addons.filter((x) => x.appointmentServiceId === l.id).map((x) => ({ name: x.addonName, price: x.price, addonId: x.addonId })),
+      addons: addons
+        .filter((x) => x.appointmentServiceId === l.id)
+        .map((x) => ({ name: x.addonName, price: x.price, addonId: x.addonId })),
     })),
-    payments: payments.map((p) => ({ id: p.id, kind: p.kind, status: p.status, amount: p.amount, provider: p.provider, paidAt: p.paidAt?.toISOString() ?? null })),
-    history: events.map((e) => ({ kind: e.kind, at: e.createdAt.toISOString(), note: e.kind === 'created' ? null : e.note, toStatus: e.toStatus })),
+    payments: payments.map((p) => ({
+      id: p.id,
+      kind: p.kind,
+      status: p.status,
+      amount: p.amount,
+      provider: p.provider,
+      paidAt: p.paidAt?.toISOString() ?? null,
+    })),
+    history: events.map((e) => ({
+      kind: e.kind,
+      at: e.createdAt.toISOString(),
+      note: e.kind === 'created' ? null : e.note,
+      toStatus: e.toStatus,
+    })),
     replacement: replacement[0] ?? null,
     previous: previous[0] ?? null,
     isDemo: a.isDemo,

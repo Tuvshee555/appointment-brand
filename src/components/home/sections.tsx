@@ -1,4 +1,14 @@
-import { ArrowRight, ArrowUpRight, Gem, LayoutDashboard, Leaf, MessageCircle, ShieldCheck, Sparkles, Timer } from 'lucide-react'
+import {
+  ArrowRight,
+  ArrowUpRight,
+  Gem,
+  LayoutDashboard,
+  Leaf,
+  MessageCircle,
+  ShieldCheck,
+  Sparkles,
+  Timer,
+} from 'lucide-react'
 import Link from 'next/link'
 import { ServiceCard } from '@/components/catalog/service-card'
 import { StaffCard } from '@/components/catalog/staff-card'
@@ -17,7 +27,11 @@ import type { PublicCatalog, PublicSalon } from '@/server/queries/public'
 export function Differentiators() {
   const items = [
     { icon: ShieldCheck, title: 'Ариун цэвэр', text: 'Төмөр багаж бүрийг ариутгаж, файл, бафыг нэг удаа хэрэглэнэ.' },
-    { icon: Timer, title: 'Бодит сул цаг', text: 'Хуанли мастер бүрийн хуваарьтай шууд холбоотой — давхар захиалга гарахгүй.' },
+    {
+      icon: Timer,
+      title: 'Бодит сул цаг',
+      text: 'Хуанли мастер бүрийн хуваарьтай шууд холбоотой — давхар захиалга гарахгүй.',
+    },
     { icon: Gem, title: 'Нэг удаад нэг хүн', text: 'Мастер таныг яаралгүй, бүрэн анхааралтай үйлчилнэ.' },
     { icon: Leaf, title: 'Тодорхой үнэ', text: 'Үнэ, үргэлжлэх хугацаа, урьдчилгааг захиалахаас өмнө харна.' },
   ]
@@ -48,7 +62,11 @@ export function FeaturedServices({ catalog }: { catalog: PublicCatalog }) {
         title="Хамгийн их захиалагддаг"
         lead="Үнэ, үргэлжлэх хугацаа нь админ самбараас удирдагддаг бодит каталогоос шууд харагдана."
         action={
-          <ButtonLink href="/services" variant="ghost" className="px-0 underline decoration-blush-300 underline-offset-8 hover:bg-transparent">
+          <ButtonLink
+            href="/services"
+            variant="ghost"
+            className="px-0 underline decoration-blush-300 underline-offset-8 hover:bg-transparent"
+          >
             Бүх үйлчилгээ <ArrowRight className="size-4" aria-hidden />
           </ButtonLink>
         }
@@ -70,7 +88,10 @@ export function Categories({ catalog }: { catalog: PublicCatalog }) {
         <ul className="mt-12 grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-5">
           {catalog.categories.map((c, i) => (
             <li key={c.id} className={i === 0 ? 'col-span-2 md:col-span-1' : ''}>
-              <Link href={`/services?category=${c.slug}`} className="group relative block aspect-[3/4] overflow-hidden rounded-xs bg-cocoa-100">
+              <Link
+                href={`/services?category=${c.slug}`}
+                className="group relative block aspect-[3/4] overflow-hidden rounded-xs bg-cocoa-100"
+              >
                 {c.imageUrl ? (
                   <Photo
                     src={c.imageUrl}
@@ -118,7 +139,11 @@ export function PriceList({ catalog }: { catalog: PublicCatalog }) {
                       <span className="text-[0.98rem] text-ink group-hover:text-cocoa-700">{s.name}</span>
                       <span className="leader" aria-hidden />
                       <span className="shrink-0 text-xs text-ink-3">{formatDuration(s.durationMinutes)}</span>
-                      <Money amount={s.price} from={s.priceType === 'from'} className="w-28 shrink-0 text-right font-medium text-cocoa-900" />
+                      <Money
+                        amount={s.price}
+                        from={s.priceType === 'from'}
+                        className="w-28 shrink-0 text-right font-medium text-cocoa-900"
+                      />
                     </Link>
                   </li>
                 ))}
@@ -127,7 +152,9 @@ export function PriceList({ catalog }: { catalog: PublicCatalog }) {
         ))}
         <div>
           <h3 className="font-display text-[1.7rem] text-cocoa-900">Нэмэлт сонголтууд</h3>
-          <p className="mt-1 text-sm text-ink-3">Үндсэн үйлчилгээн дээр нэмж сонгоно. Нэмэлт үнэ, хугацаа захиалгын нийлбэрт шууд нэмэгдэнэ.</p>
+          <p className="mt-1 text-sm text-ink-3">
+            Үндсэн үйлчилгээн дээр нэмж сонгоно. Нэмэлт үнэ, хугацаа захиалгын нийлбэрт шууд нэмэгдэнэ.
+          </p>
           <ul className="mt-4 divide-y divide-line border-t border-line">
             {catalog.addons.map((a) => (
               <li key={a.id} className="flex items-baseline gap-3 py-3.5">
@@ -156,7 +183,11 @@ export function StaffSection({ catalog }: { catalog: PublicCatalog }) {
           title="Таны гарт итгэл хүлээлгэх хүмүүс"
           lead="Мастер бүр зөвхөн өөрийн мэргэшсэн үйлчилгээг хийнэ. Зураг нь зохиомол хүмүүсийн AI-аар бүтээсэн хөрөг."
           action={
-            <ButtonLink href="/staff" variant="ghost" className="px-0 underline decoration-blush-300 underline-offset-8 hover:bg-transparent">
+            <ButtonLink
+              href="/staff"
+              variant="ghost"
+              className="px-0 underline decoration-blush-300 underline-offset-8 hover:bg-transparent"
+            >
               Танилцуулга <ArrowRight className="size-4" aria-hidden />
             </ButtonLink>
           }
@@ -188,14 +219,26 @@ const GALLERY: { photo: PhotoName; caption: string; span?: string }[] = [
 export function Gallery() {
   return (
     <section id="gallery" aria-labelledby="gallery-title" className="container-page scroll-mt-24 py-20 lg:py-28">
-      <SectionHeading id="gallery-title" eyebrow="Галерей" title="Бидний ажлын өнгө төрх" lead="Лицензтэй (Unsplash) гэрэл зураг — бодит салоны ажил биш, брэндийн чиглэлийг харуулна." />
+      <SectionHeading
+        id="gallery-title"
+        eyebrow="Галерей"
+        title="Бидний ажлын өнгө төрх"
+        lead="Лицензтэй (Unsplash) гэрэл зураг — бодит салоны ажил биш, брэндийн чиглэлийг харуулна."
+      />
       <ul className="mt-12 grid auto-rows-[11rem] grid-cols-2 gap-3 sm:auto-rows-[14rem] md:grid-cols-3 lg:auto-rows-[15rem] lg:grid-cols-4">
         {GALLERY.map((g) => {
           const p = PHOTOS[g.photo]
           return (
             <li key={g.photo} className={`group relative overflow-hidden rounded-xs bg-sand ${g.span ?? ''}`}>
-              <Photo src={p.src} alt={p.alt} fill loading="lazy" sizes="(min-width: 1024px) 24vw, (min-width: 768px) 32vw, 50vw" className="object-cover transition-transform duration-700 group-hover:scale-[1.04]" />
-              <span className="absolute bottom-2 left-2 rounded-xs bg-ivory/90 px-2 py-1 text-[0.72rem] text-cocoa-800 opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100">
+              <Photo
+                src={p.src}
+                alt={p.alt}
+                fill
+                loading="lazy"
+                sizes="(min-width: 1024px) 24vw, (min-width: 768px) 32vw, 50vw"
+                className="object-cover transition-transform duration-700 group-hover:scale-[1.04]"
+              />
+              <span className="absolute bottom-2 left-2 rounded-xs bg-ivory/90 px-2 py-1 text-[0.72rem] text-cocoa-800 opacity-0 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100">
                 {g.caption}
               </span>
             </li>
@@ -218,7 +261,14 @@ export function Experience({ salon }: { salon: PublicSalon }) {
     <section aria-labelledby="experience-title" className="bg-cocoa-900 py-20 text-ivory lg:py-28">
       <div className="container-page grid gap-14 lg:grid-cols-[1fr_1.1fr] lg:items-center">
         <div className="relative aspect-[3/2] overflow-hidden rounded-xs">
-          <Photo src={p.src} alt={p.alt} fill loading="lazy" sizes="(min-width: 1024px) 45vw, 100vw" className="object-cover" />
+          <Photo
+            src={p.src}
+            alt={p.alt}
+            fill
+            loading="lazy"
+            sizes="(min-width: 1024px) 45vw, 100vw"
+            className="object-cover"
+          />
         </div>
         <div>
           <p className="eyebrow !text-blush-300">Үйлчлүүлэгчийн туршлага</p>
@@ -228,7 +278,7 @@ export function Experience({ salon }: { salon: PublicSalon }) {
           <ol className="mt-10 space-y-7">
             {steps.map((s, i) => (
               <li key={s.title} className="flex gap-5">
-                <span className="font-display text-3xl text-blush-300 tabular">0{i + 1}</span>
+                <span className="tabular font-display text-3xl text-blush-300">0{i + 1}</span>
                 <div>
                   <h3 className="font-medium">{s.title}</h3>
                   <p className="mt-1 text-sm leading-relaxed text-cocoa-200">{s.text}</p>
@@ -237,7 +287,8 @@ export function Experience({ salon }: { salon: PublicSalon }) {
             ))}
           </ol>
           <p className="mt-10 border-t border-white/10 pt-6 text-sm text-cocoa-200">
-            {salon.rules.lateArrivalMinutes} минутаас дээш хоцорвол үйлчилгээ богиносох эсвэл өөр цаг санал болгож болно.
+            {salon.rules.lateArrivalMinutes} минутаас дээш хоцорвол үйлчилгээ богиносох эсвэл өөр цаг санал болгож
+            болно.
           </p>
         </div>
       </div>
@@ -261,7 +312,14 @@ export function About({ salon }: { salon: PublicSalon }) {
           </blockquote>
         </div>
         <div className="relative aspect-[4/5] overflow-hidden rounded-xs bg-sand lg:aspect-[5/6]">
-          <Photo src={p.src} alt={p.alt} fill loading="lazy" sizes="(min-width: 1024px) 42vw, 100vw" className="object-cover" />
+          <Photo
+            src={p.src}
+            alt={p.alt}
+            fill
+            loading="lazy"
+            sizes="(min-width: 1024px) 42vw, 100vw"
+            className="object-cover"
+          />
         </div>
       </div>
     </section>
@@ -308,14 +366,22 @@ export function Faq({ salon, catalog }: { salon: PublicSalon; catalog: PublicCat
     <section aria-labelledby="faq-title" className="bg-sand/60 py-20 lg:py-28">
       <div className="container-page grid gap-12 lg:grid-cols-[1fr_1.6fr]">
         <div className="self-start lg:sticky lg:top-28">
-          <SectionHeading id="faq-title" eyebrow="Түгээмэл асуулт" title="Асуулт, хариулт" lead="Хариултгүй асуулт байвал баруун доод буланд байгаа туслахаас асуугаарай." />
+          <SectionHeading
+            id="faq-title"
+            eyebrow="Түгээмэл асуулт"
+            title="Асуулт, хариулт"
+            lead="Хариултгүй асуулт байвал баруун доод буланд байгаа туслахаас асуугаарай."
+          />
         </div>
         <div className="divide-y divide-line-strong/60 border-y border-line-strong/60">
           {items.map((item) => (
             <details key={item.q} className="group py-5">
               <summary className="flex items-start justify-between gap-6 text-[1.02rem] font-medium text-cocoa-900">
                 {item.q}
-                <span className="mt-1 text-xl leading-none text-blush-500 transition-transform group-open:rotate-45" aria-hidden>
+                <span
+                  className="mt-1 text-xl leading-none text-blush-500 transition-transform group-open:rotate-45"
+                  aria-hidden
+                >
                   +
                 </span>
               </summary>
@@ -330,7 +396,11 @@ export function Faq({ salon, catalog }: { salon: PublicSalon; catalog: PublicCat
 
 function MapPlaceholder() {
   return (
-    <div className="relative aspect-[4/3] overflow-hidden rounded-xs border border-line bg-[#efe7dc]" role="img" aria-label="Зохиомол байршлын газрын зураг (демо)">
+    <div
+      className="relative aspect-[4/3] overflow-hidden rounded-xs border border-line bg-[#efe7dc]"
+      role="img"
+      aria-label="Зохиомол байршлын газрын зураг (демо)"
+    >
       <svg viewBox="0 0 400 300" className="absolute inset-0 size-full" aria-hidden>
         <rect width="400" height="300" fill="#efe7dc" />
         <path d="M0 210 L400 170" stroke="#fcfaf6" strokeWidth="18" />
@@ -349,7 +419,9 @@ function MapPlaceholder() {
           <span className="size-2.5 rounded-full border-2 border-ivory bg-cocoa-900" />
         </div>
       </div>
-      <p className="absolute right-3 bottom-3 rounded-xs bg-ivory/90 px-2 py-1 text-[0.7rem] text-ink-3">Газрын зураг — демо (байршил зохиомол)</p>
+      <p className="absolute right-3 bottom-3 rounded-xs bg-ivory/90 px-2 py-1 text-[0.7rem] text-ink-3">
+        Газрын зураг — демо (байршил зохиомол)
+      </p>
     </div>
   )
 }
@@ -382,17 +454,24 @@ export function Location({ salon }: { salon: PublicSalon }) {
                 {salon.specialDays.slice(0, 4).map((d) => (
                   <li key={d.date}>
                     <span className="font-medium">{formatDateKey(d.date)}</span> —{' '}
-                    {d.kind === 'closed' ? 'амарна' : `${minutesToTime(d.opensAt!)}–${minutesToTime(d.closesAt!)}`} · {d.label}
+                    {d.kind === 'closed' ? 'амарна' : `${minutesToTime(d.opensAt!)}–${minutesToTime(d.closesAt!)}`} ·{' '}
+                    {d.label}
                   </li>
                 ))}
               </ul>
             </div>
           ) : null}
           <div className="mt-8 flex flex-wrap gap-3">
-            <a href={phoneHref(salon.phone)} className="inline-flex h-11 items-center gap-2 rounded-xs border border-cocoa-800/60 px-4 text-sm text-cocoa-900 hover:bg-cocoa-900 hover:text-ivory">
+            <a
+              href={phoneHref(salon.phone)}
+              className="inline-flex h-11 items-center gap-2 rounded-xs border border-cocoa-800/60 px-4 text-sm text-cocoa-900 hover:bg-cocoa-900 hover:text-ivory"
+            >
               {formatPhone(salon.phone)}
             </a>
-            <Link href="/book" className="inline-flex h-11 items-center gap-2 rounded-xs bg-cocoa-800 px-5 text-sm text-ivory hover:bg-cocoa-900">
+            <Link
+              href="/book"
+              className="inline-flex h-11 items-center gap-2 rounded-xs bg-cocoa-800 px-5 text-sm text-ivory hover:bg-cocoa-900"
+            >
               Цаг захиалах
             </Link>
           </div>
@@ -422,9 +501,9 @@ export function DemoAdminCta() {
             Салоны эзэн бол — удирдлагын самбарыг үзээрэй
           </h2>
           <p className="mt-4 max-w-2xl text-[0.98rem] leading-relaxed text-ink-3">
-            Энэ хуудсаар хийсэн захиалга таны хөтөч дээр хадгалагдаад зогсохгүй, салоны өгөгдлийн санд бичигдэж, самбарын хуанли,
-            захиалгын жагсаалтад шууд харагдана. Самбар зохиомол өгөгдөлтэй, уншихад зориулагдсан: та зөвхөн өөрийн үүсгэсэн туршилтын
-            захиалгыг баталгаажуулж, цуцалж чадна.
+            Энэ хуудсаар хийсэн захиалга таны хөтөч дээр хадгалагдаад зогсохгүй, салоны өгөгдлийн санд бичигдэж,
+            самбарын хуанли, захиалгын жагсаалтад шууд харагдана. Самбар зохиомол өгөгдөлтэй, уншихад зориулагдсан: та
+            зөвхөн өөрийн үүсгэсэн туршилтын захиалгыг баталгаажуулж, цуцалж чадна.
           </p>
         </div>
         <div className="flex flex-col gap-3 sm:flex-row lg:justify-end">
@@ -432,7 +511,10 @@ export function DemoAdminCta() {
             <LayoutDashboard className="size-4" aria-hidden />
             Админ самбар үзэх
           </ButtonLink>
-          <a href={PORTFOLIO.portfolioUrl} className="inline-flex h-13 items-center justify-center gap-2 rounded-xs px-5 text-sm text-ink-2 hover:bg-sand">
+          <a
+            href={PORTFOLIO.portfolioUrl}
+            className="inline-flex h-13 items-center justify-center gap-2 rounded-xs px-5 text-sm text-ink-2 hover:bg-sand"
+          >
             Портфолио <ArrowUpRight className="size-4" aria-hidden />
           </a>
         </div>

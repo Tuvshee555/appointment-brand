@@ -47,7 +47,12 @@ export const ERR = {
   notFound: (what = 'Мэдээлэл') => new ServiceError('not_found', `${what} олдсонгүй.`),
   rateLimited: () => new ServiceError('rate_limited', 'Хэт олон оролдлого хийлээ. Түр хүлээгээд дахин оролдоно уу.'),
   slotTaken: (details?: unknown) =>
-    new ServiceError('slot_unavailable', 'Энэ цаг дөнгөж сая захиалагдсан эсвэл боломжгүй болсон байна. Өөр цаг сонгоно уу.', undefined, details),
+    new ServiceError(
+      'slot_unavailable',
+      'Энэ цаг дөнгөж сая захиалагдсан эсвэл боломжгүй болсон байна. Өөр цаг сонгоно уу.',
+      undefined,
+      details,
+    ),
 }
 
 export function requirePermission(ctx: ServiceContext, permission: Permission): Actor {

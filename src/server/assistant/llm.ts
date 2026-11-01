@@ -9,7 +9,17 @@ import { dateKeyOf, formatTime, minutesToTime, weekdayOf, WEEKDAYS_MN } from '@/
 import * as t from '@/server/db/schema'
 import type { ServiceContext } from '@/server/context'
 import type { ChatPart } from '@/lib/assistant/types'
-import { checkAvailability, findNextAvailable, listStaff, prepareBooking, salonInfo, searchServices, type ChatState, type PrepareInput, type ToolOutcome } from './tools'
+import {
+  checkAvailability,
+  findNextAvailable,
+  listStaff,
+  prepareBooking,
+  salonInfo,
+  searchServices,
+  type ChatState,
+  type PrepareInput,
+  type ToolOutcome,
+} from './tools'
 
 export const AI_MODEL = process.env.AI_MODEL || 'claude-opus-5-5'
 
@@ -54,13 +64,15 @@ const TOOLS: Anthropic.Beta.BetaTool[] = [
   },
   {
     name: 'get_salon_info',
-    description: 'Salon address, phone, weekly opening hours, holidays and special hours, booking rules, cancellation and deposit policies.',
+    description:
+      'Salon address, phone, weekly opening hours, holidays and special hours, booking rules, cancellation and deposit policies.',
     strict: true,
     input_schema: { type: 'object', properties: {}, required: [], additionalProperties: false },
   },
   {
     name: 'list_staff',
-    description: 'Specialists with titles, specialties, working weekdays and the services they perform. Optionally only those who perform one service (service id).',
+    description:
+      'Specialists with titles, specialties, working weekdays and the services they perform. Optionally only those who perform one service (service id).',
     strict: true,
     input_schema: {
       type: 'object',
@@ -105,7 +117,11 @@ const TOOLS: Anthropic.Beta.BetaTool[] = [
       type: 'object',
       properties: {
         service_ids: { type: 'array', items: { type: 'string' } },
-        addon_ids: { type: 'array', items: { type: 'string' }, description: 'Add-on ids from search_services, or empty' },
+        addon_ids: {
+          type: 'array',
+          items: { type: 'string' },
+          description: 'Add-on ids from search_services, or empty',
+        },
         staff_id: { type: ['string', 'null'] },
         date: { type: 'string', description: 'YYYY-MM-DD' },
         time: { type: 'string', description: 'HH:MM from the availability tools' },
@@ -123,15 +139,25 @@ async function runTool(ctx: ServiceContext, state: ChatState, name: string, inpu
   const args = (input ?? {}) as Record<string, unknown>
   switch (name) {
     case 'search_services':
-      return searchServices(ctx, { query: (args.query as string | null) ?? null, category: (args.category as string | null) ?? null })
+      return searchServices(ctx, {
+        query: (args.query as string | null) ?? null,
+        category: (args.category as string | null) ?? null,
+      })
     case 'get_salon_info':
       return salonInfo(ctx)
     case 'list_staff':
       return listStaff(ctx, { service_id: (args.service_id as string | null) ?? null })
     case 'check_availability':
-      return checkAvailability(ctx, { service_ids: (args.service_ids as string[]) ?? [], staff_id: (args.staff_id as string | null) ?? null, date: String(args.date ?? '') })
+      return checkAvailability(ctx, {
+        service_ids: (args.service_ids as string[]) ?? [],
+        staff_id: (args.staff_id as string | null) ?? null,
+        date: String(args.date ?? ''),
+      })
     case 'find_next_available':
-      return findNextAvailable(ctx, { service_ids: (args.service_ids as string[]) ?? [], staff_id: (args.staff_id as string | null) ?? null })
+      return findNextAvailable(ctx, {
+        service_ids: (args.service_ids as string[]) ?? [],
+        staff_id: (args.staff_id as string | null) ?? null,
+      })
     case 'prepare_booking':
       return prepareBooking(ctx, state, args as unknown as PrepareInput)
     default:
@@ -142,7 +168,10 @@ async function runTool(ctx: ServiceContext, state: ChatState, name: string, inpu
 /** Today's estimated model spend in USD (all models). */
 export async function spentToday(ctx: ServiceContext): Promise<number> {
   const day = dateKeyOf(ctx.now)
-  const rows = await ctx.db.select().from(t.aiUsage).where(sql`${t.aiUsage.day} = ${day}`)
+  const rows = await ctx.db
+    .select()
+    .from(t.aiUsage)
+    .where(sql`${t.aiUsage.day} = ${day}`)
   return rows.reduce((sum, r) => {
     const [pin, pout] = PRICES[r.model] ?? [5, 25]
     return sum + (r.inputTokens * pin + r.outputTokens * pout) / 1_000_000
@@ -155,7 +184,9 @@ export function underBudget(spent: number) {
 
 async function recordUsage(ctx: ServiceContext, model: string, usage: Anthropic.Beta.BetaUsage) {
   // Cache reads cost ~10% of input; writes ~125%.
-  const input = Math.round(usage.input_tokens + (usage.cache_creation_input_tokens ?? 0) * 1.25 + (usage.cache_read_input_tokens ?? 0) * 0.1)
+  const input = Math.round(
+    usage.input_tokens + (usage.cache_creation_input_tokens ?? 0) * 1.25 + (usage.cache_read_input_tokens ?? 0) * 0.1,
+  )
   await ctx.db
     .insert(t.aiUsage)
     .values({ day: dateKeyOf(ctx.now), model, calls: 1, inputTokens: input, outputTokens: usage.output_tokens })
@@ -249,7 +280,12 @@ export async function runModel(
         const outcome = await runTool(ctx, state, block.name, block.input)
         evidence += `\n${outcome.content}`
         if (outcome.parts) parts.push(...outcome.parts)
-        results.push({ type: 'tool_result', tool_use_id: block.id, content: outcome.content, is_error: outcome.isError ?? false })
+        results.push({
+          type: 'tool_result',
+          tool_use_id: block.id,
+          content: outcome.content,
+          is_error: outcome.isError ?? false,
+        })
       }
       messages.push({ role: 'user', content: results })
       continue
@@ -260,7 +296,8 @@ export async function runModel(
       .join('\n')
       .trim()
     // Slot buttons offered in this turn count as evidence for the times they show.
-    for (const p of parts) if (p.type === 'slots') evidence += `\n${p.slots.map((s) => minutesToTime(s.start)).join(' ')}`
+    for (const p of parts)
+      if (p.type === 'slots') evidence += `\n${p.slots.map((s) => minutesToTime(s.start)).join(' ')}`
     const bad = ungroundedValues(text, evidence, knownPrices)
     if (bad.length) console.warn('[assistant] ungrounded values in model reply:', bad.join(', '))
     return { text, parts, grounded: bad.length === 0, refused: false, toolsUsed }

@@ -106,7 +106,13 @@ export function buildQuote(
       if (!addon || !service.addonIds.includes(addonId)) {
         throw new QuoteError('addon_not_offered', `«${service.name}» үйлчилгээнд энэ нэмэлтийг сонгох боломжгүй.`)
       }
-      addons.push({ addonId, name: addon.name, durationMinutes: addon.durationMinutes, price: addon.price, priceType: addon.priceType })
+      addons.push({
+        addonId,
+        name: addon.name,
+        durationMinutes: addon.durationMinutes,
+        price: addon.price,
+        priceType: addon.priceType,
+      })
       addonsTotal += addon.price
       durationMinutes += addon.durationMinutes
       if (addon.priceType === 'from') hasFromPrice = true

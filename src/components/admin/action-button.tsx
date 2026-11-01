@@ -21,7 +21,11 @@ export function FeedbackLine({ feedback }: { feedback: Feedback }) {
         feedback.kind === 'error' && 'bg-rose-50 text-rose-700',
       )}
     >
-      {feedback.kind === 'simulated' ? <FlaskConical className="mt-0.5 size-4 shrink-0" aria-hidden /> : feedback.kind === 'ok' ? <CheckCircle2 className="mt-0.5 size-4 shrink-0" aria-hidden /> : null}
+      {feedback.kind === 'simulated' ? (
+        <FlaskConical className="mt-0.5 size-4 shrink-0" aria-hidden />
+      ) : feedback.kind === 'ok' ? (
+        <CheckCircle2 className="mt-0.5 size-4 shrink-0" aria-hidden />
+      ) : null}
       <span>{feedback.text}</span>
     </p>
   )

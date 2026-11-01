@@ -24,5 +24,10 @@ export default defineConfig({
   ],
   webServer: process.env.E2E_BASE_URL
     ? undefined
-    : { command: 'npm run dev', url: 'http://localhost:3210/portfolio/appointments', reuseExistingServer: true, timeout: 240_000 },
+    : {
+        command: 'npm run dev',
+        url: 'http://localhost:3210/portfolio/appointments',
+        reuseExistingServer: true,
+        timeout: 240_000,
+      },
 })

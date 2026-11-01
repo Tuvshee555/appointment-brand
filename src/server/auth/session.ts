@@ -76,7 +76,13 @@ export const getSessionActor = cache(async (): Promise<SessionActor | null> => {
     .innerJoin(t.adminUsers, eq(t.adminUsers.id, t.adminSessions.adminUserId))
     .innerJoin(t.adminRoles, eq(t.adminRoles.key, t.adminUsers.roleKey))
     // Expiry is compared with the database clock (no JS clock read during render).
-    .where(and(eq(t.adminSessions.id, sha256Hex(token)), gt(t.adminSessions.expiresAt, sql`now()`), eq(t.adminUsers.isActive, true)))
+    .where(
+      and(
+        eq(t.adminSessions.id, sha256Hex(token)),
+        gt(t.adminSessions.expiresAt, sql`now()`),
+        eq(t.adminUsers.isActive, true),
+      ),
+    )
     .limit(1)
   const row = rows[0]
   if (!row) return null

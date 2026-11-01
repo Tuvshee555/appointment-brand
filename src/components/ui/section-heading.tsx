@@ -19,7 +19,13 @@ export function SectionHeading({
   id?: string
 }) {
   return (
-    <div className={cn('flex flex-col gap-6 md:flex-row md:items-end md:justify-between', align === 'center' && 'items-center text-center md:flex-col md:items-center', className)}>
+    <div
+      className={cn(
+        'flex flex-col gap-6 md:flex-row md:items-end md:justify-between',
+        align === 'center' && 'items-center text-center md:flex-col md:items-center',
+        className,
+      )}
+    >
       <div className={cn('max-w-2xl', align === 'center' && 'mx-auto')}>
         {eyebrow ? <p className="eyebrow">{eyebrow}</p> : null}
         <h2 id={id} className="display mt-3 text-[2.4rem] text-cocoa-900 sm:text-5xl">

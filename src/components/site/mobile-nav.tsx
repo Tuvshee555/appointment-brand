@@ -67,7 +67,11 @@ export function MobileNav({ phone }: { phone: string }) {
               </li>
               {NAV_LINKS.map((l) => (
                 <li key={l.href}>
-                  <Link href={l.href} onClick={() => setOpen(false)} className="block rounded-xs px-2 py-3 font-display text-2xl hover:bg-sand">
+                  <Link
+                    href={l.href}
+                    onClick={() => setOpen(false)}
+                    className="block rounded-xs px-2 py-3 font-display text-2xl hover:bg-sand"
+                  >
                     {l.label}
                   </Link>
                 </li>
@@ -86,7 +90,7 @@ export function MobileNav({ phone }: { phone: string }) {
             >
               Цаг захиалах
             </Link>
-            <a href={phoneHref(phone)} className="block text-center text-sm text-ink-2 tabular">
+            <a href={phoneHref(phone)} className="tabular block text-center text-sm text-ink-2">
               {formatPhone(phone)} (демо дугаар)
             </a>
           </div>

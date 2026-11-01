@@ -26,7 +26,13 @@ import { logoutAction } from '@/server/actions/auth'
 export const ADMIN_NAV = [
   { href: '/admin', label: 'Тойм', icon: LayoutDashboard, permission: 'dashboard.view' },
   { href: '/admin/calendar', label: 'Хуанли', icon: CalendarDays, permission: 'appointments.view' },
-  { href: '/admin/appointments', label: 'Захиалгууд', icon: ListChecks, permission: 'appointments.view', badge: 'pending' },
+  {
+    href: '/admin/appointments',
+    label: 'Захиалгууд',
+    icon: ListChecks,
+    permission: 'appointments.view',
+    badge: 'pending',
+  },
   { href: '/admin/services', label: 'Үйлчилгээ, үнэ', icon: Scissors, permission: 'services.view' },
   { href: '/admin/staff', label: 'Ажилтан, хуваарь', icon: UserRound, permission: 'staff.view' },
   { href: '/admin/customers', label: 'Харилцагч', icon: Users, permission: 'customers.view' },
@@ -37,7 +43,15 @@ export const ADMIN_NAV = [
   { href: '/admin/settings', label: 'Тохиргоо', icon: Settings, permission: 'settings.view' },
 ] as const
 
-function NavList({ permissions, pending, onNavigate }: { permissions: string[]; pending: number; onNavigate?: () => void }) {
+function NavList({
+  permissions,
+  pending,
+  onNavigate,
+}: {
+  permissions: string[]
+  pending: number
+  onNavigate?: () => void
+}) {
   const pathname = usePathname()
   return (
     <ul className="space-y-0.5">
@@ -58,7 +72,10 @@ function NavList({ permissions, pending, onNavigate }: { permissions: string[]; 
               <Icon className="size-[1.1rem] shrink-0" aria-hidden />
               <span className="flex-1">{item.label}</span>
               {'badge' in item && pending > 0 ? (
-                <span className="rounded-full bg-blush-300 px-1.5 text-[0.7rem] font-semibold text-cocoa-900 tabular" aria-label={`${pending} хүсэлт хүлээгдэж байна`}>
+                <span
+                  className="tabular rounded-full bg-blush-300 px-1.5 text-[0.7rem] font-semibold text-cocoa-900"
+                  aria-label={`${pending} хүсэлт хүлээгдэж байна`}
+                >
                   {pending}
                 </span>
               ) : null}
@@ -137,9 +154,16 @@ export function AdminSidebar({
         <Link href="/admin" aria-label="Самбар">
           <Logo tone="light" compact />
         </Link>
-        <button type="button" onClick={() => setOpen(true)} className="inline-flex size-11 items-center justify-center rounded-xs text-ivory" aria-label="Цэс нээх">
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          className="inline-flex size-11 items-center justify-center rounded-xs text-ivory"
+          aria-label="Цэс нээх"
+        >
           <Menu className="size-6" />
-          {pending > 0 ? <span className="absolute top-3 right-3 size-2 rounded-full bg-blush-300" aria-hidden /> : null}
+          {pending > 0 ? (
+            <span className="absolute top-3 right-3 size-2 rounded-full bg-blush-300" aria-hidden />
+          ) : null}
         </button>
       </div>
       <dialog
@@ -152,7 +176,12 @@ export function AdminSidebar({
         <div className="flex h-full flex-col">
           <div className="flex items-center justify-between px-4 py-3">
             <Logo tone="light" compact />
-            <button type="button" onClick={() => setOpen(false)} className="inline-flex size-11 items-center justify-center text-ivory" aria-label="Цэс хаах">
+            <button
+              type="button"
+              onClick={() => setOpen(false)}
+              className="inline-flex size-11 items-center justify-center text-ivory"
+              aria-label="Цэс хаах"
+            >
               <X className="size-6" />
             </button>
           </div>

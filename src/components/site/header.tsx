@@ -30,7 +30,7 @@ export function Header({ phone, announcement }: { phone: string; announcement: s
             </ul>
           </nav>
           <div className="flex items-center gap-3">
-            <a href={phoneHref(phone)} className="hidden text-sm text-ink-2 tabular hover:text-cocoa-900 xl:inline">
+            <a href={phoneHref(phone)} className="tabular hidden text-sm text-ink-2 hover:text-cocoa-900 xl:inline">
               {formatPhone(phone)}
             </a>
             <ButtonLink href="/book" size="md" className="tracking-[0.08em] uppercase max-sm:hidden">

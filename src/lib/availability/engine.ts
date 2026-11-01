@@ -142,7 +142,12 @@ export function bookingWindow(now: Date, maxAdvanceDays: number) {
 }
 
 /** Classifies a date for the booking calendar before any slot is computed. */
-export function preliminaryDayState(date: DateKey, now: Date, maxAdvanceDays: number, hours: MinuteRange | null): DayState | null {
+export function preliminaryDayState(
+  date: DateKey,
+  now: Date,
+  maxAdvanceDays: number,
+  hours: MinuteRange | null,
+): DayState | null {
   const { first, last } = bookingWindow(now, maxAdvanceDays)
   if (diffDays(date, first) < 0) return 'past'
   if (diffDays(date, last) > 0) return 'beyond'
@@ -160,7 +165,9 @@ export function pickStaff(candidates: string[], bookedMinutes: Map<string, numbe
     const i = order.indexOf(id)
     return i === -1 ? Number.MAX_SAFE_INTEGER : i
   }
-  return [...candidates].sort((a, b) => (bookedMinutes.get(a) ?? 0) - (bookedMinutes.get(b) ?? 0) || rank(a) - rank(b))[0]
+  return [...candidates].sort(
+    (a, b) => (bookedMinutes.get(a) ?? 0) - (bookedMinutes.get(b) ?? 0) || rank(a) - rank(b),
+  )[0]
 }
 
 /** Groups slots into parts of the day for touch-friendly pickers. */

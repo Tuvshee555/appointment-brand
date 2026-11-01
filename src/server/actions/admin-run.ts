@@ -73,7 +73,8 @@ export async function runAdminAction<T>(
           throw new DryRun(value)
         })
       } catch (err) {
-        if (err instanceof DryRun) return { ok: true, data: err.value as T, simulated: true, message: DEMO_SIMULATED_MESSAGE }
+        if (err instanceof DryRun)
+          return { ok: true, data: err.value as T, simulated: true, message: DEMO_SIMULATED_MESSAGE }
         throw err
       }
       throw new ServiceError('unexpected', 'Алдаа гарлаа.')
@@ -91,7 +92,13 @@ export async function runAdminAction<T>(
 /** Records an important admin change. */
 export async function audit(
   ctx: AdminContext,
-  entry: { action: string; entity: string; entityId?: string | null; summary: string; detail?: Record<string, unknown> },
+  entry: {
+    action: string
+    entity: string
+    entityId?: string | null
+    summary: string
+    detail?: Record<string, unknown>
+  },
 ) {
   await ctx.db.insert(t.auditLog).values({
     salonId: ctx.salonId,

@@ -8,7 +8,10 @@ import type { PublicService } from '@/server/queries/public'
 export function ServiceCard({ service, priority = false }: { service: PublicService; priority?: boolean }) {
   return (
     <article className="group flex flex-col">
-      <Link href={`/book?service=${service.slug}`} className="relative block aspect-[4/5] overflow-hidden rounded-xs bg-sand">
+      <Link
+        href={`/book?service=${service.slug}`}
+        className="relative block aspect-[4/5] overflow-hidden rounded-xs bg-sand"
+      >
         {service.imageUrl ? (
           <Photo
             src={service.imageUrl}

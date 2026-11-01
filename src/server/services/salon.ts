@@ -41,7 +41,12 @@ export async function loadSalonConfig(db: Database, salonId: string): Promise<Sa
   }
 }
 
-export async function loadSpecialDays(db: Database, salonId: string, from: DateKey, to: DateKey): Promise<SpecialDay[]> {
+export async function loadSpecialDays(
+  db: Database,
+  salonId: string,
+  from: DateKey,
+  to: DateKey,
+): Promise<SpecialDay[]> {
   const rows = await db
     .select()
     .from(t.specialDays)

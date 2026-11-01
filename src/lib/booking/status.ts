@@ -45,8 +45,7 @@ export const STATUS_SHORT: Record<AppointmentStatus, string> = {
 export const STATUS_EXPLANATIONS: Record<AppointmentStatus, string> = {
   awaiting_deposit:
     'Цаг тань түр хадгалагдсан. Урьдчилгаа төлөгдөж, төлбөрийн систем баталгаажуулсны дараа захиалга баталгаажна.',
-  pending:
-    'Захиалгын хүсэлт тань салонд бүртгэгдлээ. Салон баталгаажуулах хүртэл энэ цаг таны нэр дээр хадгалагдана.',
+  pending: 'Захиалгын хүсэлт тань салонд бүртгэгдлээ. Салон баталгаажуулах хүртэл энэ цаг таны нэр дээр хадгалагдана.',
   confirmed: 'Таны цаг баталгаажсан. Товлосон цагаасаа 5–10 минутын өмнө ирээрэй.',
   completed: 'Үйлчилгээ хийгдэж дууссан.',
   no_show: 'Энэ цагт ирээгүй гэж тэмдэглэгдсэн.',
@@ -57,9 +56,19 @@ export const STATUS_EXPLANATIONS: Record<AppointmentStatus, string> = {
 }
 
 /** Statuses that occupy the specialist's time (mirrors the exclusion constraint). */
-export const SLOT_HOLDING_STATUSES = ['awaiting_deposit', 'pending', 'confirmed', 'completed', 'no_show'] as const satisfies readonly AppointmentStatus[]
+export const SLOT_HOLDING_STATUSES = [
+  'awaiting_deposit',
+  'pending',
+  'confirmed',
+  'completed',
+  'no_show',
+] as const satisfies readonly AppointmentStatus[]
 
-export const ACTIVE_STATUSES = ['awaiting_deposit', 'pending', 'confirmed'] as const satisfies readonly AppointmentStatus[]
+export const ACTIVE_STATUSES = [
+  'awaiting_deposit',
+  'pending',
+  'confirmed',
+] as const satisfies readonly AppointmentStatus[]
 export const TERMINAL_STATUSES = ['completed', 'no_show', 'cancelled', 'rejected', 'expired', 'rescheduled'] as const
 
 export function holdsSlot(status: AppointmentStatus): boolean {
@@ -144,3 +153,13 @@ export const CANCELLATION_REASONS = {
 } as const
 
 export type CancellationReason = keyof typeof CANCELLATION_REASONS
+
+/** Where a booking came from, as shown to staff. */
+export const SOURCE_LABELS: Record<string, string> = {
+  website: 'Вэбсайт',
+  admin: 'Самбар',
+  assistant: 'AI туслах',
+  messenger: 'Messenger',
+  phone: 'Утас',
+  walk_in: 'Шууд ирсэн',
+}

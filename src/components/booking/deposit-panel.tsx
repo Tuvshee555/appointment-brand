@@ -54,7 +54,17 @@ function useCountdown(until: string | null) {
   return left
 }
 
-export function DepositPanel({ reference, token, amount, holdExpiresAt }: { reference: string; token: string | null; amount: number; holdExpiresAt: string | null }) {
+export function DepositPanel({
+  reference,
+  token,
+  amount,
+  holdExpiresAt,
+}: {
+  reference: string
+  token: string | null
+  amount: number
+  holdExpiresAt: string | null
+}) {
   const router = useRouter()
   const [payment, setPayment] = useState<PaymentView | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -94,8 +104,14 @@ export function DepositPanel({ reference, token, amount, holdExpiresAt }: { refe
     <section aria-labelledby="deposit-title" className="surface p-5 sm:p-6">
       <div className="flex flex-col gap-6 sm:flex-row sm:items-start">
         <div className="flex flex-col items-center gap-2 rounded-xs border border-line bg-porcelain p-3">
-          {payment?.mode === 'mock' || !payment ? <FakeQr /> : payment.qrText ? <p className="max-w-44 text-center text-xs break-all text-ink-3">QPay QR</p> : null}
-          <span className="text-[0.68rem] text-ink-3">{payment?.mode === 'mock' || !payment ? 'Туршилтын QR — уншуулах боломжгүй' : 'QPay'}</span>
+          {payment?.mode === 'mock' || !payment ? (
+            <FakeQr />
+          ) : payment.qrText ? (
+            <p className="max-w-44 text-center text-xs break-all text-ink-3">QPay QR</p>
+          ) : null}
+          <span className="text-[0.68rem] text-ink-3">
+            {payment?.mode === 'mock' || !payment ? 'Туршилтын QR — уншуулах боломжгүй' : 'QPay'}
+          </span>
         </div>
         <div className="flex-1 space-y-3">
           <h2 id="deposit-title" className="font-display text-2xl text-cocoa-900">
@@ -103,8 +119,8 @@ export function DepositPanel({ reference, token, amount, holdExpiresAt }: { refe
           </h2>
           {payment?.mode === 'mock' || !payment ? (
             <p className="rounded-xs bg-amber-50 px-3 py-2 text-sm text-amber-700">
-              Энэ бол симуляц: QPay-тэй холбогдохгүй, мөнгө шилжихгүй. «Туршилтын төлбөр хийх» товч нь таны банкны аппаар төлсөнтэй адил
-              төлбөрийн систем талд бүртгэл үүсгэж, сервер түүнийг шалгаж баталгаажуулна.
+              Энэ бол симуляц: QPay-тэй холбогдохгүй, мөнгө шилжихгүй. «Туршилтын төлбөр хийх» товч нь таны банкны
+              аппаар төлсөнтэй адил төлбөрийн систем талд бүртгэл үүсгэж, сервер түүнийг шалгаж баталгаажуулна.
             </p>
           ) : (
             <p className="text-sm text-ink-2">QPay-ээр төлсний дараа «Төлбөр шалгах» товчийг дарна уу.</p>
@@ -112,7 +128,7 @@ export function DepositPanel({ reference, token, amount, holdExpiresAt }: { refe
           {!expired && left !== null ? (
             <p className="text-sm text-ink-2" aria-live="polite">
               Цаг тань{' '}
-              <span className="font-medium tabular">
+              <span className="tabular font-medium">
                 {minutes}:{String(seconds).padStart(2, '0')}
               </span>{' '}
               минут хадгалагдана.
@@ -127,8 +143,15 @@ export function DepositPanel({ reference, token, amount, holdExpiresAt }: { refe
           ) : null}
           <div className="flex flex-wrap gap-3 pt-1">
             {payment?.mode === 'mock' ? (
-              <Button onClick={() => run(simulatePaymentAction)} disabled={pending || expired || payment?.status !== 'pending'}>
-                {pending ? <Loader2 className="size-4 animate-spin" aria-hidden /> : <ShieldCheck className="size-4" aria-hidden />}
+              <Button
+                onClick={() => run(simulatePaymentAction)}
+                disabled={pending || expired || payment?.status !== 'pending'}
+              >
+                {pending ? (
+                  <Loader2 className="size-4 animate-spin" aria-hidden />
+                ) : (
+                  <ShieldCheck className="size-4" aria-hidden />
+                )}
                 Туршилтын төлбөр хийх
               </Button>
             ) : null}
@@ -137,7 +160,8 @@ export function DepositPanel({ reference, token, amount, holdExpiresAt }: { refe
             </Button>
           </div>
           <p className="text-xs text-ink-3">
-            QPay-ийн гүйлгээний шимтгэлийг QPay тооцдог; Ursgal Digital-ын холболтын үйлчилгээний төлбөр тусдаа бөгөөд үйлчлүүлэгчээс авахгүй.
+            QPay-ийн гүйлгээний шимтгэлийг QPay тооцдог; Ursgal Digital-ын холболтын үйлчилгээний төлбөр тусдаа бөгөөд
+            үйлчлүүлэгчээс авахгүй.
           </p>
         </div>
       </div>

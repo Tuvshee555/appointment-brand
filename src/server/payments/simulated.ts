@@ -40,7 +40,9 @@ export class SimulatedQPay implements OnlinePaymentProvider {
     return {
       paid: true,
       paidAmount: rows[0].amount,
-      payments: [{ providerPaymentId: `SIMPAY-${rows[0].recordId.slice(0, 8)}`, status: 'PAID', amount: rows[0].amount }],
+      payments: [
+        { providerPaymentId: `SIMPAY-${rows[0].recordId.slice(0, 8)}`, status: 'PAID', amount: rows[0].amount },
+      ],
     }
   }
 

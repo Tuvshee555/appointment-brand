@@ -27,7 +27,11 @@ export async function withDb<T>(url: string, fn: (db: Database) => Promise<T>): 
 
 export function runMigrations(url: string) {
   return withDb(url, (db) =>
-    migrate(db as Parameters<typeof migrate>[0], { migrationsFolder: MIGRATIONS_FOLDER, migrationsSchema: 'salon', migrationsTable: '__migrations' }),
+    migrate(db as Parameters<typeof migrate>[0], {
+      migrationsFolder: MIGRATIONS_FOLDER,
+      migrationsSchema: 'salon',
+      migrationsTable: '__migrations',
+    }),
   )
 }
 
@@ -39,8 +43,14 @@ export async function seed(url: string, { demo }: { demo: boolean }) {
     )
     const { ADMIN_EMAIL, ADMIN_PASSWORD, ADMIN_NAME } = process.env
     if (ADMIN_EMAIL && ADMIN_PASSWORD) {
-      const r = await ensureOwner(db, base.salonId, { email: ADMIN_EMAIL, password: ADMIN_PASSWORD, name: ADMIN_NAME ?? 'Эзэмшигч' })
-      console.log(r === 'created' ? `[seed] Owner account created (${ADMIN_EMAIL}).` : '[seed] Owner account already exists.')
+      const r = await ensureOwner(db, base.salonId, {
+        email: ADMIN_EMAIL,
+        password: ADMIN_PASSWORD,
+        name: ADMIN_NAME ?? 'Эзэмшигч',
+      })
+      console.log(
+        r === 'created' ? `[seed] Owner account created (${ADMIN_EMAIL}).` : '[seed] Owner account already exists.',
+      )
     }
     if (demo) {
       const { seedDemo } = await import('../../src/server/seed/demo')

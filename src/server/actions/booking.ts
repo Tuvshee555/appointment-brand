@@ -45,7 +45,13 @@ export async function dayAvailabilityAction(
     return {
       ok: true,
       data: {
-        slots: day.slots.map((s) => ({ start: s.start, label: minutesToTime(s.start), startsAt: s.startsAt, endsAt: s.endsAt, staffIds: s.staffIds })),
+        slots: day.slots.map((s) => ({
+          start: s.start,
+          label: minutesToTime(s.start),
+          startsAt: s.startsAt,
+          endsAt: s.endsAt,
+          staffIds: s.staffIds,
+        })),
         special: day.special?.label ?? null,
         closed: !day.hours,
       },
@@ -92,7 +98,15 @@ export async function createBookingAction(input: unknown): Promise<ActionResult<
         demoVisitorHash: config.salon.isDemo ? await visitorHash({ create: true }) : null,
       },
     )
-    return { ok: true, data: { reference: result.reference, status: result.status, token: result.manageToken, depositAmount: result.depositAmount } }
+    return {
+      ok: true,
+      data: {
+        reference: result.reference,
+        status: result.status,
+        token: result.manageToken,
+        depositAmount: result.depositAmount,
+      },
+    }
   } catch (err) {
     return toFailure(err)
   }

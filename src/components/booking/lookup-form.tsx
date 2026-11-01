@@ -45,7 +45,14 @@ export function LookupForm() {
         />
       </Field>
       <Field label="Захиалсан утасны дугаар" htmlFor="lookup-phone" error={errors.phone}>
-        <Input id="lookup-phone" type="tel" inputMode="tel" value={phone} onChange={(e) => setPhone(e.target.value)} aria-invalid={Boolean(errors.phone)} />
+        <Input
+          id="lookup-phone"
+          type="tel"
+          inputMode="tel"
+          value={phone}
+          onChange={(e) => setPhone(e.target.value)}
+          aria-invalid={Boolean(errors.phone)}
+        />
       </Field>
       {error ? (
         <p role="alert" className="text-sm text-rose-700">

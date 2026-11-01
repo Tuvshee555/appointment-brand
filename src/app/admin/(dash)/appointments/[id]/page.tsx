@@ -7,8 +7,15 @@ import { NoteForm, PaymentForm, ReschedulePanel, StatusActions } from '@/compone
 import { Card, Pill } from '@/components/admin/ui'
 import { DemoTag, StatusBadge } from '@/components/ui/badge'
 import { Money } from '@/components/ui/money'
-import { STATUS_EXPLANATIONS, STATUS_LABELS } from '@/lib/booking/status'
-import { dateKeyOf, formatDateTime, formatDateWithWeekday, formatDuration, formatTimeRange } from '@/lib/datetime'
+import { SOURCE_LABELS, STATUS_LABELS } from '@/lib/booking/status'
+import {
+  dateKeyOf,
+  formatDateTime,
+  formatDateWithWeekday,
+  formatDuration,
+  formatTime,
+  formatTimeRange,
+} from '@/lib/datetime'
 import { formatMoney } from '@/lib/money'
 import { formatPhone } from '@/lib/phone'
 import { refundPaymentAction } from '@/server/actions/admin-appointments'
@@ -32,8 +39,20 @@ const EVENT_LABELS: Record<string, string> = {
   payment_recorded: 'Төлбөр бүртгэсэн',
   late_payment: 'Хоцорсон төлбөр',
 }
-const ACTOR_LABELS: Record<string, string> = { customer: 'үйлчлүүлэгч', staff: 'ажилтан', system: 'систем', assistant: 'AI туслах' }
-const PAYMENT_STATUS: Record<string, string> = { pending: 'Хүлээгдэж буй', paid: 'Төлөгдсөн', failed: 'Амжилтгүй', cancelled: 'Цуцлагдсан', expired: 'Хугацаа дууссан', refunded: 'Буцаагдсан' }
+const ACTOR_LABELS: Record<string, string> = {
+  customer: 'үйлчлүүлэгч',
+  staff: 'ажилтан',
+  system: 'систем',
+  assistant: 'AI туслах',
+}
+const PAYMENT_STATUS: Record<string, string> = {
+  pending: 'Хүлээгдэж буй',
+  paid: 'Төлөгдсөн',
+  failed: 'Амжилтгүй',
+  cancelled: 'Цуцлагдсан',
+  expired: 'Хугацаа дууссан',
+  refunded: 'Буцаагдсан',
+}
 const METHOD: Record<string, string> = { qpay: 'QPay', cash: 'Бэлэн', card: 'Карт', bank_transfer: 'Дансаар' }
 
 export default async function AppointmentDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -48,29 +67,45 @@ export default async function AppointmentDetailPage({ params }: { params: Promis
   const paid = detail.payments.filter((p) => p.status === 'paid').reduce((s, p) => s + p.amount, 0)
   const outstanding = Math.max(0, a.totalPrice - paid)
   const manage = session.permissions.includes('appointments.manage') || session.isDemo
-  const canPay = session.permissions.includes('payments.manage') || (session.isDemo && session.permissions.includes('payments.view'))
+  const canPay =
+    session.permissions.includes('payments.manage') || (session.isDemo && session.permissions.includes('payments.view'))
   const active = a.status === 'pending' || a.status === 'confirmed'
-  const items = lines.filter((l) => l.serviceId).map((l) => ({ serviceId: l.serviceId!, addonIds: l.addons.filter((x) => x.addonId).map((x) => x.addonId!) }))
+  const items = lines
+    .filter((l) => l.serviceId)
+    .map((l) => ({ serviceId: l.serviceId!, addonIds: l.addons.filter((x) => x.addonId).map((x) => x.addonId!) }))
 
   return (
     <>
-      <Link href="/admin/appointments" className="mb-4 inline-flex items-center gap-1.5 text-sm text-ink-3 hover:text-cocoa-900">
+      <Link
+        href="/admin/appointments"
+        className="mb-4 inline-flex items-center gap-1.5 text-sm text-ink-3 hover:text-cocoa-900"
+      >
         <ArrowLeft className="size-4" aria-hidden /> Захиалгууд
       </Link>
       <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
         <div>
           <p className="eyebrow flex items-center gap-2">
             {a.reference} {a.isDemo ? <DemoTag /> : null}
-            {detail.ownDemoBooking ? <span className="rounded-xs bg-sage-50 px-1.5 py-0.5 text-[0.68rem] tracking-normal text-sage-700 normal-case">таны туршилт — жинхэнээр өөрчилнө</span> : null}
+            {detail.ownDemoBooking ? (
+              <span className="rounded-xs bg-sage-50 px-1.5 py-0.5 text-[0.68rem] tracking-normal text-sage-700 normal-case">
+                таны туршилт — жинхэнээр өөрчилнө
+              </span>
+            ) : null}
           </p>
           <h1 className="display mt-1 text-4xl text-cocoa-900">{customer.name}</h1>
           <p className="mt-1 text-ink-2">
-            {formatDateWithWeekday(a.startsAt)} · <span className="tabular">{formatTimeRange(a.startsAt, a.endsAt)}</span> · {detail.staff.displayName}
+            {formatDateWithWeekday(a.startsAt)} ·{' '}
+            <span className="tabular">{formatTimeRange(a.startsAt, a.endsAt)}</span> · {detail.staff.displayName}
           </p>
         </div>
         <div className="text-right">
           <StatusBadge status={a.status} label={STATUS_LABELS[a.status]} className="text-sm" />
-          <p className="mt-2 max-w-xs text-xs text-ink-3">{STATUS_EXPLANATIONS[a.status]}</p>
+          <p className="mt-2 max-w-xs text-xs text-ink-3">
+            {a.status === 'awaiting_deposit' && a.holdExpiresAt
+              ? `Урьдчилгааг ${formatTime(a.holdExpiresAt)} хүртэл хүлээнэ · `
+              : ''}
+            {SOURCE_LABELS[a.source] ?? a.source} · {formatDateTime(a.createdAt)}
+          </p>
         </div>
       </div>
 
@@ -96,7 +131,10 @@ export default async function AppointmentDetailPage({ params }: { params: Promis
                 <li key={l.id} className="py-2.5 first:pt-0">
                   <div className="flex justify-between gap-4">
                     <span>
-                      {l.serviceName} <span className="text-xs text-ink-3">· {l.categoryName} · {formatDuration(l.durationMinutes)}</span>
+                      {l.serviceName}{' '}
+                      <span className="text-xs text-ink-3">
+                        · {l.categoryName} · {formatDuration(l.durationMinutes)}
+                      </span>
                     </span>
                     <Money amount={l.price} from={l.priceType === 'from'} />
                   </div>
@@ -129,14 +167,24 @@ export default async function AppointmentDetailPage({ params }: { params: Promis
               <dt className="text-ink-3">Төлсөн</dt>
               <dd className="text-right">{formatMoney(paid)}</dd>
               <dt className="text-ink-3">Үлдэгдэл</dt>
-              <dd className={`text-right font-medium ${outstanding ? 'text-amber-700' : 'text-sage-700'}`}>{formatMoney(outstanding)}</dd>
+              <dd className={`text-right font-medium ${outstanding ? 'text-amber-700' : 'text-sage-700'}`}>
+                {formatMoney(outstanding)}
+              </dd>
             </dl>
-            <p className="mt-3 text-xs text-ink-3">Үйлчилгээний үнэ дараа өөрчлөгдсөн ч энэ захиалга захиалах үеийн үнээрээ хадгалагдана.</p>
+            <p className="mt-3 text-xs text-ink-3">
+              Үйлчилгээний үнэ дараа өөрчлөгдсөн ч энэ захиалга захиалах үеийн үнээрээ хадгалагдана.
+            </p>
           </Card>
 
           {manage && active ? (
             <Card title="Цаг шилжүүлэх">
-              <ReschedulePanel appointmentId={a.id} items={items} staffId={a.staffId} staff={staff} today={dateKeyOf(now)} />
+              <ReschedulePanel
+                appointmentId={a.id}
+                items={items}
+                staffId={a.staffId}
+                staff={staff}
+                today={dateKeyOf(now)}
+              />
             </Card>
           ) : null}
 
@@ -147,12 +195,23 @@ export default async function AppointmentDetailPage({ params }: { params: Promis
                   <li key={p.id} className="flex flex-wrap items-center justify-between gap-3 py-2.5 first:pt-0">
                     <div>
                       <p>
-                        {p.kind === 'deposit' ? 'Урьдчилгаа' : p.kind === 'refund' ? 'Буцаалт' : 'Төлбөр'} · {METHOD[p.method]} ·{' '}
-                        <span className={p.status === 'paid' ? 'text-sage-700' : 'text-ink-3'}>{PAYMENT_STATUS[p.status]}</span>
+                        {p.kind === 'deposit' ? 'Урьдчилгаа' : p.kind === 'refund' ? 'Буцаалт' : 'Төлбөр'} ·{' '}
+                        {METHOD[p.method]} ·{' '}
+                        <span className={p.status === 'paid' ? 'text-sage-700' : 'text-ink-3'}>
+                          {PAYMENT_STATUS[p.status]}
+                        </span>
                       </p>
                       <p className="text-xs text-ink-3">
-                        {p.provider === 'simulated' ? 'Туршилтын QPay (симуляц)' : p.provider === 'qpay' ? 'QPay' : 'Ажилтан бүртгэсэн'}
-                        {p.verifiedBy === 'provider_check' ? ' · төлбөрийн систем баталгаажуулсан' : p.verifiedBy === 'staff_record' ? ' · ажилтны бүртгэл' : ''}
+                        {p.provider === 'simulated'
+                          ? 'Туршилтын QPay (симуляц)'
+                          : p.provider === 'qpay'
+                            ? 'QPay'
+                            : 'Ажилтан бүртгэсэн'}
+                        {p.verifiedBy === 'provider_check'
+                          ? ' · төлбөрийн систем баталгаажуулсан'
+                          : p.verifiedBy === 'staff_record'
+                            ? ' · ажилтны бүртгэл'
+                            : ''}
                         {p.paidAt ? ` · ${formatDateTime(p.paidAt)}` : ''}
                       </p>
                       {p.note ? <p className="text-xs text-amber-700">{p.note}</p> : null}
@@ -160,7 +219,12 @@ export default async function AppointmentDetailPage({ params }: { params: Promis
                     <div className="flex items-center gap-3">
                       <span className="tabular">{formatMoney(p.amount)}</span>
                       {p.status === 'paid' && canPay ? (
-                        <ActionButton action={() => refundPaymentAction({ paymentId: p.id, note: 'Ажилтан буцаав' })} variant="ghost" confirm="Энэ төлбөрийг буцаах уу?" okText="Буцаагдлаа.">
+                        <ActionButton
+                          action={refundPaymentAction.bind(null, { paymentId: p.id, note: 'Ажилтан буцаав' })}
+                          variant="ghost"
+                          confirm="Энэ төлбөрийг буцаах уу?"
+                          okText="Буцаагдлаа."
+                        >
                           Буцаах
                         </ActionButton>
                       ) : null}
@@ -171,7 +235,9 @@ export default async function AppointmentDetailPage({ params }: { params: Promis
             ) : (
               <p className="text-sm text-ink-3">Төлбөр бүртгэгдээгүй.</p>
             )}
-            {canPay && outstanding > 0 && (a.status === 'confirmed' || a.status === 'completed' || a.status === 'pending') ? (
+            {canPay &&
+            outstanding > 0 &&
+            (a.status === 'confirmed' || a.status === 'completed' || a.status === 'pending') ? (
               <div className="mt-5 border-t border-line pt-5">
                 <PaymentForm appointmentId={a.id} outstanding={outstanding} />
               </div>
@@ -182,25 +248,36 @@ export default async function AppointmentDetailPage({ params }: { params: Promis
         <div className="space-y-6">
           <Card title="Үйлчлүүлэгч">
             <p className="font-medium">{customer.name}</p>
-            <p className="text-sm text-ink-2 tabular">{formatPhone(customer.phone)}</p>
+            <p className="tabular text-sm text-ink-2">{formatPhone(customer.phone)}</p>
             {customer.email ? <p className="text-sm text-ink-2">{customer.email}</p> : null}
             <div className="mt-3 flex flex-wrap gap-1.5">
               <Pill>{detail.customerStats.visits} удаа үйлчлүүлсэн</Pill>
               {detail.customerStats.cancellations ? <Pill>{detail.customerStats.cancellations} цуцлалт</Pill> : null}
-              {detail.customerStats.noShows ? <Pill className="bg-rose-50 text-rose-700">{detail.customerStats.noShows} ирээгүй</Pill> : null}
+              {detail.customerStats.noShows ? (
+                <Pill className="bg-rose-50 text-rose-700">{detail.customerStats.noShows} ирээгүй</Pill>
+              ) : null}
             </div>
             {customer.preferences ? <p className="mt-3 text-sm text-ink-2">Сонголт: {customer.preferences}</p> : null}
             {a.customerNote ? <p className="mt-2 text-sm text-ink-2">Захиалгын тэмдэглэл: «{a.customerNote}»</p> : null}
-            {customer.notes ? <p className="mt-2 rounded-xs bg-amber-50 px-3 py-2 text-sm text-amber-700">Дотоод: {customer.notes}</p> : null}
+            {customer.notes ? (
+              <p className="mt-2 rounded-xs bg-amber-50 px-3 py-2 text-sm text-amber-700">Дотоод: {customer.notes}</p>
+            ) : null}
             {session.permissions.includes('customers.view') ? (
-              <Link href={`/admin/customers/${customer.id}`} className="mt-3 inline-block text-sm text-cocoa-700 underline underline-offset-4">
+              <Link
+                href={`/admin/customers/${customer.id}`}
+                className="mt-3 inline-block text-sm text-cocoa-700 underline underline-offset-4"
+              >
                 Харилцагчийн түүх
               </Link>
             ) : null}
           </Card>
 
           <Card title="Дотоод тэмдэглэл">
-            {manage ? <NoteForm appointmentId={a.id} note={a.internalNote} /> : <p className="text-sm text-ink-2">{a.internalNote ?? '—'}</p>}
+            {manage ? (
+              <NoteForm appointmentId={a.id} note={a.internalNote} />
+            ) : (
+              <p className="text-sm text-ink-2">{a.internalNote ?? '—'}</p>
+            )}
           </Card>
 
           {detail.cancellations.length ? (
@@ -208,11 +285,16 @@ export default async function AppointmentDetailPage({ params }: { params: Promis
               {detail.cancellations.map((c) => (
                 <div key={c.id} className="text-sm">
                   <p>
-                    {c.cancelledBy === 'customer' ? 'Үйлчлүүлэгч' : c.cancelledBy === 'system' ? 'Систем' : 'Салон'} · {c.noticeHours} цагийн өмнө ·{' '}
-                    {c.withinPolicy ? 'бодлогын дагуу' : 'хугацаа хоцорсон'}
+                    {c.cancelledBy === 'customer' ? 'Үйлчлүүлэгч' : c.cancelledBy === 'system' ? 'Систем' : 'Салон'} ·{' '}
+                    {c.noticeHours} цагийн өмнө · {c.withinPolicy ? 'бодлогын дагуу' : 'хугацаа хоцорсон'}
                   </p>
                   <p className="text-xs text-ink-3">
-                    Урьдчилгаа: {c.depositOutcome === 'refund' ? 'буцаасан' : c.depositOutcome === 'forfeit' ? 'буцаагдахгүй' : 'байхгүй'}
+                    Урьдчилгаа:{' '}
+                    {c.depositOutcome === 'refund'
+                      ? 'буцаасан'
+                      : c.depositOutcome === 'forfeit'
+                        ? 'буцаагдахгүй'
+                        : 'байхгүй'}
                     {c.reasonText ? ` · «${c.reasonText}»` : ''}
                   </p>
                 </div>
@@ -252,11 +334,18 @@ export default async function AppointmentDetailPage({ params }: { params: Promis
                 {detail.notifications.map((n) => (
                   <li key={n.id}>
                     <p>
-                      {NOTIFICATION_LABELS[n.kind as NotificationKind] ?? n.kind} · <span className="text-ink-3">{n.channel === 'telegram' ? 'Telegram' : 'SMS'}</span>
+                      {NOTIFICATION_LABELS[n.kind as NotificationKind] ?? n.kind} ·{' '}
+                      <span className="text-ink-3">{n.channel === 'telegram' ? 'Telegram' : 'SMS'}</span>
                     </p>
                     <p className="text-xs text-ink-3">
-                      {n.status === 'logged' ? 'Бүртгэлд хадгалсан (илгээгээгүй)' : n.status === 'sent' ? 'Илгээсэн' : n.status === 'skipped' ? 'Суваг тохируулаагүй' : 'Алдаа'} ·{' '}
-                      {formatDateTime(n.createdAt)}
+                      {n.status === 'logged'
+                        ? 'Бүртгэлд хадгалсан (илгээгээгүй)'
+                        : n.status === 'sent'
+                          ? 'Илгээсэн'
+                          : n.status === 'skipped'
+                            ? 'Суваг тохируулаагүй'
+                            : 'Алдаа'}{' '}
+                      · {formatDateTime(n.createdAt)}
                     </p>
                   </li>
                 ))}

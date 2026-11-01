@@ -42,7 +42,15 @@ async function loadSession(ctx: ServiceContext, ch: ChatChannel, fresh: boolean)
   const [salon] = await ctx.db.select({ isDemo: t.salons.isDemo }).from(t.salons).where(eq(t.salons.id, ctx.salonId))
   const [row] = await ctx.db
     .insert(t.chatSessions)
-    .values({ salonId: ctx.salonId, channel: ch.channel, visitorHash: ch.visitorHash, state: {}, isDemo: salon?.isDemo ?? false, createdAt: ctx.now, lastMessageAt: ctx.now })
+    .values({
+      salonId: ctx.salonId,
+      channel: ch.channel,
+      visitorHash: ch.visitorHash,
+      state: {},
+      isDemo: salon?.isDemo ?? false,
+      createdAt: ctx.now,
+      lastMessageAt: ctx.now,
+    })
     .returning()
   return row
 }
@@ -69,7 +77,12 @@ function historyText(parts: ChatPart[]): string {
     .join('\n')
 }
 
-async function confirmDraft(ctx: ServiceContext, state: ChatState, draftId: string, ch: ChatChannel): Promise<{ parts: ChatPart[]; appointmentId?: string }> {
+async function confirmDraft(
+  ctx: ServiceContext,
+  state: ChatState,
+  draftId: string,
+  ch: ChatChannel,
+): Promise<{ parts: ChatPart[]; appointmentId?: string }> {
   const draft = state.draft
   if (!draft || draft.id !== draftId) {
     return { parts: [{ type: 'text', text: 'Энэ хураангуй хүчингүй болсон байна. Цагаа дахин сонгоё.' }] }
@@ -82,7 +95,13 @@ async function confirmDraft(ctx: ServiceContext, state: ChatState, draftId: stri
   try {
     const result = await createBooking(
       ctx,
-      { items: draft.items, staffId: draft.staffId, date: draft.date, start: draft.start, customer: { name: draft.name, phone: draft.phone, email: null, note: draft.note, preferences: null } },
+      {
+        items: draft.items,
+        staffId: draft.staffId,
+        date: draft.date,
+        start: draft.start,
+        customer: { name: draft.name, phone: draft.phone, email: null, note: draft.note, preferences: null },
+      },
       {
         source: ch.channel === 'messenger' ? 'messenger' : 'assistant',
         actor: 'assistant',
@@ -116,7 +135,10 @@ async function confirmDraft(ctx: ServiceContext, state: ChatState, draftId: stri
             ? [
                 {
                   type: 'quick_replies' as const,
-                  options: alts.map((a) => ({ label: `${formatDateKey(a.date)} ${minutesToTime(a.start)}`, action: { type: 'choose_slot' as const, date: a.date, start: a.start } })),
+                  options: alts.map((a) => ({
+                    label: `${formatDateKey(a.date)} ${minutesToTime(a.start)}`,
+                    action: { type: 'choose_slot' as const, date: a.date, start: a.start },
+                  })),
                 },
               ]
             : []),
@@ -127,7 +149,11 @@ async function confirmDraft(ctx: ServiceContext, state: ChatState, draftId: stri
   }
 }
 
-export async function handleChat(ctx: ServiceContext, input: { message?: string; action?: ChatAction }, ch: ChatChannel): Promise<ChatResponse> {
+export async function handleChat(
+  ctx: ServiceContext,
+  input: { message?: string; action?: ChatAction },
+  ch: ChatChannel,
+): Promise<ChatResponse> {
   const reset = input.action?.type === 'reset'
   const session = await loadSession(ctx, ch, reset)
   const state = (session.state ?? {}) as ChatState
@@ -137,7 +163,9 @@ export async function handleChat(ctx: ServiceContext, input: { message?: string;
   let appointmentId: string | undefined
 
   if (input.message) {
-    await ctx.db.insert(t.chatMessages).values({ sessionId: session.id, role: 'user', content: input.message, createdAt: ctx.now })
+    await ctx.db
+      .insert(t.chatMessages)
+      .values({ sessionId: session.id, role: 'user', content: input.message, createdAt: ctx.now })
   }
 
   if ((state.turns ?? 0) >= MAX_TURNS && input.message) {
@@ -148,9 +176,15 @@ export async function handleChat(ctx: ServiceContext, input: { message?: string;
     appointmentId = r.appointmentId
   } else if (input.action?.type === 'cancel_draft') {
     state.draft = undefined
-    parts = [{ type: 'text', text: 'Болиулав. Өөр цаг сонгох уу?' }, { type: 'quick_replies', options: [{ label: 'Сул цаг шалгах', message: 'Цаг захиалах' }] }]
+    parts = [
+      { type: 'text', text: 'Болиулав. Өөр цаг сонгох уу?' },
+      { type: 'quick_replies', options: [{ label: 'Сул цаг шалгах', message: 'Цаг захиалах' }] },
+    ]
   } else if (input.action) {
-    const r = input.action.type === 'hello' && (state.turns ?? 0) === 0 ? await greeting(ctx) : await handleRuleAction(ctx, state, input.action)
+    const r =
+      input.action.type === 'hello' && (state.turns ?? 0) === 0
+        ? await greeting(ctx)
+        : await handleRuleAction(ctx, state, input.action)
     parts = r.parts
   } else if (input.message) {
     state.turns = (state.turns ?? 0) + 1
@@ -167,9 +201,21 @@ export async function handleChat(ctx: ServiceContext, input: { message?: string;
           .slice(-12)
           .map((m) => ({ role: m.role === 'user' ? ('user' as const) : ('assistant' as const), text: m.content }))
           .filter((m) => m.text)
-        const prices = await ctx.db.select({ price: t.services.price }).from(t.services).where(eq(t.services.salonId, ctx.salonId))
-        const addonPrices = await ctx.db.select({ price: t.serviceAddons.price }).from(t.serviceAddons).where(eq(t.serviceAddons.salonId, ctx.salonId))
-        const reply = await runModel(ctx, state, turns, input.message, [...prices, ...addonPrices].map((p) => p.price))
+        const prices = await ctx.db
+          .select({ price: t.services.price })
+          .from(t.services)
+          .where(eq(t.services.salonId, ctx.salonId))
+        const addonPrices = await ctx.db
+          .select({ price: t.serviceAddons.price })
+          .from(t.serviceAddons)
+          .where(eq(t.serviceAddons.salonId, ctx.salonId))
+        const reply = await runModel(
+          ctx,
+          state,
+          turns,
+          input.message,
+          [...prices, ...addonPrices].map((p) => p.price),
+        )
         if (reply.text && reply.grounded && !reply.refused) {
           mode = 'ai'
           parts = [{ type: 'text', text: reply.text }, ...reply.parts]

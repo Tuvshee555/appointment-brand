@@ -9,7 +9,8 @@ import { getPublicCatalog } from '@/server/queries/public'
 
 export const metadata: Metadata = {
   title: 'Мастерууд',
-  description: 'Сувдын мастерууд: мэргэшил, туршлага, хийдэг үйлчилгээ, ажлын өдрүүд. Хүссэн мастертаа шууд цаг захиална.',
+  description:
+    'Сувдын мастерууд: мэргэшил, туршлага, хийдэг үйлчилгээ, ажлын өдрүүд. Хүссэн мастертаа шууд цаг захиална.',
 }
 
 export default async function StaffPage() {
@@ -21,13 +22,18 @@ export default async function StaffPage() {
         <p className="eyebrow">Мастерууд</p>
         <h1 className="display mt-3 text-5xl text-cocoa-900 sm:text-6xl">Танилцаарай</h1>
         <p className="mt-4 max-w-2xl text-[1.04rem] leading-relaxed text-ink-3">
-          Мастер бүр зөвхөн өөрийн мэргэшсэн үйлчилгээг хийдэг — захиалгын үед зөвхөн тухайн үйлчилгээг хийдэг мастерууд харагдана. Хөрөг
-          зургууд нь зохиомол хүмүүсийн AI-аар бүтээсэн зураг, нэрс зохиомол.
+          Мастер бүр зөвхөн өөрийн мэргэшсэн үйлчилгээг хийдэг — захиалгын үед зөвхөн тухайн үйлчилгээг хийдэг мастерууд
+          харагдана. Хөрөг зургууд нь зохиомол хүмүүсийн AI-аар бүтээсэн зураг, нэрс зохиомол.
         </p>
       </header>
       <div className="divide-y divide-line">
         {catalog.staff.map((s, i) => (
-          <article key={s.id} id={s.slug} aria-labelledby={`staff-${s.slug}`} className="grid scroll-mt-28 gap-8 py-12 lg:grid-cols-[22rem_1fr] lg:gap-14">
+          <article
+            key={s.id}
+            id={s.slug}
+            aria-labelledby={`staff-${s.slug}`}
+            className="grid scroll-mt-28 gap-8 py-12 lg:grid-cols-[22rem_1fr] lg:gap-14"
+          >
             <div className="relative aspect-[4/5] overflow-hidden rounded-xs bg-sand lg:aspect-[4/5]">
               {s.coverUrl ? (
                 <Photo
@@ -89,7 +95,10 @@ export default async function StaffPage() {
                     if (!svc) return null
                     return (
                       <li key={id} className="flex items-baseline gap-2">
-                        <Link href={`/book?service=${svc.slug}&staff=${s.slug}`} className="text-ink-2 hover:text-cocoa-900">
+                        <Link
+                          href={`/book?service=${svc.slug}&staff=${s.slug}`}
+                          className="text-ink-2 hover:text-cocoa-900"
+                        >
                           {svc.name}
                         </Link>
                         <span className="leader" aria-hidden />

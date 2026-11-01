@@ -10,7 +10,9 @@ async function main() {
       from pg_class c join pg_namespace n on n.oid = c.relnamespace
       where n.nspname = 'salon' and c.relkind = 'r' order by c.relname`)
     console.table(tables.rows)
-    const statuses = await db.execute(sql`select status, count(*)::int as n from salon.appointments group by status order by n desc`)
+    const statuses = await db.execute(
+      sql`select status, count(*)::int as n from salon.appointments group by status order by n desc`,
+    )
     console.table(statuses.rows)
     const overlap = await db.execute(sql`
       select count(*)::int as overlaps from salon.appointments a join salon.appointments b

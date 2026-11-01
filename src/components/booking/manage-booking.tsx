@@ -10,7 +10,12 @@ import { addDays, dateKeyOf, formatDateKey, minutesToTime } from '@/lib/datetime
 import { formatMoney } from '@/lib/money'
 import { cn } from '@/lib/cn'
 import type { PublicSlot } from '@/server/actions/booking'
-import { cancelBookingAction, rescheduleBookingAction, rescheduleDayAction, rescheduleMonthAction } from '@/server/actions/customer-booking'
+import {
+  cancelBookingAction,
+  rescheduleBookingAction,
+  rescheduleDayAction,
+  rescheduleMonthAction,
+} from '@/server/actions/customer-booking'
 import { MonthCalendar } from './month-calendar'
 
 export function ManageBooking({
@@ -100,7 +105,10 @@ export function ManageBooking({
       </h2>
       <div className="mt-4 flex flex-wrap gap-3">
         {canReschedule ? (
-          <Button variant={mode === 'reschedule' ? 'primary' : 'secondary'} onClick={() => setMode(mode === 'reschedule' ? 'none' : 'reschedule')}>
+          <Button
+            variant={mode === 'reschedule' ? 'primary' : 'secondary'}
+            onClick={() => setMode(mode === 'reschedule' ? 'none' : 'reschedule')}
+          >
             <CalendarClock className="size-4" aria-hidden /> Цаг өөрчлөх
           </Button>
         ) : null}
@@ -110,7 +118,9 @@ export function ManageBooking({
           </Button>
         ) : null}
       </div>
-      {!canReschedule && rescheduleBlockedReason ? <p className="mt-3 text-sm text-ink-3">{rescheduleBlockedReason}</p> : null}
+      {!canReschedule && rescheduleBlockedReason ? (
+        <p className="mt-3 text-sm text-ink-3">{rescheduleBlockedReason}</p>
+      ) : null}
       {error ? (
         <p role="alert" className="mt-4 text-sm text-rose-700">
           {error}
@@ -171,8 +181,10 @@ export function ManageBooking({
                       aria-pressed={slot?.start === s.start}
                       onClick={() => setSlot(s)}
                       className={cn(
-                        'h-11 rounded-xs border text-sm tabular',
-                        slot?.start === s.start ? 'border-cocoa-800 bg-cocoa-800 text-ivory' : 'border-line-strong bg-porcelain hover:border-cocoa-700',
+                        'tabular h-11 rounded-xs border text-sm',
+                        slot?.start === s.start
+                          ? 'border-cocoa-800 bg-cocoa-800 text-ivory'
+                          : 'border-line-strong bg-porcelain hover:border-cocoa-700',
                       )}
                     >
                       {s.label}

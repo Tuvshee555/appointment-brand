@@ -20,7 +20,8 @@ export function ServiceCatalog({ catalog }: { catalog: PublicCatalog }) {
   const staffById = new Map(catalog.staff.map((s) => [s.id, s]))
   const visible = catalog.categories.filter((c) => !active || c.slug === active)
 
-  const select = (slug: string | null) => router.replace(slug ? `/services?category=${slug}` : '/services', { scroll: false })
+  const select = (slug: string | null) =>
+    router.replace(slug ? `/services?category=${slug}` : '/services', { scroll: false })
 
   return (
     <div>
@@ -35,7 +36,9 @@ export function ServiceCatalog({ catalog }: { catalog: PublicCatalog }) {
               onClick={() => select(c.slug)}
               className={cn(
                 'shrink-0 rounded-full border px-4 py-2 text-sm transition-colors',
-                active === c.slug ? 'border-cocoa-800 bg-cocoa-800 text-ivory' : 'border-line-strong text-ink-2 hover:border-cocoa-600',
+                active === c.slug
+                  ? 'border-cocoa-800 bg-cocoa-800 text-ivory'
+                  : 'border-line-strong text-ink-2 hover:border-cocoa-600',
               )}
             >
               {c.name}
@@ -59,13 +62,24 @@ export function ServiceCatalog({ catalog }: { catalog: PublicCatalog }) {
                 <li key={s.id} className="surface flex flex-col overflow-hidden sm:flex-row">
                   <div className="relative aspect-[16/10] w-full shrink-0 bg-sand sm:aspect-auto sm:w-44">
                     {s.imageUrl ? (
-                      <Photo src={s.imageUrl} alt={s.imageAlt ?? s.name} fill loading="lazy" sizes="(min-width: 640px) 176px, 100vw" className="object-cover" />
+                      <Photo
+                        src={s.imageUrl}
+                        alt={s.imageAlt ?? s.name}
+                        fill
+                        loading="lazy"
+                        sizes="(min-width: 640px) 176px, 100vw"
+                        className="object-cover"
+                      />
                     ) : null}
                   </div>
                   <div className="flex flex-1 flex-col p-5">
                     <div className="flex items-start justify-between gap-4">
                       <h3 className="font-display text-[1.55rem] leading-tight text-cocoa-900">{s.name}</h3>
-                      <Money amount={s.price} from={s.priceType === 'from'} className="pt-1 text-[1.05rem] font-medium text-cocoa-900" />
+                      <Money
+                        amount={s.price}
+                        from={s.priceType === 'from'}
+                        className="pt-1 text-[1.05rem] font-medium text-cocoa-900"
+                      />
                     </div>
                     <p className="mt-1 inline-flex items-center gap-1.5 text-sm text-ink-3">
                       <Clock className="size-4" aria-hidden /> {formatDuration(s.durationMinutes)}
@@ -82,8 +96,10 @@ export function ServiceCatalog({ catalog }: { catalog: PublicCatalog }) {
                                 <Plus className="size-3 shrink-0 text-blush-500" aria-hidden />
                                 <span>{a.name}</span>
                                 <span className="leader" aria-hidden />
-                                <span className="shrink-0 text-xs text-ink-3">+{formatDuration(a.durationMinutes)}</span>
-                                <span className="shrink-0 tabular">
+                                <span className="shrink-0 text-xs text-ink-3">
+                                  +{formatDuration(a.durationMinutes)}
+                                </span>
+                                <span className="tabular shrink-0">
                                   +<Money amount={a.price} from={a.priceType === 'from'} />
                                 </span>
                               </li>
