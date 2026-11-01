@@ -36,3 +36,5 @@ next-env.d.ts
 # local scratch: raw downloaded photos before optimisation, review screenshots
 /.cache/
 /artifacts/
+
+.vercel
