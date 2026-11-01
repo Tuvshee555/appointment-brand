@@ -2,6 +2,8 @@ import { defineConfig, devices } from '@playwright/test'
 
 // E2E_BASE_URL can point at a deployment (e.g. https://…/portfolio/appointments).
 const baseURL = process.env.E2E_BASE_URL ?? 'http://localhost:3210/portfolio/appointments'
+// Installed Google Chrome by default; set E2E_BROWSER_CHANNEL=chromium to use Playwright's own build.
+const channel = process.env.E2E_BROWSER_CHANNEL ?? 'chrome'
 
 export default defineConfig({
   testDir: 'tests/e2e',
@@ -19,8 +21,8 @@ export default defineConfig({
     screenshot: 'only-on-failure',
   },
   projects: [
-    { name: 'desktop', use: { ...devices['Desktop Chrome'], viewport: { width: 1440, height: 900 } } },
-    { name: 'mobile', use: { ...devices['Pixel 7'] }, grep: /@mobile/ },
+    { name: 'desktop', use: { ...devices['Desktop Chrome'], channel, viewport: { width: 1440, height: 900 } } },
+    { name: 'mobile', use: { ...devices['Pixel 7'], channel }, grep: /@mobile/ },
   ],
   webServer: process.env.E2E_BASE_URL
     ? undefined

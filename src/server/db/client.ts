@@ -2,7 +2,7 @@
 // seed) and tests can create connections. App code imports `@/server/db`.
 import { drizzle, type NodePgQueryResultHKT } from 'drizzle-orm/node-postgres'
 import type { ExtractTablesWithRelations } from 'drizzle-orm'
-import type { PgDatabase } from 'drizzle-orm/pg-core'
+import { PgTransaction, type PgDatabase } from 'drizzle-orm/pg-core'
 import { Pool, type PoolConfig } from 'pg'
 import * as schema from './schema'
 
@@ -38,6 +38,21 @@ export function createPool(connectionString: string, overrides: PoolConfig = {})
 
 export function createDb(pool: Pool) {
   return drizzle(pool, { schema, casing: 'snake_case' })
+}
+
+/**
+ * Runs independent reads concurrently on the pool, but one after another inside
+ * a transaction: a transaction holds a single connection, and pg does not allow
+ * overlapping queries on one client (deprecated now, an error in pg 9).
+ */
+export async function parallel<T extends readonly (() => unknown)[] | []>(
+  db: Database,
+  tasks: T,
+): Promise<{ -readonly [K in keyof T]: Awaited<ReturnType<T[K]>> }> {
+  if (!(db instanceof PgTransaction)) return Promise.all(tasks.map((task) => task())) as never
+  const results: unknown[] = []
+  for (const task of tasks) results.push(await task())
+  return results as never
 }
 
 export { schema }

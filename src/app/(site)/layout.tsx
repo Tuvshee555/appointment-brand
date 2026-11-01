@@ -1,3 +1,4 @@
+import { Suspense } from 'react'
 import { ChatWidget } from '@/components/assistant/chat-widget'
 import { DemoRibbon } from '@/components/site/demo-ribbon'
 import { Footer } from '@/components/site/footer'
@@ -19,7 +20,10 @@ export default async function SiteLayout({ children }: { children: React.ReactNo
       <Header phone={salon.phone} announcement={salon.announcement} />
       <main id="main">{children}</main>
       <Footer salon={salon} />
-      <MobileBookBar />
+      {/* Reads the path to hide itself in the booking flow, so it streams on dynamic routes. */}
+      <Suspense fallback={null}>
+        <MobileBookBar />
+      </Suspense>
       <ChatWidget salonName={salon.name} />
     </>
   )

@@ -4,7 +4,7 @@ import type { DepositPolicy } from '@/lib/booking/pricing'
 import type { SpecialDay, WeeklyHours } from '@/lib/availability/engine'
 import { DEMO_SALON } from '@/lib/brand'
 import type { DateKey } from '@/lib/datetime'
-import type { Database } from '@/server/db/client'
+import { parallel, type Database } from '@/server/db/client'
 import * as t from '@/server/db/schema'
 
 export type BusinessSettings = typeof t.businessSettings.$inferSelect
@@ -28,10 +28,11 @@ export async function resolveSalonId(db: Database, slug = process.env.SALON_SLUG
 }
 
 export async function loadSalonConfig(db: Database, salonId: string): Promise<SalonConfig> {
-  const [[salon], [settings], weekly] = await Promise.all([
-    db.select().from(t.salons).where(eq(t.salons.id, salonId)),
-    db.select().from(t.businessSettings).where(eq(t.businessSettings.salonId, salonId)),
-    db.select().from(t.openingHours).where(eq(t.openingHours.salonId, salonId)).orderBy(asc(t.openingHours.weekday)),
+  const [[salon], [settings], weekly] = await parallel(db, [
+    () => db.select().from(t.salons).where(eq(t.salons.id, salonId)),
+    () => db.select().from(t.businessSettings).where(eq(t.businessSettings.salonId, salonId)),
+    () =>
+      db.select().from(t.openingHours).where(eq(t.openingHours.salonId, salonId)).orderBy(asc(t.openingHours.weekday)),
   ])
   if (!salon || !settings) throw new Error('Salon settings missing — run npm run db:seed')
   return {

@@ -2,15 +2,14 @@
 
 import { Menu, X } from 'lucide-react'
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
 import { useEffect, useRef, useState } from 'react'
 import { formatPhone, phoneHref } from '@/lib/phone'
 import { NAV_LINKS } from './nav-links'
 
 export function MobileNav({ phone }: { phone: string }) {
   const [open, setOpen] = useState(false)
-  const pathname = usePathname()
   const dialogRef = useRef<HTMLDialogElement>(null)
+  const close = () => setOpen(false)
 
   useEffect(() => {
     const dialog = dialogRef.current
@@ -19,12 +18,13 @@ export function MobileNav({ phone }: { phone: string }) {
     if (!open && dialog.open) dialog.close()
   }, [open])
 
-  // Close when navigating.
-  const [lastPath, setLastPath] = useState(pathname)
-  if (pathname !== lastPath) {
-    setLastPath(pathname)
-    setOpen(false)
-  }
+  // Links close the menu themselves; this covers the browser's back and forward buttons.
+  useEffect(() => {
+    if (!open) return
+    const onPop = () => setOpen(false)
+    window.addEventListener('popstate', onPop)
+    return () => window.removeEventListener('popstate', onPop)
+  }, [open])
 
   return (
     <>
@@ -61,7 +61,11 @@ export function MobileNav({ phone }: { phone: string }) {
           <nav aria-label="Гар утасны цэс" className="flex-1 overflow-y-auto px-5 py-4">
             <ul className="space-y-1">
               <li>
-                <Link href="/" className="block rounded-xs px-2 py-3 font-display text-2xl hover:bg-sand">
+                <Link
+                  href="/"
+                  onClick={close}
+                  className="block rounded-xs px-2 py-3 font-display text-2xl hover:bg-sand"
+                >
                   Нүүр
                 </Link>
               </li>
@@ -69,7 +73,7 @@ export function MobileNav({ phone }: { phone: string }) {
                 <li key={l.href}>
                   <Link
                     href={l.href}
-                    onClick={() => setOpen(false)}
+                    onClick={close}
                     className="block rounded-xs px-2 py-3 font-display text-2xl hover:bg-sand"
                   >
                     {l.label}
@@ -77,7 +81,11 @@ export function MobileNav({ phone }: { phone: string }) {
                 </li>
               ))}
               <li>
-                <Link href="/booking" className="block rounded-xs px-2 py-3 font-display text-2xl hover:bg-sand">
+                <Link
+                  href="/booking"
+                  onClick={close}
+                  className="block rounded-xs px-2 py-3 font-display text-2xl hover:bg-sand"
+                >
                   Миний захиалга
                 </Link>
               </li>
@@ -86,6 +94,7 @@ export function MobileNav({ phone }: { phone: string }) {
           <div className="space-y-3 border-t border-line px-5 py-5">
             <Link
               href="/book"
+              onClick={close}
               className="flex h-13 items-center justify-center rounded-xs bg-cocoa-800 text-sm font-medium tracking-[0.08em] text-ivory uppercase"
             >
               Цаг захиалах

@@ -15,7 +15,7 @@ import {
 import { buildQuote, QuoteError, type Quote, type SelectionItem } from '@/lib/booking/pricing'
 import { SLOT_HOLDING_STATUSES } from '@/lib/booking/status'
 import { addDays, dayBounds, diffDays, daysInMonth, weekdayOf, type DateKey } from '@/lib/datetime'
-import type { Database } from '@/server/db/client'
+import { parallel, type Database } from '@/server/db/client'
 import * as t from '@/server/db/schema'
 import { ServiceError } from '@/server/context'
 import { candidateStaff, loadBookingCatalog, type BookingCatalog, type StaffSummary } from './catalog'
@@ -42,43 +42,45 @@ export async function loadStaffScheduleData(
   if (staffIds.length === 0) return { schedules: [], breaks: [], timeOff: [], busy: [] }
   const rangeStart = dayBounds(from).start
   const rangeEnd = dayBounds(to).end
-  const [schedules, breaks, timeOffRows, busyRows] = await Promise.all([
-    db.select().from(t.staffSchedules).where(inArray(t.staffSchedules.staffId, staffIds)),
-    db.select().from(t.staffBreaks).where(inArray(t.staffBreaks.staffId, staffIds)),
-    db
-      .select()
-      .from(t.staffTimeOff)
-      .where(
-        and(
-          inArray(t.staffTimeOff.staffId, staffIds),
-          lt(t.staffTimeOff.startsAt, rangeEnd),
-          gt(t.staffTimeOff.endsAt, rangeStart),
-        ),
-      ),
-    db
-      .select({
-        id: t.appointments.id,
-        staffId: t.appointments.staffId,
-        startsAt: t.appointments.startsAt,
-        occupiedUntil: t.appointments.occupiedUntil,
-        durationMinutes: t.appointments.durationMinutes,
-      })
-      .from(t.appointments)
-      .where(
-        and(
-          inArray(t.appointments.staffId, staffIds),
-          lt(t.appointments.startsAt, rangeEnd),
-          gt(t.appointments.occupiedUntil, rangeStart),
-          inArray(t.appointments.status, [...SLOT_HOLDING_STATUSES]),
-          // An unpaid deposit hold stops blocking the slot once it expires.
-          or(
-            ne(t.appointments.status, 'awaiting_deposit'),
-            isNull(t.appointments.holdExpiresAt),
-            gt(t.appointments.holdExpiresAt, now),
+  const [schedules, breaks, timeOffRows, busyRows] = await parallel(db, [
+    () => db.select().from(t.staffSchedules).where(inArray(t.staffSchedules.staffId, staffIds)),
+    () => db.select().from(t.staffBreaks).where(inArray(t.staffBreaks.staffId, staffIds)),
+    () =>
+      db
+        .select()
+        .from(t.staffTimeOff)
+        .where(
+          and(
+            inArray(t.staffTimeOff.staffId, staffIds),
+            lt(t.staffTimeOff.startsAt, rangeEnd),
+            gt(t.staffTimeOff.endsAt, rangeStart),
           ),
-          excludeAppointmentId ? ne(t.appointments.id, excludeAppointmentId) : undefined,
         ),
-      ),
+    () =>
+      db
+        .select({
+          id: t.appointments.id,
+          staffId: t.appointments.staffId,
+          startsAt: t.appointments.startsAt,
+          occupiedUntil: t.appointments.occupiedUntil,
+          durationMinutes: t.appointments.durationMinutes,
+        })
+        .from(t.appointments)
+        .where(
+          and(
+            inArray(t.appointments.staffId, staffIds),
+            lt(t.appointments.startsAt, rangeEnd),
+            gt(t.appointments.occupiedUntil, rangeStart),
+            inArray(t.appointments.status, [...SLOT_HOLDING_STATUSES]),
+            // An unpaid deposit hold stops blocking the slot once it expires.
+            or(
+              ne(t.appointments.status, 'awaiting_deposit'),
+              isNull(t.appointments.holdExpiresAt),
+              gt(t.appointments.holdExpiresAt, now),
+            ),
+            excludeAppointmentId ? ne(t.appointments.id, excludeAppointmentId) : undefined,
+          ),
+        ),
   ])
   return {
     schedules,
@@ -136,7 +138,10 @@ export async function prepareSelection(
   staffId: string | null,
   { publicOnly }: { publicOnly: boolean },
 ): Promise<PreparedSelection> {
-  const [config, catalog] = await Promise.all([loadSalonConfig(db, salonId), loadBookingCatalog(db, salonId)])
+  const [config, catalog] = await parallel(db, [
+    () => loadSalonConfig(db, salonId),
+    () => loadBookingCatalog(db, salonId),
+  ])
   let quote: Quote
   try {
     quote = buildQuote(items, catalog, {
@@ -202,15 +207,16 @@ export async function monthAvailability(
   const { config, quote, candidates } = prepared
   const first = `${month}-01`
   const last = addDays(first, daysInMonth(first) - 1)
-  const [specials, data] = await Promise.all([
-    loadSpecialDays(db, config.salon.id, first, last),
-    loadStaffScheduleData(db, {
-      staffIds: candidates.map((c) => c.id),
-      from: first,
-      to: last,
-      now,
-      excludeAppointmentId,
-    }),
+  const [specials, data] = await parallel(db, [
+    () => loadSpecialDays(db, config.salon.id, first, last),
+    () =>
+      loadStaffScheduleData(db, {
+        staffIds: candidates.map((c) => c.id),
+        from: first,
+        to: last,
+        now,
+        excludeAppointmentId,
+      }),
   ])
   const days: CalendarDay[] = []
   for (let date = first; diffDays(date, last) <= 0; date = addDays(date, 1)) {

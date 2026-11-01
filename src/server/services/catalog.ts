@@ -2,7 +2,7 @@
 // perform them. Always loaded fresh for pricing and booking decisions.
 import { and, asc, eq, inArray } from 'drizzle-orm'
 import type { CatalogAddon, CatalogService, SelectionItem } from '@/lib/booking/pricing'
-import type { Database } from '@/server/db/client'
+import { parallel, type Database } from '@/server/db/client'
 import * as t from '@/server/db/schema'
 import { ServiceError } from '@/server/context'
 
@@ -26,27 +26,31 @@ export interface BookingCatalog {
 }
 
 export async function loadBookingCatalog(db: Database, salonId: string): Promise<BookingCatalog> {
-  const [serviceRows, categoryRows, addonRows, linkRows, staffRows, staffServiceRows] = await Promise.all([
-    db
-      .select()
-      .from(t.services)
-      .where(and(eq(t.services.salonId, salonId), eq(t.services.isActive, true))),
-    db.select().from(t.serviceCategories).where(eq(t.serviceCategories.salonId, salonId)),
-    db
-      .select()
-      .from(t.serviceAddons)
-      .where(and(eq(t.serviceAddons.salonId, salonId), eq(t.serviceAddons.isActive, true))),
-    db
-      .select({ serviceId: t.serviceAddonLinks.serviceId, addonId: t.serviceAddonLinks.addonId })
-      .from(t.serviceAddonLinks)
-      .innerJoin(t.services, eq(t.services.id, t.serviceAddonLinks.serviceId))
-      .where(eq(t.services.salonId, salonId)),
-    db.select().from(t.staff).where(eq(t.staff.salonId, salonId)).orderBy(asc(t.staff.sortOrder)),
-    db
-      .select({ staffId: t.staffServices.staffId, serviceId: t.staffServices.serviceId })
-      .from(t.staffServices)
-      .innerJoin(t.staff, eq(t.staff.id, t.staffServices.staffId))
-      .where(eq(t.staff.salonId, salonId)),
+  const [serviceRows, categoryRows, addonRows, linkRows, staffRows, staffServiceRows] = await parallel(db, [
+    () =>
+      db
+        .select()
+        .from(t.services)
+        .where(and(eq(t.services.salonId, salonId), eq(t.services.isActive, true))),
+    () => db.select().from(t.serviceCategories).where(eq(t.serviceCategories.salonId, salonId)),
+    () =>
+      db
+        .select()
+        .from(t.serviceAddons)
+        .where(and(eq(t.serviceAddons.salonId, salonId), eq(t.serviceAddons.isActive, true))),
+    () =>
+      db
+        .select({ serviceId: t.serviceAddonLinks.serviceId, addonId: t.serviceAddonLinks.addonId })
+        .from(t.serviceAddonLinks)
+        .innerJoin(t.services, eq(t.services.id, t.serviceAddonLinks.serviceId))
+        .where(eq(t.services.salonId, salonId)),
+    () => db.select().from(t.staff).where(eq(t.staff.salonId, salonId)).orderBy(asc(t.staff.sortOrder)),
+    () =>
+      db
+        .select({ staffId: t.staffServices.staffId, serviceId: t.staffServices.serviceId })
+        .from(t.staffServices)
+        .innerJoin(t.staff, eq(t.staff.id, t.staffServices.staffId))
+        .where(eq(t.staff.salonId, salonId)),
   ])
   const categoryName = new Map(categoryRows.map((c) => [c.id, c.name]))
   const activeCategory = new Set(categoryRows.filter((c) => c.isActive).map((c) => c.id))

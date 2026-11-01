@@ -14,7 +14,7 @@ import { buildQuote, type Quote, type SelectionItem } from '@/lib/booking/pricin
 import { STATUS_LABELS, type AppointmentStatus } from '@/lib/booking/status'
 import { addDays, dateKeyOf, dayBounds, formatDateTime, ubToUtc, weekdayOf, type DateKey } from '@/lib/datetime'
 import { maskPhone } from '@/lib/phone'
-import type { Database } from '@/server/db/client'
+import { parallel, type Database } from '@/server/db/client'
 import * as t from '@/server/db/schema'
 import { randomToken, sha256Hex } from '@/server/security/crypto'
 import { loadBookingCatalog } from '@/server/services/catalog'
@@ -116,9 +116,9 @@ export async function seedDemo(
   const staffList = catalog.staff.filter((s) => s.isActive)
   const staffIds = staffList.map((s) => s.id)
   const staffBySlug = new Map(staffList.map((s) => [s.slug, s]))
-  const [schedules, breaks] = await Promise.all([
-    db.select().from(t.staffSchedules).where(inArray(t.staffSchedules.staffId, staffIds)),
-    db.select().from(t.staffBreaks).where(inArray(t.staffBreaks.staffId, staffIds)),
+  const [schedules, breaks] = await parallel(db, [
+    () => db.select().from(t.staffSchedules).where(inArray(t.staffSchedules.staffId, staffIds)),
+    () => db.select().from(t.staffBreaks).where(inArray(t.staffBreaks.staffId, staffIds)),
   ])
   const [owner] = await db
     .select({ id: t.adminUsers.id })
@@ -492,6 +492,67 @@ export async function seedDemo(
     )
   }
 
+  // Every status appears in the demo regardless of the random draws above.
+  const dropBusy = (g: GenAppointment) =>
+    busy.set(
+      g.staffId,
+      (busy.get(g.staffId) ?? []).filter((b) => b.start !== g.startsAt.getTime()),
+    )
+  // Deposit holds that were never paid, so the slot was released.
+  const lapsable = [
+    ...gens.filter((g) => g.status === 'confirmed' && g.startsAt > now),
+    ...gens.filter((g) => g.status === 'completed'),
+  ].filter((g) => g.deposit > 0 && !g.rescheduledFromId && !g.replacementRef)
+  for (const g of lapsable.slice(0, Math.max(0, 2 - gens.filter((x) => x.status === 'expired').length))) {
+    g.status = 'expired'
+    g.confirmedAt = null
+    g.completedAt = null
+    dropBusy(g)
+  }
+  // One deposit hold still open at seeding time. Like a real one it lapses after
+  // the hold time (the next booking or the maintenance job expires it).
+  if (!gens.some((g) => g.status === 'awaiting_deposit')) {
+    const combo = { services: ['nail-extensions'] }
+    for (let offset = 3; offset <= 10; offset++) {
+      const date = addDays(today, offset)
+      const probe = quoteFor(combo, ubToUtc(date, 12 * 60))
+      if (!probe || probe.quote.deposit === 0) break
+      const candidates = eligibleFor(probe.serviceIds).filter((id) => staffDay(id, date).shift)
+      const slot = candidates.length ? findSlot(candidates, date, probe.quote) : null
+      if (!slot) continue
+      const startsAt = ubToUtc(date, slot.start)
+      const { quote, serviceIds } = quoteFor(combo, startsAt)!
+      const endsAt = new Date(startsAt.getTime() + quote.durationMinutes * MINUTE)
+      const hold: GenAppointment = {
+        id: randomUUID(),
+        reference: nextRef(),
+        staffId: slot.staffId,
+        customerIdx: pickCustomer(),
+        date,
+        startsAt,
+        endsAt,
+        occupiedUntil: new Date(endsAt.getTime() + quote.bufferMinutes * MINUTE),
+        quote,
+        serviceIds,
+        status: 'awaiting_deposit',
+        source: 'website',
+        createdAt: new Date(now.getTime() - 3 * MINUTE),
+        confirmedAt: null,
+        cancelledAt: null,
+        completedAt: null,
+        deposit: quote.deposit,
+        staffRequested: false,
+        customerNote: null,
+        rescheduledFromId: null,
+        rescheduledAt: null,
+        replacementRef: null,
+      }
+      gens.push(hold)
+      addBusy(hold)
+      break
+    }
+  }
+
   // ---- Rows
   const appointmentRows: (typeof t.appointments.$inferInsert)[] = []
   const lineRows: (typeof t.appointmentServices.$inferInsert)[] = []
@@ -525,6 +586,10 @@ export async function seedDemo(
       depositAmount: g.deposit,
       staffRequested: g.staffRequested,
       customerNote: g.customerNote,
+      holdExpiresAt:
+        g.status === 'awaiting_deposit' || g.status === 'expired'
+          ? new Date(g.createdAt.getTime() + config.settings.holdMinutes * MINUTE)
+          : null,
       confirmedAt: g.confirmedAt,
       cancelledAt: g.cancelledAt,
       completedAt: g.completedAt,
@@ -617,7 +682,8 @@ export async function seedDemo(
 
     if (g.deposit > 0) {
       const paymentId = randomUUID()
-      const paid = g.status !== 'expired'
+      const open = g.status === 'awaiting_deposit'
+      const paid = g.status !== 'expired' && !open
       const refunded =
         g.status === 'cancelled' &&
         g.cancelledAt &&
@@ -628,7 +694,7 @@ export async function seedDemo(
         appointmentId: g.id,
         kind: 'deposit',
         method: 'qpay',
-        status: !paid ? 'expired' : refunded ? 'refunded' : 'paid',
+        status: open ? 'pending' : !paid ? 'expired' : refunded ? 'refunded' : 'paid',
         amount: g.deposit,
         provider: 'simulated',
         providerInvoiceId: `SIM-DEMO-${g.reference}`,
@@ -662,7 +728,7 @@ export async function seedDemo(
           'customer',
           `Сувд: ${g.deposit.toLocaleString('en-US')}₮ урьдчилгаа баталгаажлаа. ${g.reference} баталгаажсан.`,
         )
-      } else {
+      } else if (!open) {
         eventRows.push({
           appointmentId: g.id,
           kind: 'hold_expired',
