@@ -20,6 +20,8 @@ export const PERMISSIONS = [
   'settings.manage',
   'notifications.view',
   'assistant.view',
+  'assistant.reply',
+  'assistant.manage',
   'audit.view',
   'demo.reset',
 ] as const
@@ -56,6 +58,8 @@ export const ROLE_DEFINITIONS: Record<RoleKey, { name: string; description: stri
       'payments.view',
       'payments.manage',
       'notifications.view',
+      'assistant.view',
+      'assistant.reply',
     ],
   },
   specialist: {

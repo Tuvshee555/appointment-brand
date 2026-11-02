@@ -15,6 +15,13 @@
       "when": 1793508003371,
       "tag": "0001_appointments_no_overlap",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1793584996158,
+      "tag": "0002_assistant_intelligence",
+      "breakpoints": true
     }
   ]
 }

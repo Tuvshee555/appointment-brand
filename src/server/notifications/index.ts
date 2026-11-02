@@ -23,7 +23,10 @@ export type NotificationKind =
   | 'staff_new_booking'
   | 'staff_cancelled'
 
-export const NOTIFICATION_LABELS: Record<NotificationKind, string> = {
+/** Staff alerts that are not about one appointment (written by queueStaffAlert). */
+export type StaffAlertKind = 'assistant_handoff'
+
+export const NOTIFICATION_LABELS: Record<NotificationKind | StaffAlertKind, string> = {
   booking_created: 'Захиалга бүртгэгдсэн',
   booking_confirmed: 'Баталгаажсан',
   booking_rejected: 'Татгалзсан',
@@ -34,6 +37,7 @@ export const NOTIFICATION_LABELS: Record<NotificationKind, string> = {
   deposit_expired: 'Урьдчилгааны хугацаа дууссан',
   staff_new_booking: 'Ажилтанд: шинэ захиалга',
   staff_cancelled: 'Ажилтанд: цуцлалт',
+  assistant_handoff: 'Ажилтанд: чатад хүн хэрэгтэй',
 }
 
 export interface NotificationVars {
@@ -154,6 +158,41 @@ export async function queueNotification(
           ? 'Энэ суваг тохируулагдаагүй.'
           : null,
       dedupeKey: `${input.appointmentId}:${input.kind}:${audience}:${channel}:${input.variant ?? ''}`.slice(0, 200),
+      isDemo: input.isDemo,
+    })
+    .onConflictDoNothing({ target: t.notifications.dedupeKey })
+    .returning({ id: t.notifications.id })
+  return rows[0]?.id ?? null
+}
+
+/**
+ * Records a staff alert that is not tied to one appointment (the assistant asked for a person).
+ * Same delivery rules as appointment notifications: logged only in demo mode, Telegram when set.
+ */
+export async function queueStaffAlert(
+  db: Database,
+  input: { salonId: string; kind: StaffAlertKind; subject: string; body: string; isDemo: boolean; dedupeKey: string },
+): Promise<string | null> {
+  const demo = input.isDemo || isDemoMode()
+  const status = demo ? 'logged' : telegramConfigured() ? 'logged' : 'skipped'
+  const rows = await db
+    .insert(t.notifications)
+    .values({
+      salonId: input.salonId,
+      appointmentId: null,
+      kind: input.kind,
+      channel: 'telegram',
+      audience: 'staff',
+      recipient: 'Ажилтны Telegram групп',
+      subject: input.subject.slice(0, 200),
+      body: input.body,
+      status,
+      error: demo
+        ? 'Демо горим: гадагш илгээгээгүй, зөвхөн бүртгэлд хадгалсан.'
+        : status === 'skipped'
+          ? 'Энэ суваг тохируулагдаагүй.'
+          : null,
+      dedupeKey: input.dedupeKey.slice(0, 200),
       isDemo: input.isDemo,
     })
     .onConflictDoNothing({ target: t.notifications.dedupeKey })

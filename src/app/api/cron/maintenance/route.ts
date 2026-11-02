@@ -40,5 +40,11 @@ export async function GET(req: Request) {
     .where(
       and(eq(t.chatSessions.isDemo, true), lt(t.chatSessions.lastMessageAt, new Date(now.getTime() - 7 * 86_400_000))),
     )
+  // Admin «Try it» conversations are scratch work: kept for a week.
+  await db
+    .delete(t.chatSessions)
+    .where(
+      and(eq(t.chatSessions.isTest, true), lt(t.chatSessions.lastMessageAt, new Date(now.getTime() - 7 * 86_400_000))),
+    )
   return Response.json({ ok: true, at: now.toISOString(), report })
 }

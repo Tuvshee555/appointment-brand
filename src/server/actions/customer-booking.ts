@@ -3,18 +3,22 @@
 import { and, asc, eq } from 'drizzle-orm'
 import { z } from 'zod'
 import type { CalendarDay } from '@/lib/availability/engine'
-import { hoursUntil, minutesToTime } from '@/lib/datetime'
+import { minutesToTime } from '@/lib/datetime'
 import { bookingLookupSchema } from '@/lib/validation/booking'
 import { dateKey, minuteOfDay, optionalText } from '@/lib/validation/common'
 import * as t from '@/server/db/schema'
-import { ERR, ServiceError, type ServiceContext } from '@/server/context'
+import { ServiceError, type ServiceContext } from '@/server/context'
 import { ensureDepositInvoice, simulateBankPayment, verifyPayment, type PaymentView } from '@/server/payments/service'
 import { authorizeBooking, grantLookup } from '@/server/queries/customer-booking'
 import { publicContext } from '@/server/request'
 import { enforceRateLimit, LIMITS } from '@/server/security/rate-limit'
 import { dayAvailability, monthAvailability, prepareSelection } from '@/server/services/availability'
 import { rescheduleAppointment, transitionAppointment } from '@/server/services/booking'
-import { loadSalonConfig } from '@/server/services/salon'
+import {
+  assertCustomerCancellable,
+  customerRescheduleSelection,
+  loadSalonAppointment,
+} from '@/server/services/customer-changes'
 import { toFailure, type ActionResult } from './result'
 import type { PublicSlot } from './booking'
 
@@ -27,15 +31,6 @@ async function authorized(input: unknown): Promise<{ ctx: ServiceContext; appoin
   if (!ok)
     throw new ServiceError('forbidden', 'Энэ захиалгыг харах эрх алга. Захиалгын дугаар, утсаараа дахин нэвтэрнэ үү.')
   return { ctx, appointmentId: ok.id }
-}
-
-async function loadAppointment(ctx: ServiceContext, id: string) {
-  const [appt] = await ctx.db
-    .select()
-    .from(t.appointments)
-    .where(and(eq(t.appointments.id, id), eq(t.appointments.salonId, ctx.salonId)))
-  if (!appt) throw ERR.notFound('Захиалга')
-  return appt
 }
 
 /** Reference + phone lookup → a short-lived signed access cookie. */
@@ -66,12 +61,7 @@ export async function cancelBookingAction(
     const { reason } = z.object({ reason: optionalText(300) }).parse(input)
     const { ctx, appointmentId } = await authorized(input)
     await enforceRateLimit(ctx.db, LIMITS.customerChange, ctx.ipHash)
-    const appt = await loadAppointment(ctx, appointmentId)
-    if (appt.startsAt <= ctx.now)
-      throw new ServiceError(
-        'started',
-        'Эхэлсэн эсвэл өнгөрсөн цагийг онлайнаар цуцлах боломжгүй. Салон руу залгана уу.',
-      )
+    assertCustomerCancellable(await loadSalonAppointment(ctx, appointmentId), ctx.now)
     const result = await transitionAppointment(ctx, appointmentId, 'cancelled', {
       actor: 'customer',
       reason: 'customer_request',
@@ -83,43 +73,12 @@ export async function cancelBookingAction(
   }
 }
 
-async function rescheduleSelection(ctx: ServiceContext, appointmentId: string) {
-  const appt = await loadAppointment(ctx, appointmentId)
-  const config = await loadSalonConfig(ctx.db, ctx.salonId)
-  if (appt.status !== 'pending' && appt.status !== 'confirmed') {
-    throw new ServiceError('not_reschedulable', 'Энэ захиалгын цагийг өөрчлөх боломжгүй.')
-  }
-  if (hoursUntil(appt.startsAt, ctx.now) < config.settings.rescheduleNoticeHours) {
-    throw new ServiceError(
-      'too_late',
-      `Цаг эхлэхээс ${config.settings.rescheduleNoticeHours} цагийн дотор онлайнаар өөрчлөх боломжгүй. Салон руу залгана уу.`,
-    )
-  }
-  const lines = await ctx.db
-    .select()
-    .from(t.appointmentServices)
-    .where(eq(t.appointmentServices.appointmentId, appt.id))
-    .orderBy(asc(t.appointmentServices.sortOrder))
-  const addons = await ctx.db.select().from(t.appointmentAddons).where(eq(t.appointmentAddons.appointmentId, appt.id))
-  const items = lines
-    .filter((l) => l.serviceId)
-    .map((l) => ({
-      serviceId: l.serviceId!,
-      addonIds: addons.filter((a) => a.appointmentServiceId === l.id && a.addonId).map((a) => a.addonId!),
-    }))
-  if (items.length !== lines.length)
-    throw new ServiceError('service_removed', 'Үйлчилгээ шинэчлэгдсэн тул салон руу залгаж цагаа өөрчилнө үү.')
-  // A customer who chose a specialist keeps them; "any" stays "any".
-  const staffId = appt.staffRequested ? appt.staffId : null
-  return { appt, items, staffId }
-}
-
 export async function rescheduleMonthAction(input: unknown): Promise<ActionResult<{ days: CalendarDay[] }>> {
   try {
     const { month } = z.object({ month: z.string().regex(/^\d{4}-\d{2}$/) }).parse(input)
     const { ctx, appointmentId } = await authorized(input)
     await enforceRateLimit(ctx.db, LIMITS.availability, ctx.ipHash)
-    const { items, staffId } = await rescheduleSelection(ctx, appointmentId)
+    const { items, staffId } = await customerRescheduleSelection(ctx, appointmentId)
     const prepared = await prepareSelection(ctx.db, ctx.salonId, items, staffId, { publicOnly: true })
     const days = await monthAvailability(ctx.db, prepared, month, { now: ctx.now, excludeAppointmentId: appointmentId })
     return { ok: true, data: { days } }
@@ -133,7 +92,7 @@ export async function rescheduleDayAction(input: unknown): Promise<ActionResult<
     const { date } = z.object({ date: dateKey }).parse(input)
     const { ctx, appointmentId } = await authorized(input)
     await enforceRateLimit(ctx.db, LIMITS.availability, ctx.ipHash)
-    const { items, staffId } = await rescheduleSelection(ctx, appointmentId)
+    const { items, staffId } = await customerRescheduleSelection(ctx, appointmentId)
     const prepared = await prepareSelection(ctx.db, ctx.salonId, items, staffId, { publicOnly: true })
     const day = await dayAvailability(ctx.db, prepared, date, {
       now: ctx.now,
@@ -165,7 +124,7 @@ export async function rescheduleBookingAction(
     const { ctx, appointmentId } = await authorized(input)
     await enforceRateLimit(ctx.db, LIMITS.customerChange, ctx.ipHash)
     const { token } = access.parse(input)
-    const { staffId } = await rescheduleSelection(ctx, appointmentId)
+    const { staffId } = await customerRescheduleSelection(ctx, appointmentId)
     const result = await rescheduleAppointment(
       ctx,
       appointmentId,

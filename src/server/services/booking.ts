@@ -3,7 +3,7 @@
 // slot is re-validated against fresh rows under a per-salon-day advisory
 // lock, and the database exclusion constraint backs it up.
 import { randomInt } from 'node:crypto'
-import { and, asc, eq, lt, sql } from 'drizzle-orm'
+import { and, asc, eq, gt, inArray, lt, sql } from 'drizzle-orm'
 import { isStaffFree, pickStaff, preliminaryDayState, salonHoursFor } from '@/lib/availability/engine'
 import type { Quote, SelectionItem } from '@/lib/booking/pricing'
 import {
@@ -78,6 +78,13 @@ export interface CreateBookingOptions {
   /** Staff-created bookings choose their own status. */
   staffStatus?: 'confirmed' | 'pending'
   internalNote?: string | null
+  /**
+   * Refuse when this phone number already holds an active appointment overlapping the new one
+   * (checked under the day lock). Used by the assistant so a repeated chat cannot double-book.
+   */
+  preventCustomerOverlap?: boolean
+  /** False: record notifications without sending them (simulated assistant bookings). */
+  deliver?: boolean
 }
 
 export interface BookingResult {
@@ -314,6 +321,30 @@ async function insertBooking(
     }
     const free = candidates.filter((c) => isStaffFree(request, staffDayFor(data, c.id, input.date), input.start))
     if (free.length === 0) throw new ServiceError('slot_unavailable', 'slot')
+    if (opts.preventCustomerOverlap) {
+      const from = ubToUtc(input.date, input.start)
+      const to = new Date(from.getTime() + quote.durationMinutes * 60_000)
+      const [clash] = await tx
+        .select({ id: t.appointments.id })
+        .from(t.appointments)
+        .innerJoin(t.customers, eq(t.customers.id, t.appointments.customerId))
+        .where(
+          and(
+            eq(t.appointments.salonId, ctx.salonId),
+            eq(t.customers.phone, input.customer.phone),
+            inArray(t.appointments.status, ['awaiting_deposit', 'pending', 'confirmed']),
+            lt(t.appointments.startsAt, to),
+            gt(t.appointments.endsAt, from),
+          ),
+        )
+        .limit(1)
+      if (clash) {
+        throw new ServiceError(
+          'duplicate_booking',
+          'Энэ утасны дугаарт энэ цагтай давхцах захиалга аль хэдийн бүртгэлтэй байна. Өөр цаг сонгох эсвэл салон руу залгана уу.',
+        )
+      }
+    }
     const staffId =
       input.staffId ??
       pickStaff(
@@ -443,7 +474,7 @@ async function insertBooking(
       quote,
     }
   })
-  for (const id of notificationIds) await deliverNotification(ctx.db, id)
+  if (opts.deliver !== false) for (const id of notificationIds) await deliverNotification(ctx.db, id)
   return result
 }
 
@@ -455,6 +486,8 @@ export interface TransitionOptions {
   note?: string | null
   /** Who in the salon performed it (audit and history). */
   adminUserId?: string | null
+  /** False: record notifications without sending them (simulated changes). */
+  deliver?: boolean
 }
 
 async function lockAppointment(tx: Database, salonId: string, appointmentId: string): Promise<AppointmentRow> {
@@ -562,7 +595,7 @@ export async function transitionAppointment(
     }
     return { status: to, depositOutcome: depositOutcome === 'none' ? undefined : depositOutcome }
   })
-  for (const id of notificationIds) await deliverNotification(ctx.db, id)
+  if (opts.deliver !== false) for (const id of notificationIds) await deliverNotification(ctx.db, id)
   return out
 }
 
@@ -596,7 +629,7 @@ export async function rescheduleAppointment(
   ctx: ServiceContext,
   appointmentId: string,
   input: RescheduleInput,
-  opts: { actor: 'customer' | 'staff'; publicRules: boolean; adminUserId?: string | null },
+  opts: { actor: 'customer' | 'staff'; publicRules: boolean; adminUserId?: string | null; deliver?: boolean },
 ): Promise<{
   appointmentId: string
   reference: string
@@ -765,7 +798,7 @@ export async function rescheduleAppointment(
         staffName: staff.displayName,
       }
     })
-    for (const id of notificationIds) await deliverNotification(ctx.db, id)
+    if (opts.deliver !== false) for (const id of notificationIds) await deliverNotification(ctx.db, id)
     return result
   } catch (err) {
     if (pgErrorCode(err) === '23P01' || (err instanceof ServiceError && err.code === 'slot_unavailable')) {

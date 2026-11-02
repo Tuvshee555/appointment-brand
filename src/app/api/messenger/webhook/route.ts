@@ -5,7 +5,7 @@
 // Send API. Booking confirmation uses a postback button carrying the draft id.
 import { createHmac, timingSafeEqual } from 'node:crypto'
 import type { ChatPart } from '@/lib/assistant/types'
-import { handleChat } from '@/server/assistant/engine'
+import { handleChat } from '@/server/assistant/handler'
 import { publicContext } from '@/server/request'
 import { sha256Hex } from '@/server/security/crypto'
 import { hitRateLimit, LIMITS } from '@/server/security/rate-limit'
@@ -38,7 +38,8 @@ function validSignature(raw: string, header: string | null) {
 function toMessenger(parts: ChatPart[]) {
   const out: Record<string, unknown>[] = []
   for (const p of parts) {
-    if (p.type === 'text' || p.type === 'handoff') out.push({ text: p.text.slice(0, 1900) })
+    if (p.type === 'text' || p.type === 'handoff' || p.type === 'staff' || p.type === 'notice')
+      out.push({ text: p.text.slice(0, 1900) })
     if (p.type === 'slots') out.push({ text: `${p.dateLabel}: ${p.slots.map((s) => s.label).join(', ')}` })
     if (p.type === 'draft') {
       out.push({
@@ -62,6 +63,9 @@ function toMessenger(parts: ChatPart[]) {
       })
     }
     if (p.type === 'booking') out.push({ text: `Захиалга ${p.reference}: ${p.statusLabel}. ${p.explanation}` })
+    if (p.type === 'appointment')
+      out.push({ text: `${p.summary.reference}: ${p.summary.dateLabel} ${p.summary.timeRange}, ${p.summary.services.join(', ')}` })
+    if (p.type === 'change') out.push({ text: `${p.summary.reference}: ${p.summary.from}${p.summary.to ? ` → ${p.summary.to}` : ''}. ${p.summary.note}` })
   }
   return out
 }
@@ -75,7 +79,7 @@ export async function POST(req: Request) {
     entry?: {
       messaging?: {
         sender?: { id?: string }
-        message?: { text?: string; is_echo?: boolean }
+        message?: { mid?: string; text?: string; is_echo?: boolean }
         postback?: { payload?: string }
       }[]
     }[]
@@ -87,7 +91,9 @@ export async function POST(req: Request) {
       if (!psid || event.message?.is_echo) continue
       if (!(await hitRateLimit(ctx.db, LIMITS.messenger, psid))) continue
       let input: Parameters<typeof handleChat>[1] | null = null
-      if (event.message?.text) input = { message: event.message.text.slice(0, 500) }
+      if (event.message?.text)
+        // Meta retries a webhook it thinks failed; the message id makes the retry return the stored reply.
+        input = { message: event.message.text.slice(0, 500), clientMessageId: event.message.mid?.slice(0, 80) }
       else if (event.postback?.payload) {
         try {
           const payload = JSON.parse(event.postback.payload) as { type?: string; draftId?: string }

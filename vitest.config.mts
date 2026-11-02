@@ -39,6 +39,24 @@ export default defineConfig({
           hookTimeout: 180_000,
         },
       },
+      {
+        // The held-out conversation set: run on purpose (npm run eval:assistant), never as a gate.
+        extends: true,
+        test: {
+          name: 'eval',
+          include: ['tests/eval/**/*.eval.ts'],
+          environment: 'node',
+          globalSetup: ['tests/integration/global-setup.ts'],
+          env: {
+            TZ: 'UTC',
+            DEMO_MODE: 'true',
+            QPAY_MODE: 'mock',
+            SESSION_SECRET: 'integration-test-secret-0123456789',
+          },
+          testTimeout: 600_000,
+          hookTimeout: 180_000,
+        },
+      },
     ],
   },
 })

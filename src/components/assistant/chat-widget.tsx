@@ -1,26 +1,50 @@
 'use client'
 
-import { CalendarCheck2, Loader2, MessageCircle, RotateCcw, Send, X } from 'lucide-react'
+import { CalendarCheck2, CalendarClock, Loader2, MessageCircle, RotateCcw, Send, UserRound, X } from 'lucide-react'
 import Link from 'next/link'
-import { useEffect, useRef, useState, type FormEvent } from 'react'
-import type { ChatAction, ChatMessage, ChatPart, ChatResponse, QuickReply } from '@/lib/assistant/types'
+import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react'
+import type {
+  ChatAction,
+  ChatMessage,
+  ChatPart,
+  ChatResponse,
+  ConversationStatus,
+  QuickReply,
+} from '@/lib/assistant/types'
 import { withBasePath } from '@/lib/base-path'
 import { formatDuration } from '@/lib/datetime'
 import { formatMoney } from '@/lib/money'
 import { cn } from '@/lib/cn'
 
-async function callChat(body: { message?: string; action?: ChatAction }): Promise<ChatResponse> {
-  const res = await fetch(withBasePath('/api/chat'), {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-  })
-  const data = (await res.json().catch(() => null)) as ChatResponse | null
-  if (!data) return { messages: [], mode: 'rules', error: 'Холболтын алдаа гарлаа. Дахин оролдоно уу.' }
-  return data
+async function callChat(body: { message?: string; action?: ChatAction; clientMessageId?: string }): Promise<ChatResponse> {
+  try {
+    const res = await fetch(withBasePath('/api/chat'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    })
+    const data = (await res.json().catch(() => null)) as ChatResponse | null
+    return data ?? { messages: [], mode: 'rules', error: 'Холболтын алдаа гарлаа. Дахин оролдоно уу.' }
+  } catch {
+    return { messages: [], mode: 'rules', error: 'Холболтын алдаа гарлаа. Дахин оролдоно уу.' }
+  }
 }
 
-function Part({
+async function loadHistory(after?: string): Promise<{ messages: ChatMessage[]; status: ConversationStatus } | null> {
+  try {
+    const res = await fetch(withBasePath(`/api/chat${after ? `?after=${encodeURIComponent(after)}` : ''}`))
+    if (!res.ok) return null
+    return (await res.json()) as { messages: ChatMessage[]; status: ConversationStatus }
+  } catch {
+    return null
+  }
+}
+
+function newId() {
+  return typeof crypto !== 'undefined' && 'randomUUID' in crypto ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`
+}
+
+export function ChatPartView({
   part,
   onAction,
   onQuick,
@@ -36,6 +60,17 @@ function Part({
       return <p className="whitespace-pre-line">{part.text}</p>
     case 'handoff':
       return <p className="rounded-xs bg-amber-50 px-3 py-2 text-[0.85rem] text-amber-700">{part.text}</p>
+    case 'notice':
+      return <p className="rounded-xs bg-sand px-3 py-1.5 text-[0.75rem] text-ink-3">{part.text}</p>
+    case 'staff':
+      return (
+        <div>
+          <p className="flex items-center gap-1.5 text-[0.72rem] font-medium text-cocoa-600">
+            <UserRound className="size-3.5" aria-hidden /> {part.name} · ажилтан
+          </p>
+          <p className="mt-0.5 whitespace-pre-line">{part.text}</p>
+        </div>
+      )
     case 'quick_replies':
       return (
         <div className="flex flex-wrap gap-1.5 pt-1">
@@ -144,6 +179,61 @@ function Part({
         </div>
       )
     }
+    case 'appointment': {
+      const s = part.summary
+      return (
+        <div className="rounded-xs border border-line bg-ivory p-3 text-[0.82rem]">
+          <p className="flex items-center gap-2 font-medium text-cocoa-900">
+            <CalendarClock className="size-4" aria-hidden /> {s.reference} · {s.statusLabel}
+          </p>
+          <p className="mt-1 text-ink-2">
+            {s.dateLabel}, <span className="tabular">{s.timeRange}</span>
+          </p>
+          <p className="text-ink-3">
+            {s.services.join(', ')} · {s.staffName}
+          </p>
+        </div>
+      )
+    }
+    case 'change': {
+      const s = part.summary
+      return (
+        <div className="space-y-2 rounded-xs border border-cocoa-200 bg-porcelain p-3 text-[0.82rem]">
+          <p className="text-[0.75rem] font-semibold tracking-wide text-cocoa-600 uppercase">
+            {s.kind === 'cancel' ? 'Цуцлах хүсэлт' : 'Цаг өөрчлөх хүсэлт'}
+          </p>
+          <p>
+            {s.reference}: <span className="tabular">{s.from}</span>
+            {s.to ? (
+              <>
+                {' '}
+                → <span className="tabular font-medium">{s.to}</span>
+              </>
+            ) : null}
+          </p>
+          {s.staffName ? <p className="text-ink-3">Мастер: {s.staffName}</p> : null}
+          <p className="text-ink-3">{s.note}</p>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => onAction({ type: 'confirm_change', draftId: part.draftId }, 'Тийм')}
+              className="flex-1 rounded-xs bg-cocoa-800 py-2 text-sm text-ivory hover:bg-cocoa-900 disabled:opacity-50"
+            >
+              {s.kind === 'cancel' ? 'Цуцлах' : 'Өөрчлөх'}
+            </button>
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => onAction({ type: 'cancel_change', draftId: part.draftId }, 'Үгүй')}
+              className="rounded-xs border border-line-strong px-3 py-2 text-sm text-ink-2 hover:bg-sand disabled:opacity-50"
+            >
+              Үгүй
+            </button>
+          </div>
+        </div>
+      )
+    }
     case 'booking':
       return (
         <div className="space-y-2 rounded-xs border border-sage-600/30 bg-sage-50 p-3">
@@ -152,7 +242,7 @@ function Part({
           </p>
           <p className="text-[0.82rem] text-ink-2">{part.explanation}</p>
           <Link
-            href={part.link}
+            href={part.link ?? `/booking/${part.reference}`}
             className="inline-block text-[0.82rem] font-medium text-cocoa-800 underline underline-offset-4"
           >
             Захиалгаа харах
@@ -162,36 +252,76 @@ function Part({
   }
 }
 
+const POLL_MS = 6000
+
 export function ChatWidget({ salonName }: { salonName: string }) {
   const [open, setOpen] = useState(false)
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [mode, setMode] = useState<'ai' | 'rules'>('rules')
+  const [status, setStatus] = useState<ConversationStatus>('bot')
   const [input, setInput] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const listRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
   const started = useRef(false)
+  const lastAt = useRef<string | undefined>(undefined)
 
-  async function send(body: { message?: string; action?: ChatAction }, userLabel?: string) {
-    setBusy(true)
-    setError(null)
-    if (userLabel)
-      setMessages((m) => [...m, { id: `u-${Date.now()}`, role: 'user', parts: [{ type: 'text', text: userLabel }] }])
-    const res = await callChat(body)
-    setBusy(false)
-    if (res.error) setError(res.error)
-    setMode(res.mode)
-    setMessages((m) => [...m, ...res.messages])
-  }
+  const append = useCallback((incoming: ChatMessage[]) => {
+    if (!incoming.length) return
+    setMessages((m) => {
+      const known = new Set(m.map((x) => x.id))
+      return [...m, ...incoming.filter((x) => !known.has(x.id))]
+    })
+    const latest = incoming.map((x) => x.createdAt).filter(Boolean).sort().at(-1)
+    if (latest) lastAt.current = latest
+  }, [])
+
+  const send = useCallback(
+    async (body: { message?: string; action?: ChatAction }, userLabel?: string) => {
+      setBusy(true)
+      setError(null)
+      if (userLabel)
+        setMessages((m) => [...m, { id: `u-${newId()}`, role: 'user', parts: [{ type: 'text', text: userLabel }] }])
+      const res = await callChat(body.message ? { ...body, clientMessageId: newId() } : body)
+      setBusy(false)
+      if (res.error) setError(res.error)
+      setMode(res.mode)
+      if (res.status) setStatus(res.status)
+      append(res.messages.map((m) => ({ ...m, createdAt: m.createdAt ?? new Date().toISOString() })))
+    },
+    [append],
+  )
+
+  // Reopening the widget continues the conversation; a new visitor gets the greeting.
+  useEffect(() => {
+    if (!open || started.current) return
+    started.current = true
+    void (async () => {
+      const history = await loadHistory()
+      if (history?.messages.length) {
+        setMessages(history.messages)
+        setStatus(history.status)
+        lastAt.current = history.messages.at(-1)?.createdAt
+      } else void send({ action: { type: 'hello' } })
+    })()
+  }, [open, send])
 
   useEffect(() => {
-    if (open && !started.current) {
-      started.current = true
-      void send({ action: { type: 'hello' } })
-    }
     if (open) setTimeout(() => inputRef.current?.focus(), 50)
   }, [open])
+
+  // While staff handle the conversation, their replies arrive here.
+  useEffect(() => {
+    if (!open || (status !== 'staff' && status !== 'handoff')) return
+    const timer = setInterval(async () => {
+      const update = await loadHistory(lastAt.current)
+      if (!update) return
+      setStatus(update.status)
+      append(update.messages.filter((m) => m.role !== 'user'))
+    }, POLL_MS)
+    return () => clearInterval(timer)
+  }, [open, status, append])
 
   useEffect(() => {
     listRef.current?.scrollTo({ top: listRef.current.scrollHeight, behavior: 'smooth' })
@@ -237,8 +367,9 @@ export function ChatWidget({ salonName }: { salonName: string }) {
             <div>
               <p className="font-display text-xl leading-none text-cocoa-900">{salonName} · туслах</p>
               <p className="mt-1 text-[0.7rem] text-ink-3">
-                {mode === 'ai' ? 'AI загвар · ' : 'Дүрэмд суурилсан туслах · '}
-                салоны бодит үнэ, сул цагаас хариулна
+                {status === 'staff'
+                  ? 'Ажилтан энэ чатад хариулж байна'
+                  : `${mode === 'ai' ? 'AI туслах · ' : ''}салоны бодит үнэ, сул цагаас хариулна`}
               </p>
             </div>
             <div className="flex items-center gap-1">
@@ -246,6 +377,7 @@ export function ChatWidget({ salonName }: { salonName: string }) {
                 type="button"
                 onClick={() => {
                   setMessages([])
+                  setStatus('bot')
                   void send({ action: { type: 'reset' } })
                 }}
                 className="inline-flex size-9 items-center justify-center rounded-xs text-ink-3 hover:bg-sand"
@@ -275,11 +407,13 @@ export function ChatWidget({ salonName }: { salonName: string }) {
                     'max-w-[88%] space-y-2 rounded-card px-3.5 py-2.5',
                     m.role === 'user'
                       ? 'rounded-br-xs bg-cocoa-800 text-ivory'
-                      : 'rounded-bl-xs border border-line bg-porcelain text-ink',
+                      : m.role === 'staff'
+                        ? 'rounded-bl-xs border border-cocoa-300 bg-cocoa-50 text-ink'
+                        : 'rounded-bl-xs border border-line bg-porcelain text-ink',
                   )}
                 >
                   {m.parts.map((p, i) => (
-                    <Part key={i} part={p} onAction={onAction} onQuick={onQuick} busy={busy} />
+                    <ChatPartView key={i} part={p} onAction={onAction} onQuick={onQuick} busy={busy} />
                   ))}
                 </div>
               </div>
@@ -303,7 +437,7 @@ export function ChatWidget({ salonName }: { salonName: string }) {
                 onChange={(e) => setInput(e.target.value)}
                 maxLength={500}
                 autoComplete="off"
-                placeholder="Жишээ: Гель будалт хэд вэ?"
+                placeholder="Жишээ: margaash 3 tsagt gel budalt"
                 className="min-w-0 flex-1 rounded-xs border border-line-strong bg-ivory px-3 py-2.5 text-sm focus:border-cocoa-600 focus:outline-none"
               />
               <button
