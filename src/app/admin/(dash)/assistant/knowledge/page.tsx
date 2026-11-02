@@ -9,7 +9,15 @@ import { listKnowledge } from '@/server/queries/admin-assistant'
 
 export const metadata = { title: 'Мэдлэг · AI туслах' }
 
-const EMPTY: KnowledgeValues = { id: null, topic: 'general', question: '', answer: '', keywords: '', isActive: true, verified: false }
+const EMPTY: KnowledgeValues = {
+  id: null,
+  topic: 'general',
+  question: '',
+  answer: '',
+  keywords: '',
+  isActive: true,
+  verified: false,
+}
 
 export default async function KnowledgePage() {
   const session = await requireAdminPage('assistant.view')
@@ -36,7 +44,11 @@ export default async function KnowledgePage() {
                 <span className="flex flex-wrap items-center gap-2">
                   {k.question}
                   <Badge tone="muted">{TOPICS[k.topic as KnowledgeValues['topic']] ?? k.topic}</Badge>
-                  {k.verifiedAt ? <Badge tone="success">Баталгаажсан</Badge> : <Badge tone="warning">Баталгаажаагүй</Badge>}
+                  {k.verifiedAt ? (
+                    <Badge tone="success">Баталгаажсан</Badge>
+                  ) : (
+                    <Badge tone="warning">Баталгаажаагүй</Badge>
+                  )}
                   {!k.isActive ? <Badge tone="muted">Идэвхгүй</Badge> : null}
                 </span>
               }

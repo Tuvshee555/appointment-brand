@@ -7,7 +7,7 @@ import { isDateKey, timeToMinutes } from '@/lib/datetime'
 import { normalizePhone } from '@/lib/phone'
 import { detect, type Detection, type Intent, type Topic } from './engine/intents'
 import { findDigits8, findName, findPhone, findReference, isNo, isYes, numberChoice } from './engine/signals'
-import { normText, probeOf } from './engine/text'
+import { normText, phoneticTokens, probeOf } from './engine/text'
 import { findVocabulary } from './engine/vocab'
 import { parseWhen, type TimeRange } from './engine/when'
 import type { GenericTerm, Snapshot } from './salon/port'
@@ -55,7 +55,9 @@ export function readMessage(
   const genericMatch = matches.find((m) => m.kind === 'generic')
   const outsideTerm = matches.some((m) => m.kind === 'outside')
   const generic =
-    genericMatch && !services.length && !outsideTerm ? { key: genericMatch.id, ...snap.generics.get(genericMatch.id)! } : undefined
+    genericMatch && !services.length && !outsideTerm
+      ? { key: genericMatch.id, ...snap.generics.get(genericMatch.id)! }
+      : undefined
   const staffNamed = matches.filter((m) => m.kind === 'staff').map((m) => m.id)
   const outside = matches.find((m) => m.kind === 'outside')?.id
   const anyStaff = matches.some((m) => m.kind === 'any_staff')
@@ -64,6 +66,14 @@ export function readMessage(
   const phone = findPhone(text) ?? undefined
   const yes = isYes(norm, text)
   const no = !yes && isNo(norm, text)
+  const name = yes || no ? undefined : (findName(text, opts.expectName) ?? undefined)
+  // A customer called Ану answering "your name?" is not asking for the specialist Ану.
+  if (name) {
+    const inName = new Set(phoneticTokens(normText(name)))
+    const tokens = phoneticTokens(norm)
+    const own = matches.filter((m) => m.kind === 'staff' && m.at.every((i) => inName.has(tokens[i])))
+    for (const m of own) staffNamed.splice(staffNamed.indexOf(m.id), 1)
+  }
   return {
     text,
     norm,
@@ -80,7 +90,7 @@ export function readMessage(
     durationQuestion: when.durationQuestion,
     phone,
     digits: findDigits8(text) ?? undefined,
-    name: yes || no ? undefined : (findName(text, opts.expectName) ?? undefined),
+    name,
     reference,
     yes,
     no,
@@ -126,7 +136,18 @@ export interface ModelProposal {
   answer?: unknown
 }
 
-const MODEL_INTENTS: Intent[] = ['book', 'reschedule', 'cancel', 'status', 'human', 'complaint', 'greeting', 'thanks', 'identity', 'privacy']
+const MODEL_INTENTS: Intent[] = [
+  'book',
+  'reschedule',
+  'cancel',
+  'status',
+  'human',
+  'complaint',
+  'greeting',
+  'thanks',
+  'identity',
+  'privacy',
+]
 const MODEL_TOPICS: Topic[] = [
   'price',
   'duration',
@@ -158,14 +179,18 @@ export function groundProposal(
   if (typeof p.intent === 'string' && MODEL_INTENTS.includes(p.intent as Intent) && !r.det.intents.length)
     r.det.intents.push(p.intent as Intent)
   if (Array.isArray(p.topics))
-    for (const t of p.topics) if (MODEL_TOPICS.includes(t as Topic) && !r.det.topics.includes(t as Topic)) r.det.topics.push(t as Topic)
+    for (const t of p.topics)
+      if (MODEL_TOPICS.includes(t as Topic) && !r.det.topics.includes(t as Topic)) r.det.topics.push(t as Topic)
   if (Array.isArray(p.services) && !r.services.length)
-    r.services = [...new Set(p.services.map((k) => keys.services.get(String(k))).filter((id): id is string => Boolean(id)))].slice(0, 3)
+    r.services = [
+      ...new Set(p.services.map((k) => keys.services.get(String(k))).filter((id): id is string => Boolean(id))),
+    ].slice(0, 3)
   if (r.staffId === undefined && typeof p.staff === 'string') {
     if (p.staff === 'any') r.staffId = null
     else if (keys.staff.has(p.staff)) r.staffId = keys.staff.get(p.staff)
   }
-  if (!r.date && typeof p.date === 'string' && isDateKey(p.date) && p.date >= window.today && p.date <= window.last) r.date = p.date
+  if (!r.date && typeof p.date === 'string' && isDateKey(p.date) && p.date >= window.today && p.date <= window.last)
+    r.date = p.date
   if (r.time === undefined && typeof p.time === 'string') {
     const m = timeToMinutes(p.time)
     if (m !== null) r.time = m
@@ -185,12 +210,62 @@ export function detectLocale(text: string, previous: 'mn' | 'en' | undefined): '
   const words = text.toLowerCase().match(/[a-z']+/g) ?? []
   if (!words.length) return previous ?? 'mn'
   const english = new Set([
-    'i', 'you', 'my', 'me', 'the', 'a', 'an', 'is', 'are', 'can', 'could', 'how', 'what', 'when', 'where',
-    'who', 'which', 'do', 'does', 'want', 'would', 'like', 'please', 'book', 'appointment', 'cancel', 'change',
-    'much', 'price', 'tomorrow', 'today', 'available', 'need', 'to', 'for', 'at', 'have', 'there', 'yes', 'no',
-    'thanks', 'thank', 'hello', 'hi', 'long', 'take', 'time', 'open', 'closed', 'your', 'it', 'this', 'that',
+    'i',
+    'you',
+    'my',
+    'me',
+    'the',
+    'a',
+    'an',
+    'is',
+    'are',
+    'can',
+    'could',
+    'how',
+    'what',
+    'when',
+    'where',
+    'who',
+    'which',
+    'do',
+    'does',
+    'want',
+    'would',
+    'like',
+    'please',
+    'book',
+    'appointment',
+    'cancel',
+    'change',
+    'much',
+    'price',
+    'tomorrow',
+    'today',
+    'available',
+    'need',
+    'to',
+    'for',
+    'at',
+    'have',
+    'there',
+    'yes',
+    'no',
+    'thanks',
+    'thank',
+    'hello',
+    'hi',
+    'long',
+    'take',
+    'time',
+    'open',
+    'closed',
+    'your',
+    'it',
+    'this',
+    'that',
   ])
-  const mongolian = /^(?:tsag\w*|cag\w*|bn|bna|baina|uu|vv|ve|yu|yuu|hed\w*|une\w*|margaash\w*|zahial\w*|hiilge\w*|bolno|boloh|bolh\w*|tiim|ugui|za|bayarlalaa|bga\w*|bdag|sain|unuudur|onoodor|ene|ter|minii|tanai|hums\w*|budalt\w*|sungalt\w*|garig\w*|garag\w*|oroi|ugluu)$/
+  const mongolian =
+    /^(?:tsag\w*|cag\w*|bn|bna|baina|uu|vv|ve|yu|yuu|hed\w*|une\w*|margaash\w*|zahial\w*|hiilge\w*|bolno|boloh|bolh\w*|tiim|ugui|za|bayarlalaa|bga\w*|bdag|sain|unuudur|onoodor|ene|ter|minii|tanai|hums\w*|budalt\w*|sungalt\w*|garig\w*|garag\w*|oroi|ugluu)$/
   const en = words.filter((w) => english.has(w)).length
   const mn = words.filter((w) => mongolian.test(w)).length
   if (mn > 0) return 'mn'

@@ -133,7 +133,11 @@ export function createSalonPort(ctx: ServiceContext, opts: PortOptions): SalonPo
     }
     const vocabulary = compileVocabulary([
       ...serviceVocabulary(portServices),
-      ...GENERIC_TERMS.filter((g) => generics.has(g.key)).map((g) => ({ id: g.key, kind: 'generic', phrases: g.phrases })),
+      ...GENERIC_TERMS.filter((g) => generics.has(g.key)).map((g) => ({
+        id: g.key,
+        kind: 'generic',
+        phrases: g.phrases,
+      })),
       ...staff.map((x) => ({ id: x.id, kind: 'staff', phrases: [x.displayName] })),
       { id: 'any', kind: 'any_staff', phrases: ANY_STAFF_PHRASES },
       ...OUTSIDE_PHRASES.map((p) => ({ id: p, kind: 'outside', phrases: [p] })),
@@ -412,6 +416,11 @@ export async function activeIds(db: Database, ids: string[]): Promise<string[]> 
   const rows = await db
     .select({ id: t.appointments.id })
     .from(t.appointments)
-    .where(and(inArray(t.appointments.id, ids), inArray(t.appointments.status, ['awaiting_deposit', 'pending', 'confirmed'])))
+    .where(
+      and(
+        inArray(t.appointments.id, ids),
+        inArray(t.appointments.status, ['awaiting_deposit', 'pending', 'confirmed']),
+      ),
+    )
   return rows.map((r) => r.id)
 }

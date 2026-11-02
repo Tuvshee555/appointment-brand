@@ -64,8 +64,13 @@ function toMessenger(parts: ChatPart[]) {
     }
     if (p.type === 'booking') out.push({ text: `Захиалга ${p.reference}: ${p.statusLabel}. ${p.explanation}` })
     if (p.type === 'appointment')
-      out.push({ text: `${p.summary.reference}: ${p.summary.dateLabel} ${p.summary.timeRange}, ${p.summary.services.join(', ')}` })
-    if (p.type === 'change') out.push({ text: `${p.summary.reference}: ${p.summary.from}${p.summary.to ? ` → ${p.summary.to}` : ''}. ${p.summary.note}` })
+      out.push({
+        text: `${p.summary.reference}: ${p.summary.dateLabel} ${p.summary.timeRange}, ${p.summary.services.join(', ')}`,
+      })
+    if (p.type === 'change')
+      out.push({
+        text: `${p.summary.reference}: ${p.summary.from}${p.summary.to ? ` → ${p.summary.to}` : ''}. ${p.summary.note}`,
+      })
   }
   return out
 }

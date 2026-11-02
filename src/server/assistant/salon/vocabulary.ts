@@ -32,12 +32,25 @@ export const SERVICE_ALIASES: Record<string, string[]> = {
 }
 
 /** Generic words → the services they may mean, with the usual meaning when there is one. */
-export const GENERIC_TERMS: { key: string; label: string; phrases: string[]; slugs: string[]; canonical: string | null }[] = [
+export const GENERIC_TERMS: {
+  key: string
+  label: string
+  phrases: string[]
+  slugs: string[]
+  canonical: string | null
+}[] = [
   {
     key: 'manicure',
     label: 'Маникюр',
     phrases: ['маникюр', 'manicure', 'гарын хумс'],
-    slugs: ['basic-manicure', 'classic-manicure', 'mens-manicure', 'gel-polish', 'french-manicure', 'nail-strengthening'],
+    slugs: [
+      'basic-manicure',
+      'classic-manicure',
+      'mens-manicure',
+      'gel-polish',
+      'french-manicure',
+      'nail-strengthening',
+    ],
     canonical: 'classic-manicure',
   },
   {

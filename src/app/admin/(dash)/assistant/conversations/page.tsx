@@ -28,7 +28,8 @@ const FILTERS: Record<ConversationFilter, string> = {
   test: 'Туршилт',
 }
 const PAGE_SIZE = 30
-const tone = (status: string) => (status === 'handoff' ? 'warning' : status === 'staff' ? 'info' : status === 'closed' ? 'muted' : 'neutral')
+const tone = (status: string) =>
+  status === 'handoff' ? 'warning' : status === 'staff' ? 'info' : status === 'closed' ? 'muted' : 'neutral'
 
 export default async function ConversationsPage({
   searchParams,
@@ -66,7 +67,9 @@ export default async function ConversationsPage({
             href={href(k as ConversationFilter)}
             className={cn(
               'rounded-full border px-3 py-1.5 text-sm',
-              filter === k ? 'border-cocoa-800 bg-cocoa-800 text-ivory' : 'border-line-strong text-ink-2 hover:border-cocoa-700',
+              filter === k
+                ? 'border-cocoa-800 bg-cocoa-800 text-ivory'
+                : 'border-line-strong text-ink-2 hover:border-cocoa-700',
             )}
           >
             {label}
@@ -91,7 +94,8 @@ export default async function ConversationsPage({
                       </span>
                     </span>
                     <span className="mt-0.5 block text-xs text-ink-3">
-                      {s.channel === 'messenger' ? 'Messenger' : s.channel === 'test' ? 'Туршилт' : 'Вэбсайт'} · {s.messageCount} мессеж
+                      {s.channel === 'messenger' ? 'Messenger' : s.channel === 'test' ? 'Туршилт' : 'Вэбсайт'} ·{' '}
+                      {s.messageCount} мессеж
                       {reference ? ` · ${reference}` : ''}
                       {s.handoffReason ? ` · ${HANDOFF_LABELS[s.handoffReason] ?? s.handoffReason}` : ''}
                     </span>
@@ -119,7 +123,12 @@ export default async function ConversationsPage({
             <div className="space-y-5">
               <div className="space-y-3">
                 {detail.messages.map((m) => {
-                  const meta = (m.meta ?? {}) as { parts?: ChatPart[]; mode?: string; intent?: string; sensitive?: boolean }
+                  const meta = (m.meta ?? {}) as {
+                    parts?: ChatPart[]
+                    mode?: string
+                    intent?: string
+                    sensitive?: boolean
+                  }
                   const parts = meta.parts ?? []
                   const shown = contacts ? parts : redactParts(parts)
                   return (
@@ -135,7 +144,9 @@ export default async function ConversationsPage({
                         )}
                       >
                         {m.role === 'user' ? (
-                          <p className="whitespace-pre-line">{contacts ? m.content : redactCustomerText(m.content, Boolean(meta.sensitive))}</p>
+                          <p className="whitespace-pre-line">
+                            {contacts ? m.content : redactCustomerText(m.content, Boolean(meta.sensitive))}
+                          </p>
                         ) : (
                           <p className="whitespace-pre-line">
                             {shown
@@ -159,7 +170,11 @@ export default async function ConversationsPage({
                           </p>
                         )}
                         <p className={cn('mt-1 text-[0.68rem]', m.role === 'user' ? 'text-ivory/70' : 'text-ink-3')}>
-                          {m.role === 'staff' ? 'ажилтан · ' : m.role === 'assistant' ? `${meta.mode === 'ai' ? 'AI' : 'дүрэм'} · ${meta.intent ?? ''} · ` : ''}
+                          {m.role === 'staff'
+                            ? 'ажилтан · '
+                            : m.role === 'assistant'
+                              ? `${meta.mode === 'ai' ? 'AI' : 'дүрэм'} · ${meta.intent ?? ''} · `
+                              : ''}
                           {formatDateTime(m.createdAt)}
                         </p>
                       </div>
@@ -180,7 +195,9 @@ export default async function ConversationsPage({
                   </ul>
                 </div>
               ) : null}
-              {!detail.s.isTest ? <ConversationActions sessionId={detail.s.id} status={detail.s.status} canReply={canReply} /> : null}
+              {!detail.s.isTest ? (
+                <ConversationActions sessionId={detail.s.id} status={detail.s.status} canReply={canReply} />
+              ) : null}
             </div>
           ) : (
             <EmptyState title="Яриа сонгоно уу" />

@@ -53,12 +53,52 @@ export function findReference(raw: string, prefix = 'SV'): string | null {
 
 /** Words that make a reply something other than a name (whole words, or these stems). */
 const NOT_NAME_WORDS = new Set([
-  'үнэ', 'хэд', 'вэ', 'бэ', 'уу', 'үү', 'юу', 'тийм', 'үгүй', 'болно', 'за', 'сайн', 'байна', 'ок', 'ok',
-  'book', 'price', 'time', 'yes', 'no', 'hello', 'hi', 'the', 'and',
+  'үнэ',
+  'хэд',
+  'вэ',
+  'бэ',
+  'уу',
+  'үү',
+  'юу',
+  'тийм',
+  'үгүй',
+  'болно',
+  'за',
+  'сайн',
+  'байна',
+  'ок',
+  'ok',
+  'book',
+  'price',
+  'time',
+  'yes',
+  'no',
+  'hello',
+  'hi',
+  'the',
+  'and',
 ])
 const NOT_NAME_STEMS = [
-  'цаг', 'захиал', 'үйлчил', 'маникюр', 'педикюр', 'гель', 'сунгал', 'хумс', 'мастер', 'маргааш',
-  'өнөөдөр', 'нөгөөдөр', 'утас', 'дугаар', 'баярлал', 'хүсэж', 'цуцл', 'өөрчл', 'appoint', 'cancel',
+  'цаг',
+  'захиал',
+  'үйлчил',
+  'маникюр',
+  'педикюр',
+  'гель',
+  'сунгал',
+  'хумс',
+  'мастер',
+  'маргааш',
+  'өнөөдөр',
+  'нөгөөдөр',
+  'утас',
+  'дугаар',
+  'баярлал',
+  'хүсэж',
+  'цуцл',
+  'өөрчл',
+  'appoint',
+  'cancel',
 ]
 
 function notAName(text: string): boolean {
@@ -86,7 +126,7 @@ function titleCase(name: string): string {
  */
 export function findName(raw: string, expected: boolean): string | null {
   const explicit =
-    /(?:намайг|миний\s+нэр(?:\s+бол)?|нэр(?:\s+нь)?\s*[:-]?|namaig|minii\s+ner|ner\s*[:-])\s+([\p{L}][\p{L}-]{1,30}(?:\s+[\p{L}][\p{L}-]{1,30})?)(?:\s+гэдэг|\s+gedeg)?/iu.exec(
+    /(?:намайг|миний\s+нэр(?:\s+бол)?|нэр(?:\s+нь)?\s*[:-]?|namaig|minii\s+ner|ner\s*[:-])\s+([\p{L}][\p{L}-]{1,30}(?:\s+(?!гэдэг|gedeg|гэдэг\b)[\p{L}][\p{L}-]{1,30})?)/iu.exec(
       raw,
     ) ?? /(?:my\s+name\s+is|i\s+am|i'm|this\s+is)\s+([a-z][a-z-]{1,30}(?:\s+[a-z][a-z-]{1,30})?)/i.exec(raw)
   if (explicit && !notAName(explicit[1])) return titleCase(explicit[1].trim()).slice(0, 60)

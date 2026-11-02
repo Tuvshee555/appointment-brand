@@ -72,7 +72,7 @@ test('the assistant answers prices from the catalogue', async ({ page }) => {
   await page.goto('./')
   await page.getByRole('button', { name: 'Чат туслах нээх' }).click()
   const chat = page.getByRole('region', { name: 'Сувдын туслах' })
-  await chat.getByPlaceholder('Жишээ: Гель будалт хэд вэ?').fill('Гель будалт хэд вэ?')
+  await chat.getByLabel('Асуултаа бичих').fill('Гель будалт хэд вэ?')
   await chat.getByRole('button', { name: 'Илгээх' }).click()
   await expect(chat.getByText(/65,000₮/).first()).toBeVisible({ timeout: 60_000 })
 })

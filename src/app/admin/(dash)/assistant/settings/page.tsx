@@ -22,7 +22,10 @@ export default async function AssistantSettingsPage() {
       />
       <AssistantTabs current="settings" />
       <div className="grid items-start gap-6 xl:grid-cols-[1fr_22rem]">
-        <Card title="Тохиргоо" action={s.updatedAt ? <span className="text-xs text-ink-3">{formatDateTime(s.updatedAt)}</span> : null}>
+        <Card
+          title="Тохиргоо"
+          action={s.updatedAt ? <span className="text-xs text-ink-3">{formatDateTime(s.updatedAt)}</span> : null}
+        >
           <AssistantSettingsForm
             canEdit={session.permissions.includes('assistant.manage')}
             initial={{
@@ -43,7 +46,10 @@ export default async function AssistantSettingsPage() {
         <Card title="Юуг AI шийддэггүй вэ">
           <ul className="space-y-2 text-sm text-ink-2">
             <li>Сул цаг, үнэ, хугацаа, мастерын ур чадварыг салоны систем тодорхойлно.</li>
-            <li>Захиалга, цуцлалт, цаг өөрчлөлт үйлчлүүлэгч хураангуйг «Тийм» гэж баталгаажуулсны дараа, ижил шалгалтаар хийгдэнэ.</li>
+            <li>
+              Захиалга, цуцлалт, цаг өөрчлөлт үйлчлүүлэгч хураангуйг «Тийм» гэж баталгаажуулсны дараа, ижил шалгалтаар
+              хийгдэнэ.
+            </li>
             <li>Бусад үйлчлүүлэгчийн захиалгыг дугаар, утасны тохирол шалгалгүйгээр харуулахгүй.</li>
             <li>Түлхүүр алга эсвэл төсөв дуусвал туслах дүрмээр үргэлжлэн ажиллана.</li>
           </ul>

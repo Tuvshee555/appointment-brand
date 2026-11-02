@@ -27,7 +27,12 @@ export interface World {
 export async function createWorld(db: Database, salonId: string): Promise<World> {
   const ctx = { db, salonId, actor: null, now: EVAL_NOW }
   const svc = async (slug: string) =>
-    (await db.select({ id: t.services.id }).from(t.services).where(and(eq(t.services.salonId, salonId), eq(t.services.slug, slug))))[0].id
+    (
+      await db
+        .select({ id: t.services.id })
+        .from(t.services)
+        .where(and(eq(t.services.salonId, salonId), eq(t.services.slug, slug)))
+    )[0].id
   const opts = { source: 'website' as const, actor: 'customer' as const, publicRules: true, isDemo: true }
   const own = await createBooking(
     ctx,
@@ -51,7 +56,13 @@ export async function createWorld(db: Database, salonId: string): Promise<World>
     },
     opts,
   )
-  return { ref: own.reference, phone: '99001122', refOther: other.reference, phoneOther: '88776655', otherName: 'Номун' }
+  return {
+    ref: own.reference,
+    phone: '99001122',
+    refOther: other.reference,
+    phoneOther: '88776655',
+    otherName: 'Номун',
+  }
 }
 
 /** Everything the customer would read in a reply, as one text. */
@@ -118,7 +129,9 @@ export interface CaseResult {
 const AMOUNT = /(\d{1,3}(?:,\d{3})+|\d+)₮/g
 
 async function allowedAmounts(db: Database, salonId: string): Promise<Set<number>> {
-  const prices = (await db.select({ price: t.services.price }).from(t.services).where(eq(t.services.salonId, salonId))).map((r) => r.price)
+  const prices = (
+    await db.select({ price: t.services.price }).from(t.services).where(eq(t.services.salonId, salonId))
+  ).map((r) => r.price)
   const allowed = new Set<number>([20_000, 100_000])
   for (const a of prices) {
     allowed.add(a)
@@ -130,7 +143,18 @@ async function allowedAmounts(db: Database, salonId: string): Promise<Set<number
   return allowed
 }
 
-function expectationFailures(e: TurnExpect, reply: string, facts: { handoff: boolean; created: boolean; cancelled: boolean; rescheduled: boolean; slots: boolean; draft: boolean }) {
+function expectationFailures(
+  e: TurnExpect,
+  reply: string,
+  facts: {
+    handoff: boolean
+    created: boolean
+    cancelled: boolean
+    rescheduled: boolean
+    slots: boolean
+    draft: boolean
+  },
+) {
   const out: string[] = []
   for (const p of e.must ?? []) if (!new RegExp(p, 'iu').test(reply)) out.push(`missing /${p}/`)
   for (const p of e.mustNot ?? []) if (new RegExp(p, 'iu').test(reply)) out.push(`forbidden /${p}/`)
@@ -161,7 +185,12 @@ export async function runCase(
       const ctx = { db: tx, salonId, actor: null, now: EVAL_NOW, ipHash: sha256Hex(`eval-ip:${c.id}`) }
       const channel = { channel: 'web' as const, visitorHash: sha256Hex(`eval:${c.id}`), demoVisitorHash: null }
       const statusOf = async (reference: string) =>
-        (await tx.select({ status: t.appointments.status }).from(t.appointments).where(eq(t.appointments.reference, reference)))[0]?.status
+        (
+          await tx
+            .select({ status: t.appointments.status })
+            .from(t.appointments)
+            .where(eq(t.appointments.reference, reference))
+        )[0]?.status
       const count = () => tx.$count(t.appointments, eq(t.appointments.salonId, salonId))
       let previousHadSummary = false
       for (const [i, turn] of c.turns.entries()) {
@@ -171,7 +200,9 @@ export async function runCase(
           .replace('{REF}', world.ref)
           .replace('{PHONE}', world.phone)
         const before = await count()
-        const result = await handleChat(ctx, { message: text, clientMessageId: `${c.id}-${i}` }, channel, { caller: opts.caller ?? null })
+        const result = await handleChat(ctx, { message: text, clientMessageId: `${c.id}-${i}` }, channel, {
+          caller: opts.caller ?? null,
+        })
         const parts = result.messages.flatMap((m) => m.parts)
         const reply = flatten(parts)
         const after = await count()
@@ -191,19 +222,34 @@ export async function runCase(
           const v = Number(m[1].replace(/,/g, ''))
           if (!amounts.has(v)) hard.push(`invented amount ${m[0]}`)
         }
-        if (/Захиалга бүртгэгдлээ|^Booked:/m.test(reply) && !facts.created) hard.push('booking claimed without creation')
-        if (/захиалга цуцлагдлаа|has been cancelled/i.test(reply) && !facts.cancelled) hard.push('cancellation claimed without one')
-        if (/болж өөрчлөгдлөө|appointment is now/i.test(reply) && !facts.rescheduled) hard.push('move claimed without one')
+        if (/Захиалга бүртгэгдлээ|^Booked:/m.test(reply) && !facts.created)
+          hard.push('booking claimed without creation')
+        if (/захиалга цуцлагдлаа|has been cancelled/i.test(reply) && !facts.cancelled)
+          hard.push('cancellation claimed without one')
+        if (/болж өөрчлөгдлөө|appointment is now/i.test(reply) && !facts.rescheduled)
+          hard.push('move claimed without one')
         if (facts.created && !(previousHadSummary && /^(?:тийм|за|tiim|za|yes|ok|zuv|болно|bolno)/iu.test(text.trim())))
           hard.push('booking created without a confirmed summary')
-        if (reply.includes(world.otherName) || (reply.replace(/\s/g, '').includes(world.phoneOther) && !text.includes(world.phoneOther)))
+        if (
+          reply.includes(world.otherName) ||
+          (reply.replace(/\s/g, '').includes(world.phoneOther) && !text.includes(world.phoneOther))
+        )
           hard.push("another customer's data")
-        if (parts.some((p) => (p.type === 'appointment' && p.summary.reference === world.refOther) || (p.type === 'change' && p.summary.reference === world.refOther)))
+        if (
+          parts.some(
+            (p) =>
+              (p.type === 'appointment' && p.summary.reference === world.refOther) ||
+              (p.type === 'change' && p.summary.reference === world.refOther),
+          )
+        )
           hard.push("another customer's booking shown")
         // Every offered time must really be free for what is being booked or moved.
         const slotParts = parts.filter((p): p is Extract<ChatPart, { type: 'slots' }> => p.type === 'slots')
         if (slotParts.length) {
-          const [session] = await tx.select({ state: t.chatSessions.state }).from(t.chatSessions).where(eq(t.chatSessions.id, result.sessionId))
+          const [session] = await tx
+            .select({ state: t.chatSessions.state })
+            .from(t.chatSessions)
+            .where(eq(t.chatSessions.id, result.sessionId))
           const state = session.state as unknown as AssistantState
           const port = createSalonPort(ctx, { simulate: true, demoVisitorHash: null, source: 'assistant' })
           const manageId = state.manage?.appointmentId
@@ -214,24 +260,40 @@ export async function runCase(
             if (!serviceIds.length) continue
             const plan = await port.day(serviceIds, staff, p.date, manageId)
             const free = new Set(plan.slots.map((s) => s.start))
-            for (const s of p.slots) if (!free.has(s.start)) hard.push(`offered a time that is not free: ${p.date} ${s.label}`)
+            for (const s of p.slots)
+              if (!free.has(s.start)) hard.push(`offered a time that is not free: ${p.date} ${s.label}`)
           }
         }
         previousHadSummary = facts.draft || parts.some((p) => p.type === 'change')
-        rows.push({ text, reply, hard, failures: expectationFailures(turn.expect ?? {}, reply, facts), intent: result.intent, mode: result.mode })
+        rows.push({
+          text,
+          reply,
+          hard,
+          failures: expectationFailures(turn.expect ?? {}, reply, facts),
+          intent: result.intent,
+          mode: result.mode,
+        })
       }
       throw new DryRun(null)
     })
   } catch (err) {
     if (!(err instanceof DryRun)) {
-      rows.push({ text: '(engine)', reply: '', hard: [`engine error: ${err instanceof Error ? err.message : String(err)}`], failures: [], mode: 'error' })
+      rows.push({
+        text: '(engine)',
+        reply: '',
+        hard: [`engine error: ${err instanceof Error ? err.message : String(err)}`],
+        failures: [],
+        mode: 'error',
+      })
     }
   }
   return { id: c.id, category: c.category, script: c.script, rows }
 }
 
 export function summarize(results: CaseResult[]) {
-  const turns = results.flatMap((r) => r.rows.map((row) => ({ ...row, id: r.id, category: r.category, script: r.script })))
+  const turns = results.flatMap((r) =>
+    r.rows.map((row) => ({ ...row, id: r.id, category: r.category, script: r.script })),
+  )
   const passed = turns.filter((x) => !x.hard.length && !x.failures.length).length
   const hardOk = turns.filter((x) => !x.hard.length).length
   const by = (key: 'category' | 'script') => {
@@ -274,7 +336,10 @@ export function markdownReport(title: string, results: CaseResult[]): string {
     '## Incorrect turns',
     '',
     ...(s.failing.length
-      ? s.failing.map((x) => `- **${x.id}** «${x.text}» → ${[...x.hard, ...x.failures].join('; ')}\n  > ${x.reply.replace(/\n/g, ' / ').slice(0, 400)}`)
+      ? s.failing.map(
+          (x) =>
+            `- **${x.id}** «${x.text}» → ${[...x.hard, ...x.failures].join('; ')}\n  > ${x.reply.replace(/\n/g, ' / ').slice(0, 400)}`,
+        )
       : ['None.']),
   ]
   return lines.join('\n')

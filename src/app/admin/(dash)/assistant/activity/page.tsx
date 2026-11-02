@@ -50,7 +50,9 @@ export default async function AssistantActivityPage({ searchParams }: { searchPa
                 <td className={`${td} whitespace-nowrap`}>{formatDateTime(e.createdAt)}</td>
                 <td className={td}>
                   {EVENT_LABELS[e.kind] ?? e.kind}{' '}
-                  {e.level !== 'info' ? <Badge tone={e.level === 'error' ? 'danger' : 'warning'}>{e.level}</Badge> : null}
+                  {e.level !== 'info' ? (
+                    <Badge tone={e.level === 'error' ? 'danger' : 'warning'}>{e.level}</Badge>
+                  ) : null}
                   {e.isTest ? <Badge tone="muted">туршилт</Badge> : null}
                 </td>
                 <td className={td}>
@@ -64,7 +66,10 @@ export default async function AssistantActivityPage({ searchParams }: { searchPa
                 </td>
                 <td className={td}>
                   {e.sessionId ? (
-                    <Link href={`/admin/assistant/conversations?filter=${e.isTest ? 'test' : 'all'}&session=${e.sessionId}`} className="underline">
+                    <Link
+                      href={`/admin/assistant/conversations?filter=${e.isTest ? 'test' : 'all'}&session=${e.sessionId}`}
+                      className="underline"
+                    >
                       Харах
                     </Link>
                   ) : (
@@ -78,7 +83,13 @@ export default async function AssistantActivityPage({ searchParams }: { searchPa
       ) : (
         <EmptyState title="Үйл ажиллагаа алга" />
       )}
-      <Pager page={page} pageSize={PAGE_SIZE} total={total} href={(p) => `/admin/assistant/activity?page=${p}`} unit="бичлэг" />
+      <Pager
+        page={page}
+        pageSize={PAGE_SIZE}
+        total={total}
+        href={(p) => `/admin/assistant/activity?page=${p}`}
+        unit="бичлэг"
+      />
     </>
   )
 }

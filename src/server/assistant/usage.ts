@@ -8,7 +8,9 @@ import * as t from '@/server/db/schema'
 import { estimateCostUsd } from './engine/model'
 
 export function usageEnvironment(): string {
-  return process.env.AI_USAGE_ENVIRONMENT || process.env.VERCEL_ENV || (process.env.NODE_ENV === 'test' ? 'test' : 'local')
+  return (
+    process.env.AI_USAGE_ENVIRONMENT || process.env.VERCEL_ENV || (process.env.NODE_ENV === 'test' ? 'test' : 'local')
+  )
 }
 
 export async function recordModelUsage(

@@ -85,7 +85,8 @@ export async function saveKnowledgeAction(input: unknown) {
       if (!current) throw new ServiceError('not_found', 'Мэдээлэл олдсонгүй.')
       // A changed answer must be checked again before the assistant quotes it.
       const changed = current.answer !== v.answer || current.question !== v.question
-      const verifiedAt = v.verified && !changed ? (current.verifiedAt ?? ctx.now) : v.verified && changed ? ctx.now : null
+      const verifiedAt =
+        v.verified && !changed ? (current.verifiedAt ?? ctx.now) : v.verified && changed ? ctx.now : null
       await ctx.db
         .update(t.assistantKnowledge)
         .set({
@@ -215,7 +216,13 @@ export async function testChatAction(
     )
     return {
       ok: true,
-      data: { messages: result.messages, mode: result.mode, status: result.status, intent: result.intent, events: result.events },
+      data: {
+        messages: result.messages,
+        mode: result.mode,
+        status: result.status,
+        intent: result.intent,
+        events: result.events,
+      },
     }
   } catch (err) {
     return toFailure(err)

@@ -42,7 +42,8 @@ export const KNOWLEDGE_SEED: { topic: string; question: string; answer: string; 
   {
     topic: 'policy',
     question: 'Хоцорвол яах вэ?',
-    answer: '15 минутаас дээш хоцорвол үйлчилгээг богиносгох эсвэл өөр цаг санал болгож болно. Хоцрохоор бол салон руу урьдчилж мэдэгдээрэй.',
+    answer:
+      '15 минутаас дээш хоцорвол үйлчилгээг богиносгох эсвэл өөр цаг санал болгож болно. Хоцрохоор бол салон руу урьдчилж мэдэгдээрэй.',
     keywords: 'хоцрох, хоцорвол, late',
   },
 ]
@@ -52,7 +53,15 @@ export async function seedKnowledge(db: Database, salonId: string, now: Date): P
   const existing = await db.$count(t.assistantKnowledge, eq(t.assistantKnowledge.salonId, salonId))
   if (existing) return 0
   await db.insert(t.assistantKnowledge).values(
-    KNOWLEDGE_SEED.map((k, i) => ({ salonId, ...k, isActive: true, verifiedAt: now, sortOrder: i, createdAt: now, updatedAt: now })),
+    KNOWLEDGE_SEED.map((k, i) => ({
+      salonId,
+      ...k,
+      isActive: true,
+      verifiedAt: now,
+      sortOrder: i,
+      createdAt: now,
+      updatedAt: now,
+    })),
   )
   return KNOWLEDGE_SEED.length
 }

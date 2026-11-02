@@ -15,7 +15,14 @@ import { createModelPorts } from './models'
 import { createSalonPort } from './salon/adapter'
 import type { SalonPort } from './salon/port'
 import { loadAssistantSettings } from './settings'
-import { runTurn, type AssistantState, type HistoryLine, type ModelPorts, type TurnEvent, type TurnOutput } from './turn'
+import {
+  runTurn,
+  type AssistantState,
+  type HistoryLine,
+  type ModelPorts,
+  type TurnEvent,
+  type TurnOutput,
+} from './turn'
 import { recordModelUsage, spentTodayUsd, withinBudget } from './usage'
 
 export interface ChatChannel {
@@ -187,7 +194,10 @@ function failureTurn(state: AssistantState, phone: string | null, err: unknown):
       {
         kind: timeout ? 'backend_timeout' : 'engine_error',
         level: 'error',
-        detail: { error: err instanceof Error ? err.name : typeof err, code: err instanceof ServiceError ? err.code : null },
+        detail: {
+          error: err instanceof Error ? err.name : typeof err,
+          code: err instanceof ServiceError ? err.code : null,
+        },
       },
     ],
     grantReferences: [],
@@ -353,12 +363,20 @@ export async function handleChat(
             caller: deps.caller ?? createModelCaller(),
             understanding: settings.useModelForUnderstanding,
             answers: settings.useModelForAnswers,
-            record: (u) => recordModelUsage(ctx.db, ctx.now, { ...u, source: ch.channel === 'test' ? `test-${u.source}` : u.source }),
+            record: (u) =>
+              recordModelUsage(ctx.db, ctx.now, {
+                ...u,
+                source: ch.channel === 'test' ? `test-${u.source}` : u.source,
+              }),
             onEvent: (e) => events.push(e),
           })
         } else if (state.budgetNoticeDay !== dateKeyOf(ctx.now)) {
           state.budgetNoticeDay = dateKeyOf(ctx.now)
-          events.push({ kind: 'budget_exceeded', level: 'warning', detail: { spentUsd: Number(spent.toFixed(4)), budgetUsd: settings.dailyBudgetUsd } })
+          events.push({
+            kind: 'budget_exceeded',
+            level: 'warning',
+            detail: { spentUsd: Number(spent.toFixed(4)), budgetUsd: settings.dailyBudgetUsd },
+          })
         }
       }
 
@@ -379,7 +397,11 @@ export async function handleChat(
           port,
           now: ctx.now,
           models,
-          settings: { englishReplies: settings.englishReplies, greeting: settings.greeting, handoverMessage: settings.handoverMessage },
+          settings: {
+            englishReplies: settings.englishReplies,
+            greeting: settings.greeting,
+            handoverMessage: settings.handoverMessage,
+          },
         })
       } catch (err) {
         console.error('[assistant] turn failed:', err instanceof Error ? `${err.name}: ${err.message}` : err)
@@ -419,7 +441,9 @@ export async function handleChat(
         locale: out.state.locale ?? 'mn',
         handedOff: session.handedOff || Boolean(out.handoff),
         appointmentId: out.booked?.appointmentId ?? session.appointmentId,
-        ...(handingOff ? { status: 'handoff', handoffReason: out.handoff!.reason, handoffAt: ctx.now, resolvedAt: null } : {}),
+        ...(handingOff
+          ? { status: 'handoff', handoffReason: out.handoff!.reason, handoffAt: ctx.now, resolvedAt: null }
+          : {}),
       })
       .where(eq(t.chatSessions.id, session.id))
 
@@ -524,7 +548,8 @@ export async function setConversationStatus(
   await ctx.db.insert(t.assistantEvents).values({
     salonId: ctx.salonId,
     sessionId: session.id,
-    kind: input.status === 'staff' ? 'staff_takeover' : input.status === 'bot' ? 'staff_handback' : 'conversation_resolved',
+    kind:
+      input.status === 'staff' ? 'staff_takeover' : input.status === 'bot' ? 'staff_handback' : 'conversation_resolved',
     level: 'info',
     detail: { adminUserId: input.adminUserId },
     isDemo: session.isDemo,

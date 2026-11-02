@@ -34,7 +34,9 @@ const INTERPRET_TIMEOUT_MS = 8_000
 const ANSWER_TIMEOUT_MS = 12_000
 
 function historyBlock(history: HistoryLine[]) {
-  const lines = history.slice(-6).map((h) => `${h.role === 'user' ? 'Customer' : 'Assistant'}: ${h.text.replace(/\s+/g, ' ').slice(0, 300)}`)
+  const lines = history
+    .slice(-6)
+    .map((h) => `${h.role === 'user' ? 'Customer' : 'Assistant'}: ${h.text.replace(/\s+/g, ' ').slice(0, 300)}`)
   return lines.length ? lines.join('\n') : '(none)'
 }
 
@@ -52,7 +54,13 @@ function catalogueKeys(snap: Snapshot) {
   return { services, staff, serviceLines, staffLines }
 }
 
-export function interpretPrompt(snap: Snapshot, message: string, history: HistoryLine[], today: DateKey, awaiting: string | undefined) {
+export function interpretPrompt(
+  snap: Snapshot,
+  message: string,
+  history: HistoryLine[],
+  today: DateKey,
+  awaiting: string | undefined,
+) {
   const keys = catalogueKeys(snap)
   const system = `You read one customer message for «${snap.salon.name}», a nail salon in Ulaanbaatar. Customers write Mongolian in Cyrillic or in Latin letters, with typos and missing spaces, or English. Reply with ONLY a JSON object:
 {"intent":"book"|"reschedule"|"cancel"|"status"|"human"|"complaint"|"greeting"|"thanks"|"identity"|"privacy"|null,"topics":["price"|"duration"|"services"|"staff"|"hours"|"location"|"cancel_policy"|"deposit"|"payment"|"preparation"|"aftercare"|"parking"|"contact"|"availability"],"services":["S1"],"staff":"T1"|"any"|null,"date":"YYYY-MM-DD"|null,"time":"HH:MM"|null,"phone":string|null,"name":string|null,"reference":string|null,"answer":"yes"|"no"|null}
@@ -107,7 +115,9 @@ export function answerPrompt(snap: Snapshot, question: string, history: HistoryL
   const s = snap.salon
   const system = [
     `You are the online assistant of «${s.name}», a nail and beauty salon in Ulaanbaatar.`,
-    locale === 'en' ? '- Reply in English.' : '- Reply in Mongolian (Cyrillic), even if the customer wrote Latin letters.',
+    locale === 'en'
+      ? '- Reply in English.'
+      : '- Reply in Mongolian (Cyrillic), even if the customer wrote Latin letters.',
     '- Answer ONLY from the Facts below. If the Facts do not contain the answer, reply with exactly one word: REFER.',
     '- Never state a price, amount, clock time, phone number, e-mail or link that is not written in the Facts.',
     '- Never say that you booked, moved or cancelled anything, or that a payment arrived; never offer discounts or promise results.',
@@ -120,22 +130,32 @@ export function answerPrompt(snap: Snapshot, question: string, history: HistoryL
     `Opening hours: ${weeklyHours(s, 'mn').join('; ')}.`,
     ...s.specials
       .filter((d) => d.date >= today && d.date <= addDays(today, 30))
-      .map((d) => `Special day ${d.date}: ${d.closed ? 'closed' : `${minutesToTime(d.opensAt!)}–${minutesToTime(d.closesAt!)}`} (${d.label}).`),
+      .map(
+        (d) =>
+          `Special day ${d.date}: ${d.closed ? 'closed' : `${minutesToTime(d.opensAt!)}–${minutesToTime(d.closesAt!)}`} (${d.label}).`,
+      ),
     `Cancellation policy: ${s.cancellationPolicy}`,
     `Deposit policy: ${s.depositPolicy}`,
     `Minimum notice for online booking: ${s.minAdvanceMinutes / 60} hours; bookable up to ${s.maxAdvanceDays} days ahead; late arrival tolerance ${s.lateArrivalMinutes} minutes.`,
     'Services:',
     ...snap.services.map(
-      (x) => `- ${x.name} (${x.categoryName}): ${formatMoney(x.price)}${x.priceType === 'from' ? ' and up' : ''}, ${duration(x.durationMinutes, 'mn')}. ${x.description}`,
+      (x) =>
+        `- ${x.name} (${x.categoryName}): ${formatMoney(x.price)}${x.priceType === 'from' ? ' and up' : ''}, ${duration(x.durationMinutes, 'mn')}. ${x.description}`,
     ),
     'Specialists:',
     ...snap.staff.map(
       (x) =>
         `- ${x.name}: ${x.title}${x.experienceYears ? `, ${x.experienceYears} years` : ''}; specialties: ${x.specialties.join(', ') || '-'}.`,
     ),
-    ...(snap.knowledge.length ? ['Owner answers:', ...snap.knowledge.map((k) => `- Q: ${k.question} A: ${k.answer}`)] : []),
+    ...(snap.knowledge.length
+      ? ['Owner answers:', ...snap.knowledge.map((k) => `- Q: ${k.question} A: ${k.answer}`)]
+      : []),
   ].join('\n')
-  const user = [`Facts:\n${facts}`, `Conversation:\n${historyBlock(history)}`, `Question: ${question.trim().slice(0, 500)}`].join('\n\n')
+  const user = [
+    `Facts:\n${facts}`,
+    `Conversation:\n${historyBlock(history)}`,
+    `Question: ${question.trim().slice(0, 500)}`,
+  ].join('\n\n')
   return { system, user }
 }
 
@@ -150,10 +170,21 @@ export function createModelPorts(opts: BridgeOptions): ModelPorts {
         maxTokens: json ? 400 : 450,
         timeoutMs: json ? INTERPRET_TIMEOUT_MS : ANSWER_TIMEOUT_MS,
       })
-      await opts.record({ provider: option.provider, model: option.model, source, inputTokens: reply.inputTokens, outputTokens: reply.outputTokens, ok: true }).catch(() => {})
+      await opts
+        .record({
+          provider: option.provider,
+          model: option.model,
+          source,
+          inputTokens: reply.inputTokens,
+          outputTokens: reply.outputTokens,
+          ok: true,
+        })
+        .catch(() => {})
       return reply.text
     } catch (err) {
-      await opts.record({ provider: option.provider, model: option.model, source, inputTokens: 0, outputTokens: 0, ok: false }).catch(() => {})
+      await opts
+        .record({ provider: option.provider, model: option.model, source, inputTokens: 0, outputTokens: 0, ok: false })
+        .catch(() => {})
       opts.onEvent({
         kind: 'model_error',
         level: 'error',
@@ -170,7 +201,11 @@ export function createModelPorts(opts: BridgeOptions): ModelPorts {
           if (!text) return null
           const proposal = parseJsonObject(text) as ModelProposal | null
           if (!proposal) {
-            opts.onEvent({ kind: 'model_rejected', level: 'warning', detail: { source: 'interpret', reason: 'not_json' } })
+            opts.onEvent({
+              kind: 'model_rejected',
+              level: 'warning',
+              detail: { source: 'interpret', reason: 'not_json' },
+            })
             return null
           }
           opts.onEvent({ kind: 'model_interpreted', level: 'info', detail: { model: option.model } })

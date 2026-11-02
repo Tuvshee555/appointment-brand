@@ -19,11 +19,24 @@ import { ServiceError } from '@/server/context'
 import { matchKnowledge } from './engine/knowledge'
 import type { Topic } from './engine/intents'
 import { bareHour, type TimeRange } from './engine/when'
-import { clock, dayLabel, duration, fullDayLabel, phone, price, say, serviceLine, weekdayName, weeklyHours, type Locale } from './format'
+import {
+  clock,
+  dayLabel,
+  duration,
+  fullDayLabel,
+  phone,
+  price,
+  say,
+  serviceLine,
+  weekdayName,
+  weeklyHours,
+  type Locale,
+} from './format'
 import { detectLocale, isEmptyReading, readMessage, type Reading } from './reading'
 import type { BookingView, DayPlan, PortService, SalonPort, Snapshot } from './salon/port'
 
-export type HandoffReason = 'customer_request' | 'complaint' | 'payment_claim' | 'unanswered' | 'verification' | 'system_error'
+export type HandoffReason =
+  'customer_request' | 'complaint' | 'payment_claim' | 'unanswered' | 'verification' | 'system_error'
 
 export type Awaiting =
   | 'service'
@@ -62,7 +75,16 @@ export interface AssistantState {
   booking?: BookingMemory
   awaiting?: Awaiting
   choices?: { kind: 'service' | 'date' | 'time' | 'booking'; values: string[] }
-  draft?: { id: string; serviceIds: string[]; staffId: string | null; date: DateKey; start: number; name: string; phone: string; expiresAt: string }
+  draft?: {
+    id: string
+    serviceIds: string[]
+    staffId: string | null
+    date: DateKey
+    start: number
+    name: string
+    phone: string
+    expiresAt: string
+  }
   manage?: {
     intent: 'cancel' | 'reschedule' | 'status'
     reference?: string
@@ -72,7 +94,15 @@ export interface AssistantState {
     range?: TimeRange
     failures?: number
   }
-  change?: { id: string; kind: 'cancel' | 'reschedule'; appointmentId: string; reference: string; date?: DateKey; start?: number; expiresAt: string }
+  change?: {
+    id: string
+    kind: 'cancel' | 'reschedule'
+    appointmentId: string
+    reference: string
+    date?: DateKey
+    start?: number
+    expiresAt: string
+  }
   /** Bookings this chat may manage: created here, or proved with reference + phone (2 hours). */
   verified?: { id: string; reference: string; until: string }[]
   /** Confirmed drafts, so a repeated "yes" or button press never books twice. */
@@ -97,9 +127,25 @@ export interface HistoryLine {
 
 export interface ModelPorts {
   /** A grounded reading of a message the rules could not read; null when the model is unavailable. */
-  interpret?: ((args: { reading: Reading; snapshot: Snapshot; state: AssistantState; history: HistoryLine[]; today: DateKey }) => Promise<Reading | null>) | null
+  interpret?:
+    | ((args: {
+        reading: Reading
+        snapshot: Snapshot
+        state: AssistantState
+        history: HistoryLine[]
+        today: DateKey
+      }) => Promise<Reading | null>)
+    | null
   /** A fact-checked answer to an open question, or null (no answer / rejected / unavailable). */
-  write?: ((args: { question: string; snapshot: Snapshot; history: HistoryLine[]; locale: Locale; today: DateKey }) => Promise<string | null>) | null
+  write?:
+    | ((args: {
+        question: string
+        snapshot: Snapshot
+        history: HistoryLine[]
+        locale: Locale
+        today: DateKey
+      }) => Promise<string | null>)
+    | null
 }
 
 export interface TurnInput {
@@ -128,7 +174,15 @@ export interface TurnOutput {
 const DRAFT_MINUTES = 15
 const VERIFIED_HOURS = 2
 const MAX_FAILED_VERIFICATIONS = 3
-const POPULAR = ['gel-polish', 'classic-manicure', 'french-manicure', 'gel-extensions', 'nail-refill', 'gel-pedicure', 'basic-pedicure']
+const POPULAR = [
+  'gel-polish',
+  'classic-manicure',
+  'french-manicure',
+  'gel-extensions',
+  'nail-refill',
+  'gel-pedicure',
+  'basic-pedicure',
+]
 const ACTIVE_STATUSES = new Set(['awaiting_deposit', 'pending', 'confirmed'])
 const BOOKING_STEPS: Awaiting[] = ['service', 'service_choice', 'date', 'time', 'contact', 'confirm']
 const MANAGE_STEPS: Awaiting[] = ['reference', 'phone', 'pick_booking', 'manage_date', 'manage_time', 'change_confirm']
@@ -233,10 +287,22 @@ class Turn {
   }
   menu(): QuickReply[] {
     return [
-      { label: this.t('Үйлчилгээ, үнэ', 'Services & prices'), message: this.t('Ямар үйлчилгээ байдаг вэ?', 'What services do you offer?') },
-      { label: this.t('Цаг захиалах', 'Book a time'), message: this.t('Цаг захиалмаар байна', 'I want to book an appointment') },
-      { label: this.t('Ажлын цаг, хаяг', 'Hours & address'), message: this.t('Ажлын цаг, хаяг', 'Opening hours and address') },
-      { label: this.t('Захиалгаа өөрчлөх', 'Change my booking'), message: this.t('Захиалгаа өөрчлөх', 'Change my booking') },
+      {
+        label: this.t('Үйлчилгээ, үнэ', 'Services & prices'),
+        message: this.t('Ямар үйлчилгээ байдаг вэ?', 'What services do you offer?'),
+      },
+      {
+        label: this.t('Цаг захиалах', 'Book a time'),
+        message: this.t('Цаг захиалмаар байна', 'I want to book an appointment'),
+      },
+      {
+        label: this.t('Ажлын цаг, хаяг', 'Hours & address'),
+        message: this.t('Ажлын цаг, хаяг', 'Opening hours and address'),
+      },
+      {
+        label: this.t('Захиалгаа өөрчлөх', 'Change my booking'),
+        message: this.t('Захиалгаа өөрчлөх', 'Change my booking'),
+      },
     ]
   }
 
@@ -302,7 +368,9 @@ class Turn {
         return this.dropDraft()
       case 'confirm_change':
         if (s.change?.id === a.draftId) return this.executeChange()
-        this.say(this.t('Энэ хүсэлт хүчингүй болсон байна. Дахин эхлүүлье.', 'This request has expired. Let’s start again.'))
+        this.say(
+          this.t('Энэ хүсэлт хүчингүй болсон байна. Дахин эхлүүлье.', 'This request has expired. Let’s start again.'),
+        )
         return
       case 'cancel_change':
         return this.dropChange()
@@ -376,7 +444,8 @@ class Turn {
       return
     }
     if (s.draft) {
-      const changes = r.services.length || r.generic || r.date || r.time !== undefined || r.staffId !== undefined || r.phone || r.name
+      const changes =
+        r.services.length || r.generic || r.date || r.time !== undefined || r.staffId !== undefined || r.phone || r.name
       if (r.yes && !changes) return this.expiredDraft ? this.refreshDraft() : this.confirmDraft()
       if (r.no && !changes) return this.dropDraft()
       if (changes && !infoTopics.length) {
@@ -399,7 +468,14 @@ class Turn {
       s.manage &&
       s.awaiting &&
       MANAGE_STEPS.includes(s.awaiting) &&
-      (r.reference || r.phone || r.digits || r.date || r.time !== undefined || r.range || r.choice !== undefined || r.yes)
+      (r.reference ||
+        r.phone ||
+        r.digits ||
+        r.date ||
+        r.time !== undefined ||
+        r.range ||
+        r.choice !== undefined ||
+        r.yes)
     ) {
       this.mergeManage(r)
       if (s.awaiting === 'pick_booking' && r.choice !== undefined && s.choices?.kind === 'booking') {
@@ -414,7 +490,12 @@ class Turn {
     const awaitingBooking = s.awaiting && BOOKING_STEPS.includes(s.awaiting)
     const asksInfo = infoTopics.length > 0 && !(strongBooking && !r.det.question)
     const answersStep = awaitingBooking && this.answersBookingStep(r)
-    if (!asksInfo && (intents.includes('book') || answersStep || ((r.date || r.time !== undefined || r.range || r.det.topics.includes('availability')) && !intents.length))) {
+    if (
+      !asksInfo &&
+      (intents.includes('book') ||
+        answersStep ||
+        ((r.date || r.time !== undefined || r.range || r.det.topics.includes('availability')) && !intents.length))
+    ) {
       this.merge(r)
       return this.bookingFlow()
     }
@@ -423,7 +504,10 @@ class Turn {
     if (asksInfo) {
       if (s.booking || r.date || r.time !== undefined) this.remember(r)
       // "Хулан ямар үйлчилгээ хийдэг вэ?" is about that specialist, not the whole list.
-      const topics = r.staffNamed.length && infoTopics.some((x) => x === 'services' || x === 'staff') ? (['staff'] as Topic[]) : infoTopics
+      const topics =
+        r.staffNamed.length && infoTopics.some((x) => x === 'services' || x === 'staff')
+          ? (['staff'] as Topic[])
+          : infoTopics
       await this.info(r, topics)
       if (awaitingBooking) this.reprompt()
       return
@@ -465,6 +549,8 @@ class Turn {
   }
 
   answersBookingStep(r: Reading): boolean {
+    // Contact details given early are kept; the pending question is then asked again.
+    if (r.phone || r.name) return true
     switch (this.state.awaiting) {
       case 'service':
       case 'service_choice':
@@ -472,7 +558,9 @@ class Turn {
       case 'date':
         return Boolean(r.date || r.choice !== undefined || r.time !== undefined || r.staffId !== undefined)
       case 'time':
-        return Boolean(r.time !== undefined || r.range || r.date || r.choice !== undefined || r.staffId !== undefined || r.no)
+        return Boolean(
+          r.time !== undefined || r.range || r.date || r.choice !== undefined || r.staffId !== undefined || r.no,
+        )
       case 'contact':
         return Boolean(r.name || r.phone || r.yes || r.time !== undefined || r.date)
       default:
@@ -500,13 +588,19 @@ class Turn {
       const id = s.choices.values[r.choice]
       if (id) b.serviceIds = [id]
     } else if (r.services.length) {
-      b.serviceIds = r.det.adds && b.serviceIds.length ? [...new Set([...b.serviceIds, ...r.services])].slice(0, max) : r.services.slice(0, max)
+      b.serviceIds =
+        r.det.adds && b.serviceIds.length
+          ? [...new Set([...b.serviceIds, ...r.services])].slice(0, max)
+          : r.services.slice(0, max)
       b.assumed = undefined
     } else if (r.generic) {
       const scoped = s.awaiting === 'service_choice' && s.choices?.kind === 'service' ? s.choices.values : null
       if (!scoped) {
         if (r.generic.canonical) {
-          b.serviceIds = r.det.adds && b.serviceIds.length ? [...new Set([...b.serviceIds, r.generic.canonical])].slice(0, max) : [r.generic.canonical]
+          b.serviceIds =
+            r.det.adds && b.serviceIds.length
+              ? [...new Set([...b.serviceIds, r.generic.canonical])].slice(0, max)
+              : [r.generic.canonical]
           b.assumed = { serviceId: r.generic.canonical, label: r.generic.label, told: false }
         } else if (!b.serviceIds.length || !r.det.adds) {
           b.serviceIds = []
@@ -541,7 +635,8 @@ class Turn {
     const b = (s.booking ??= { serviceIds: [] })
     this.intent = 'book'
     if (!b.serviceIds.length) {
-      if (s.awaiting === 'service_choice' && s.choices?.kind === 'service') return this.askServiceChoice(s.choices.values)
+      if (s.awaiting === 'service_choice' && s.choices?.kind === 'service')
+        return this.askServiceChoice(s.choices.values)
       return this.askService()
     }
     const services = b.serviceIds.map((id) => this.service(id)).filter((x): x is PortService => Boolean(x))
@@ -612,7 +707,12 @@ class Turn {
     const popular = POPULAR.map((slug) => this.snap.services.find((x) => x.slug === slug && x.onlineBookable)).filter(
       (x): x is PortService => Boolean(x),
     )
-    this.quick(popular.map((x) => ({ label: `${x.name} · ${price(x, this.locale)}`, action: { type: 'pick_service', serviceId: x.id } })))
+    this.quick(
+      popular.map((x) => ({
+        label: `${x.name} · ${price(x, this.locale)}`,
+        action: { type: 'pick_service', serviceId: x.id },
+      })),
+    )
   }
 
   askServiceChoice(ids: string[]) {
@@ -663,7 +763,10 @@ class Turn {
     const day = fullDayLabel(plan.date, this.today, this.locale)
     const reason =
       plan.state === 'closed'
-        ? this.t(`${day} салон амарна${plan.special ? ` (${plan.special})` : ''}.`, `The salon is closed on ${day}${plan.special ? ` (${plan.special})` : ''}.`)
+        ? this.t(
+            `${day} салон амарна${plan.special ? ` (${plan.special})` : ''}.`,
+            `The salon is closed on ${day}${plan.special ? ` (${plan.special})` : ''}.`,
+          )
         : plan.state === 'beyond'
           ? this.t(
               `${day} хэт хол байна — онлайнаар ${this.snap.salon.maxAdvanceDays} хоногийн дотор захиална.`,
@@ -684,7 +787,9 @@ class Turn {
   slotChoices(plan: DayPlan, range?: TimeRange) {
     let slots = plan.slots
     if (range) {
-      const inRange = slots.filter((x) => (range.from === undefined || x.start >= range.from) && (range.to === undefined || x.start < range.to))
+      const inRange = slots.filter(
+        (x) => (range.from === undefined || x.start >= range.from) && (range.to === undefined || x.start < range.to),
+      )
       if (inRange.length) slots = inRange
     }
     if (slots.length > 16) {
@@ -712,7 +817,9 @@ class Turn {
     s.awaiting = manage ? 'manage_time' : 'time'
     s.choices = { kind: 'time', values: slots.map((x) => String(x.start)) }
     const staffHint =
-      !manage && !staffId && this.snap.staff.filter((x) => serviceIds.every((id) => x.serviceIds.includes(id))).length > 1
+      !manage &&
+      !staffId &&
+      this.snap.staff.filter((x) => serviceIds.every((id) => x.serviceIds.includes(id))).length > 1
         ? this.t(' Тодорхой мастер сонгох бол нэрийг нь бичээрэй.', ' To choose a specialist, write their name.')
         : ''
     this.say(
@@ -745,7 +852,10 @@ class Turn {
     const hours = plan.hours!
     let why: string
     if (time < hours.opensAt)
-      why = this.t(`${day} салон ${clock(hours.opensAt)}-с нээгдэнэ.`, `On ${day} the salon opens at ${clock(hours.opensAt)}.`)
+      why = this.t(
+        `${day} салон ${clock(hours.opensAt)}-с нээгдэнэ.`,
+        `On ${day} the salon opens at ${clock(hours.opensAt)}.`,
+      )
     else if (time >= hours.closesAt || (minutes && time + minutes > hours.closesAt))
       why = this.t(
         `${this.serviceNames(serviceIds)} ${duration(minutes, 'mn')} үргэлжилдэг тул ${clock(time)}-с эхэлбэл салон ${clock(hours.closesAt)}-д хаахаас өмнө амжихгүй.`,
@@ -787,7 +897,8 @@ class Turn {
     if (staffId) return this.t(` (мастер ${this.staffName(staffId)})`, ` with ${this.staffName(staffId)}`)
     const names = slot.staffIds.map((id) => this.staffName(id)).filter(Boolean)
     if (names.length === 1) return this.t(` (мастер ${names[0]})`, ` with ${names[0]}`)
-    return names.length ? this.t(` (${names.join(', ')} мастерууд сул)`, ` (free: ${names.join(', ')})`) : ''
+    if (names.length === 2) return this.t(` (${names.join(', ')} мастерууд сул)`, ` (free: ${names.join(', ')})`)
+    return names.length ? this.t(` (${names.length} мастер сул)`, ` (${names.length} specialists free)`) : ''
   }
 
   askContact(date: DateKey, slot: { start: number; staffIds: string[] }) {
@@ -798,12 +909,17 @@ class Turn {
     const missing = !b.name && !b.phone ? 'both' : !b.name ? 'name' : 'phone'
     const ask =
       missing === 'both'
-        ? this.t('Захиалга бүртгэхэд нэр, утасны дугаараа бичнэ үү.', 'To book it, please send your name and phone number.')
+        ? this.t(
+            'Захиалга бүртгэхэд нэр, утасны дугаараа бичнэ үү.',
+            'To book it, please send your name and phone number.',
+          )
         : missing === 'name'
           ? this.t('Захиалгыг хэний нэр дээр бүртгэх вэ? Нэрээ бичнэ үү.', 'What name should I put the booking under?')
           : this.t('Утасны дугаараа бичнэ үү (8 орон).', 'Please send your phone number (8 digits).')
     const hint =
-      this.snap.salon.isDemo && !s.demoHintShown ? this.t(' Демо: жишээ нэр, дугаар бичиж болно.', ' (Demo: a sample name and number are fine.)') : ''
+      this.snap.salon.isDemo && !s.demoHintShown
+        ? this.t(' Демо: жишээ нэр, дугаар бичиж болно.', ' (Demo: a sample name and number are fine.)')
+        : ''
     if (hint) s.demoHintShown = true
     this.say(
       `${this.t(
@@ -832,7 +948,13 @@ class Turn {
           ? STATUS_LABELS.confirmed
           : STATUS_LABELS.pending
     const summary: DraftSummary = {
-      services: quote.lines.map((l) => ({ name: l.name, price: l.price, from: l.from, durationMinutes: l.durationMinutes, addons: [] })),
+      services: quote.lines.map((l) => ({
+        name: l.name,
+        price: l.price,
+        from: l.from,
+        durationMinutes: l.durationMinutes,
+        addons: [],
+      })),
       staffName,
       dateLabel: fullDayLabel(date, this.today, this.locale),
       timeRange: `${clock(slot.start)}–${clock(slot.start + quote.durationMinutes)}`,
@@ -872,8 +994,20 @@ class Turn {
     const d = this.state.draft!
     this.state.draft = undefined
     const b = (this.state.booking ??= { serviceIds: d.serviceIds })
-    Object.assign(b, { serviceIds: d.serviceIds, staffId: d.staffId, date: d.date, time: d.start, name: d.name, phone: d.phone })
-    this.say(this.t('Хураангуйн хугацаа дууссан тул сул цагийг дахин шалгалаа.', 'The summary expired, so I checked the time again.'))
+    Object.assign(b, {
+      serviceIds: d.serviceIds,
+      staffId: d.staffId,
+      date: d.date,
+      time: d.start,
+      name: d.name,
+      phone: d.phone,
+    })
+    this.say(
+      this.t(
+        'Хураангуйн хугацаа дууссан тул сул цагийг дахин шалгалаа.',
+        'The summary expired, so I checked the time again.',
+      ),
+    )
     return this.bookingFlow()
   }
 
@@ -881,10 +1015,20 @@ class Turn {
     const done = this.state.done?.find((d) => d.draftId === draftId)
     this.intent = 'book'
     if (done) {
-      this.say(this.t(`Энэ захиалга аль хэдийн бүртгэгдсэн: ${done.reference}.`, `This booking is already made: ${done.reference}.`))
+      this.say(
+        this.t(
+          `Энэ захиалга аль хэдийн бүртгэгдсэн: ${done.reference}.`,
+          `This booking is already made: ${done.reference}.`,
+        ),
+      )
       return
     }
-    this.say(this.t('Энэ хураангуй хүчингүй болсон байна. Цагаа дахин сонгоё.', 'This summary is no longer valid. Let’s pick the time again.'))
+    this.say(
+      this.t(
+        'Энэ хураангуй хүчингүй болсон байна. Цагаа дахин сонгоё.',
+        'This summary is no longer valid. Let’s pick the time again.',
+      ),
+    )
   }
 
   async confirmDraft() {
@@ -953,8 +1097,17 @@ class Turn {
       s.draft = undefined
       this.event('booking_failed', 'warning', { detail: { code: err.code } })
       const b = (s.booking ??= { serviceIds: d.serviceIds })
-      Object.assign(b, { serviceIds: d.serviceIds, staffId: d.staffId, date: d.date, name: d.name, phone: d.phone, time: undefined })
-      const alts = ((err.details as { alternatives?: { date: string; start: number }[] } | undefined)?.alternatives ?? []).slice(0, 4)
+      Object.assign(b, {
+        serviceIds: d.serviceIds,
+        staffId: d.staffId,
+        date: d.date,
+        name: d.name,
+        phone: d.phone,
+        time: undefined,
+      })
+      const alts = (
+        (err.details as { alternatives?: { date: string; start: number }[] } | undefined)?.alternatives ?? []
+      ).slice(0, 4)
       this.say(err.message)
       if (alts.length) {
         s.awaiting = 'time'
@@ -975,10 +1128,18 @@ class Turn {
     s.awaiting = undefined
     if (s.booking) s.booking.time = undefined
     this.intent = 'book'
-    this.say(this.t('За, захиалга үүсгэсэнгүй. Өөр цаг эсвэл үйлчилгээ сонгох уу?', 'Okay, nothing was booked. Would you like another time or service?'))
+    this.say(
+      this.t(
+        'За, захиалга үүсгэсэнгүй. Өөр цаг эсвэл үйлчилгээ сонгох уу?',
+        'Okay, nothing was booked. Would you like another time or service?',
+      ),
+    )
     this.quick([
       { label: this.t('Өөр цаг', 'Another time'), message: this.t('Өөр цаг харуулаач', 'Show other times') },
-      { label: this.t('Үйлчилгээ, үнэ', 'Services & prices'), message: this.t('Ямар үйлчилгээ байдаг вэ?', 'What services do you offer?') },
+      {
+        label: this.t('Үйлчилгээ, үнэ', 'Services & prices'),
+        message: this.t('Ямар үйлчилгээ байдаг вэ?', 'What services do you offer?'),
+      },
     ])
   }
 
@@ -997,11 +1158,21 @@ class Turn {
         this.say(this.t('Аль цаг тохирох вэ?', 'Which time suits you?'))
         break
       case 'contact':
-        this.say(this.t('Захиалгаа үргэлжлүүлэх бол нэр, утасны дугаараа бичнэ үү.', 'To continue the booking, send your name and phone number.'))
+        this.say(
+          this.t(
+            'Захиалгаа үргэлжлүүлэх бол нэр, утасны дугаараа бичнэ үү.',
+            'To continue the booking, send your name and phone number.',
+          ),
+        )
         break
       case 'confirm':
         if (s.draft && b)
-          this.say(this.t('Захиалгын хураангуй таны «Тийм» хариуг хүлээж байна.', 'The booking summary is waiting for your “yes”.'))
+          this.say(
+            this.t(
+              'Захиалгын хураангуй таны «Тийм» хариуг хүлээж байна.',
+              'The booking summary is waiting for your “yes”.',
+            ),
+          )
         break
     }
   }
@@ -1025,7 +1196,12 @@ class Turn {
     }
     if (r.time !== undefined) m.time = r.time
     if (r.range) m.range = r.range
-    if (this.state.awaiting === 'manage_date' && r.choice !== undefined && this.state.choices?.kind === 'date' && !r.date) {
+    if (
+      this.state.awaiting === 'manage_date' &&
+      r.choice !== undefined &&
+      this.state.choices?.kind === 'date' &&
+      !r.date
+    ) {
       const d = this.state.choices.values[r.choice]
       if (d) m.date = d
     }
@@ -1039,9 +1215,15 @@ class Turn {
     s.choices = undefined
     const ask =
       intent === 'cancel'
-        ? this.t('Цуцлах захиалгынхаа дугаарыг (SV-XXXXXX) бичнэ үү.', 'Please send the booking reference (SV-XXXXXX) you want to cancel.')
+        ? this.t(
+            'Цуцлах захиалгынхаа дугаарыг (SV-XXXXXX) бичнэ үү.',
+            'Please send the booking reference (SV-XXXXXX) you want to cancel.',
+          )
         : intent === 'reschedule'
-          ? this.t('Цагийг нь өөрчлөх захиалгын дугаарыг (SV-XXXXXX) бичнэ үү.', 'Please send the booking reference (SV-XXXXXX) you want to move.')
+          ? this.t(
+              'Цагийг нь өөрчлөх захиалгын дугаарыг (SV-XXXXXX) бичнэ үү.',
+              'Please send the booking reference (SV-XXXXXX) you want to move.',
+            )
           : this.t('Захиалгын дугаараа (SV-XXXXXX) бичнэ үү.', 'Please send your booking reference (SV-XXXXXX).')
     this.say(
       `${withPhone ? this.t('Аюулгүй байдлын үүднээс утасны дугаар дангаараа хангалтгүй. ', 'For your security a phone number alone is not enough. ') : ''}${ask} ${this.t(
@@ -1133,13 +1315,20 @@ class Turn {
           'The booking reference or phone number did not match. Please check both and try again.',
         ) +
           (m.failures >= MAX_FAILED_VERIFICATIONS
-            ? this.t(` Тусламж хэрэгтэй бол ${phone(this.snap.salon.phone)} руу залгаарай.`, ` If you need help, call ${phone(this.snap.salon.phone)}.`)
+            ? this.t(
+                ` Тусламж хэрэгтэй бол ${phone(this.snap.salon.phone)} руу залгаарай.`,
+                ` If you need help, call ${phone(this.snap.salon.phone)}.`,
+              )
             : ''),
       )
-      if (m.failures >= MAX_FAILED_VERIFICATIONS) this.quick([{ label: this.t('Ажилтантай холбогдох', 'Talk to staff'), action: { type: 'human' } }])
+      if (m.failures >= MAX_FAILED_VERIFICATIONS)
+        this.quick([{ label: this.t('Ажилтантай холбогдох', 'Talk to staff'), action: { type: 'human' } }])
       return false
     }
-    s.verified = [...(s.verified ?? []).filter((v) => v.id !== view.id), { id: view.id, reference: view.reference, until: this.verifiedUntil() }]
+    s.verified = [
+      ...(s.verified ?? []).filter((v) => v.id !== view.id),
+      { id: view.id, reference: view.reference, until: this.verifiedUntil() },
+    ]
     this.grant.push(view.reference)
     m.appointmentId = view.id
     m.failures = 0
@@ -1174,7 +1363,10 @@ class Turn {
     s.awaiting = undefined
     if (ACTIVE_STATUSES.has(v.status) && v.startsAt > this.input.now)
       this.quick([
-        { label: this.t('Цаг өөрчлөх', 'Move it'), message: this.t(`${v.reference} цагаа өөрчлөх`, `Reschedule ${v.reference}`) },
+        {
+          label: this.t('Цаг өөрчлөх', 'Move it'),
+          message: this.t(`${v.reference} цагаа өөрчлөх`, `Reschedule ${v.reference}`),
+        },
         { label: this.t('Цуцлах', 'Cancel it'), message: this.t(`${v.reference} цуцлах`, `Cancel ${v.reference}`) },
       ])
   }
@@ -1182,13 +1374,23 @@ class Turn {
   startCancel(v: BookingView) {
     const s = this.state
     if (!ACTIVE_STATUSES.has(v.status)) {
-      this.say(this.t(`${v.reference} захиалга «${v.statusLabel}» төлөвтэй тул цуцлах боломжгүй.`, `${v.reference} is “${v.statusLabel}”, so it can’t be cancelled.`))
+      this.say(
+        this.t(
+          `${v.reference} захиалга «${v.statusLabel}» төлөвтэй тул цуцлах боломжгүй.`,
+          `${v.reference} is “${v.statusLabel}”, so it can’t be cancelled.`,
+        ),
+      )
       s.manage = undefined
       s.awaiting = undefined
       return
     }
     if (v.startsAt <= this.input.now) {
-      this.say(this.t('Эхэлсэн эсвэл өнгөрсөн цагийг онлайнаар цуцлах боломжгүй. Салон руу залгана уу.', 'An appointment that has started can’t be cancelled online. Please call the salon.'))
+      this.say(
+        this.t(
+          'Эхэлсэн эсвэл өнгөрсөн цагийг онлайнаар цуцлах боломжгүй. Салон руу залгана уу.',
+          'An appointment that has started can’t be cancelled online. Please call the salon.',
+        ),
+      )
       s.manage = undefined
       s.awaiting = undefined
       return
@@ -1198,10 +1400,19 @@ class Turn {
     const note = v.depositPaid
       ? notice >= limit
         ? this.t('Төлсөн урьдчилгааг тань буцаана.', 'Your paid deposit will be refunded.')
-        : this.t(`Цаг эхлэхэд ${limit} цагаас бага хугацаа үлдсэн тул нөхцлийн дагуу урьдчилгаа буцаагдахгүй.`, `It is less than ${limit} hours before the start, so under the policy the deposit is not refunded.`)
+        : this.t(
+            `Цаг эхлэхэд ${limit} цагаас бага хугацаа үлдсэн тул нөхцлийн дагуу урьдчилгаа буцаагдахгүй.`,
+            `It is less than ${limit} hours before the start, so under the policy the deposit is not refunded.`,
+          )
       : v.status === 'awaiting_deposit'
-        ? this.t('Урьдчилгаа төлөгдөөгүй тул нэмэлт төлбөр гарахгүй.', 'No deposit was paid, so there is nothing to forfeit.')
-        : this.t('Энэ захиалгад урьдчилгаа төлөөгүй, цуцлахад төлбөр гарахгүй.', 'No deposit was paid for this booking; cancelling costs nothing.')
+        ? this.t(
+            'Урьдчилгаа төлөгдөөгүй тул нэмэлт төлбөр гарахгүй.',
+            'No deposit was paid, so there is nothing to forfeit.',
+          )
+        : this.t(
+            'Энэ захиалгад урьдчилгаа төлөөгүй, цуцлахад төлбөр гарахгүй.',
+            'No deposit was paid for this booking; cancelling costs nothing.',
+          )
     const id = randomUUID()
     s.change = {
       id,
@@ -1215,9 +1426,19 @@ class Turn {
     this.parts.push({
       type: 'change',
       draftId: id,
-      summary: { kind: 'cancel', reference: v.reference, from: `${fullDayLabel(v.date, this.today, this.locale)} ${clock(v.start)}`, note },
+      summary: {
+        kind: 'cancel',
+        reference: v.reference,
+        from: `${fullDayLabel(v.date, this.today, this.locale)} ${clock(v.start)}`,
+        note,
+      },
     })
-    this.say(this.t(`${v.reference} захиалгыг цуцлах уу? «Тийм» эсвэл «Үгүй» гэж хариулна уу.`, `Cancel ${v.reference}? Reply “yes” or “no”.`))
+    this.say(
+      this.t(
+        `${v.reference} захиалгыг цуцлах уу? «Тийм» эсвэл «Үгүй» гэж хариулна уу.`,
+        `Cancel ${v.reference}? Reply “yes” or “no”.`,
+      ),
+    )
   }
 
   async askManageDate(intro?: string) {
@@ -1236,11 +1457,22 @@ class Turn {
     this.say(
       `${intro ? `${intro}\n` : ''}${
         days.length
-          ? this.t('Аль өдөр рүү шилжүүлэх вэ? Сул цагтай ойрын өдрүүд:', 'Which day would you like to move it to? The nearest days with free times:')
-          : this.t(`Ойрын хугацаанд сул цаг олдсонгүй. ${phone(this.snap.salon.phone)} руу залгаарай.`, `No free times soon. Please call ${phone(this.snap.salon.phone)}.`)
+          ? this.t(
+              'Аль өдөр рүү шилжүүлэх вэ? Сул цагтай ойрын өдрүүд:',
+              'Which day would you like to move it to? The nearest days with free times:',
+            )
+          : this.t(
+              `Ойрын хугацаанд сул цаг олдсонгүй. ${phone(this.snap.salon.phone)} руу залгаарай.`,
+              `No free times soon. Please call ${phone(this.snap.salon.phone)}.`,
+            )
       }`,
     )
-    this.quick(days.map((d) => ({ label: `${dayLabel(d.date, this.today, this.locale)} (${d.slotCount})`, action: { type: 'pick_date', date: d.date } })))
+    this.quick(
+      days.map((d) => ({
+        label: `${dayLabel(d.date, this.today, this.locale)} (${d.slotCount})`,
+        action: { type: 'pick_date', date: d.date },
+      })),
+    )
   }
 
   async rescheduleFlow(v: BookingView) {
@@ -1268,7 +1500,10 @@ class Turn {
     if (m.time === undefined) return this.showSlots(plan, opts.serviceIds, opts.staffId, m.range, true)
     const slot = plan.slots.find((x) => x.start === m.time)
     if (!slot)
-      return this.timeNotFree(plan, m.time, opts.serviceIds, opts.staffId, { manage: true, durationMinutes: v.durationMinutes })
+      return this.timeNotFree(plan, m.time, opts.serviceIds, opts.staffId, {
+        manage: true,
+        durationMinutes: v.durationMinutes,
+      })
     const id = randomUUID()
     s.change = {
       id,
@@ -1290,7 +1525,10 @@ class Turn {
         from: `${fullDayLabel(v.date, this.today, this.locale)} ${clock(v.start)}`,
         to: `${fullDayLabel(m.date, this.today, this.locale)} ${clock(m.time)}`,
         staffName: staff,
-        note: this.t('Үнэ, үйлчилгээ хэвээр. Шинэ захиалгын дугаар олгогдоно.', 'Price and services stay the same; you will get a new reference.'),
+        note: this.t(
+          'Үнэ, үйлчилгээ хэвээр. Шинэ захиалгын дугаар олгогдоно.',
+          'Price and services stay the same; you will get a new reference.',
+        ),
       },
     })
     this.say(
@@ -1318,13 +1556,27 @@ class Turn {
           out.depositOutcome === 'refund'
             ? this.t(' Төлсөн урьдчилгааг буцаана.', ' Your deposit will be refunded.')
             : out.depositOutcome === 'forfeit'
-              ? this.t(' Цуцлалтын нөхцлийн дагуу урьдчилгаа буцаагдахгүй.', ' Under the policy the deposit is not refunded.')
+              ? this.t(
+                  ' Цуцлалтын нөхцлийн дагуу урьдчилгаа буцаагдахгүй.',
+                  ' Under the policy the deposit is not refunded.',
+                )
               : ''
-        this.say(this.t(`${c.reference} захиалга цуцлагдлаа.${deposit}`, `${c.reference} has been cancelled.${deposit}`))
-        if (out.simulated) this.parts.push({ type: 'notice', text: this.t('Туршилтын горим: цуцлалтыг шалгасан ч хадгалаагүй.', 'Test mode: the cancellation was validated but not saved.') })
+        this.say(
+          this.t(`${c.reference} захиалга цуцлагдлаа.${deposit}`, `${c.reference} has been cancelled.${deposit}`),
+        )
+        if (out.simulated)
+          this.parts.push({
+            type: 'notice',
+            text: this.t(
+              'Туршилтын горим: цуцлалтыг шалгасан ч хадгалаагүй.',
+              'Test mode: the cancellation was validated but not saved.',
+            ),
+          })
       } else {
         const out = await this.input.port.reschedule(c.appointmentId, c.date!, c.start!)
-        this.event(out.simulated ? 'reschedule_simulated' : 'reschedule_done', 'info', { appointmentId: out.simulated ? c.appointmentId : out.appointmentId })
+        this.event(out.simulated ? 'reschedule_simulated' : 'reschedule_done', 'info', {
+          appointmentId: out.simulated ? c.appointmentId : out.appointmentId,
+        })
         if (!out.simulated) {
           s.verified = [
             ...(s.verified ?? []).filter((v) => v.id !== c.appointmentId),
@@ -1346,7 +1598,14 @@ class Turn {
             `Your appointment is now ${fullDayLabel(c.date!, this.today, 'en')} at ${clock(c.start!)}${out.staffName ? ` with ${out.staffName}` : ''}. New reference: ${out.reference}.`,
           ),
         )
-        if (out.simulated) this.parts.push({ type: 'notice', text: this.t('Туршилтын горим: цаг өөрчлөлтийг шалгасан ч хадгалаагүй.', 'Test mode: the change was validated but not saved.') })
+        if (out.simulated)
+          this.parts.push({
+            type: 'notice',
+            text: this.t(
+              'Туршилтын горим: цаг өөрчлөлтийг шалгасан ч хадгалаагүй.',
+              'Test mode: the change was validated but not saved.',
+            ),
+          })
       }
       s.manage = undefined
       s.awaiting = undefined
@@ -1402,7 +1661,12 @@ class Turn {
           } else if (focus.length) {
             lines.push(...list(focus).map((x) => serviceLine(x, this.locale)))
             if (/хямд|хямдр|discount|\d{4,}\s*(?:болго|bolgo)/iu.test(r.text))
-              lines.push(this.t('Үнэ салоны үнийн жагсаалтаар тогтсон — хямдруулах боломжгүй.', 'Prices follow the salon’s price list; I can’t change them.'))
+              lines.push(
+                this.t(
+                  'Үнэ салоны үнийн жагсаалтаар тогтсон — хямдруулах боломжгүй.',
+                  'Prices follow the salon’s price list; I can’t change them.',
+                ),
+              )
           } else {
             lines.push(this.t('Үйлчилгээний үнэ (эхлэх үнэ):', 'Prices (starting from):'))
             for (const c of this.snap.categories) {
@@ -1427,7 +1691,9 @@ class Turn {
             const items = list(c.serviceIds)
             if (!items.length) continue
             const min = Math.min(...items.map((x) => x.price))
-            lines.push(`${c.name}: ${items.map((x) => x.name).join(', ')} (${formatMoney(min)}${this.t('-өөс', ' and up')})`)
+            lines.push(
+              `${c.name}: ${items.map((x) => x.name).join(', ')} (${formatMoney(min)}${this.t('-өөс', ' and up')})`,
+            )
           }
           this.quickCategories()
           break
@@ -1485,8 +1751,10 @@ class Turn {
         case 'aftercare':
         case 'parking': {
           const entry =
-            matchKnowledge(r.text, this.snap.knowledge.filter((k) => k.topic === topic))?.item ??
-            this.snap.knowledge.find((k) => k.topic === topic)
+            matchKnowledge(
+              r.text,
+              this.snap.knowledge.filter((k) => k.topic === topic),
+            )?.item ?? this.snap.knowledge.find((k) => k.topic === topic)
           if (entry) lines.push(entry.answer)
           else if (topic === 'payment') lines.push(salon.depositPolicy)
           else {
@@ -1508,7 +1776,9 @@ class Turn {
     if (topics.includes('price') || topics.includes('duration')) {
       const ids = r.services.length ? r.services : focus
       if (ids.length === 1 && this.service(ids[0])?.onlineBookable && !this.state.booking?.date)
-        this.quick([{ label: this.t('Сул цаг харах', 'See free times'), action: { type: 'pick_service', serviceId: ids[0] } }])
+        this.quick([
+          { label: this.t('Сул цаг харах', 'See free times'), action: { type: 'pick_service', serviceId: ids[0] } },
+        ])
     }
   }
 
@@ -1535,8 +1805,14 @@ class Turn {
         const services = x.serviceIds.map((sid) => this.service(sid)?.name).filter(Boolean)
         return [
           describe(x),
-          this.t(`Хийдэг үйлчилгээ: ${services.slice(0, 8).join(', ')}${services.length > 8 ? ` гэх мэт ${services.length}` : ''}.`, `Services: ${services.slice(0, 8).join(', ')}${services.length > 8 ? ` and more (${services.length})` : ''}.`),
-          this.t(`Ажлын өдөр: ${x.workdays.map((d) => weekdayName(d, 'mn')).join(', ')}.`, `Works on: ${x.workdays.map((d) => weekdayName(d, 'en')).join(', ')}.`),
+          this.t(
+            `Хийдэг үйлчилгээ: ${services.slice(0, 8).join(', ')}${services.length > 8 ? ` гэх мэт ${services.length}` : ''}.`,
+            `Services: ${services.slice(0, 8).join(', ')}${services.length > 8 ? ` and more (${services.length})` : ''}.`,
+          ),
+          this.t(
+            `Ажлын өдөр: ${x.workdays.map((d) => weekdayName(d, 'mn')).join(', ')}.`,
+            `Works on: ${x.workdays.map((d) => weekdayName(d, 'en')).join(', ')}.`,
+          ),
         ]
       })
     }
@@ -1545,7 +1821,13 @@ class Turn {
       const eligible = staff.filter((x) => ids.some((id) => x.serviceIds.includes(id)))
       const strict = staff.filter((x) => ids.every((id) => x.serviceIds.includes(id)))
       const who = strict.length ? strict : eligible
-      return [this.t(`${r.generic && !r.services.length ? r.generic.label : this.serviceNames(ids)} хийдэг мастерууд:`, `Specialists for ${this.serviceNames(ids)}:`), ...who.map(describe)]
+      return [
+        this.t(
+          `${r.generic && !r.services.length ? r.generic.label : this.serviceNames(ids)} хийдэг мастерууд:`,
+          `Specialists for ${this.serviceNames(ids)}:`,
+        ),
+        ...who.map(describe),
+      ]
     }
     const asksBest = /(?:сайн|шилдэг|хамгийн|best|good)/iu.test(r.norm)
     return [
@@ -1567,18 +1849,36 @@ class Turn {
     this.intent = 'service'
     if (r.generic && !r.services.length) {
       const items = r.generic.candidates.map((id) => this.service(id)).filter((x): x is PortService => Boolean(x))
-      this.say([`${r.generic.label}:`, ...items.map((x) => serviceLine(x, this.locale)), this.t('Алийг нь сонирхож байна вэ?', 'Which one interests you?')].join('\n'))
+      this.say(
+        [
+          `${r.generic.label}:`,
+          ...items.map((x) => serviceLine(x, this.locale)),
+          this.t('Алийг нь сонирхож байна вэ?', 'Which one interests you?'),
+        ].join('\n'),
+      )
       s.choices = { kind: 'service', values: items.map((x) => x.id) }
       s.awaiting = 'service_choice'
       ;(s.booking ??= { serviceIds: [] }).serviceIds = []
-      this.quick(items.filter((x) => x.onlineBookable).map((x) => ({ label: x.name, action: { type: 'pick_service', serviceId: x.id } })))
+      this.quick(
+        items
+          .filter((x) => x.onlineBookable)
+          .map((x) => ({ label: x.name, action: { type: 'pick_service', serviceId: x.id } })),
+      )
       return
     }
     const items = r.services.map((id) => this.service(id)).filter((x): x is PortService => Boolean(x))
     s.focus = { ...s.focus, serviceIds: items.map((x) => x.id) }
-    this.say(items.map((x) => `${serviceLine(x, this.locale)}${x.description ? `\n${x.description}` : ''}`).join('\n\n'))
+    this.say(
+      items.map((x) => `${serviceLine(x, this.locale)}${x.description ? `\n${x.description}` : ''}`).join('\n\n'),
+    )
     const bookable = items.filter((x) => x.onlineBookable)
-    if (bookable.length === 1) this.quick([{ label: this.t('Сул цаг харах', 'See free times'), action: { type: 'pick_service', serviceId: bookable[0].id } }])
+    if (bookable.length === 1)
+      this.quick([
+        {
+          label: this.t('Сул цаг харах', 'See free times'),
+          action: { type: 'pick_service', serviceId: bookable[0].id },
+        },
+      ])
   }
 
   staffInfo(r: Reading) {
@@ -1633,8 +1933,14 @@ class Turn {
     const aboutStaff = r.staffNamed.length > 0
     this.say(
       aboutStaff
-        ? this.t('Мастеруудын хувийн мэдээллийг хуваалцдаггүй. Мэргэжлийн туршлагыг нь хэлж өгье:', 'I don’t share our specialists’ personal details. Here is their professional background:')
-        : this.t('Бусад үйлчлүүлэгчийн мэдээллийг хуваалцах боломжгүй — хүн бүрийн мэдээлэл нууц.', 'I can’t share other customers’ information — everyone’s details are private.'),
+        ? this.t(
+            'Мастеруудын хувийн мэдээллийг хуваалцдаггүй. Мэргэжлийн туршлагыг нь хэлж өгье:',
+            'I don’t share our specialists’ personal details. Here is their professional background:',
+          )
+        : this.t(
+            'Бусад үйлчлүүлэгчийн мэдээллийг хуваалцах боломжгүй — хүн бүрийн мэдээлэл нууц.',
+            'I can’t share other customers’ information — everyone’s details are private.',
+          ),
     )
     if (aboutStaff) this.say(this.staffLines(r, []).slice(0, 1).join('\n'))
   }
@@ -1659,7 +1965,12 @@ class Turn {
     this.handoff = { reason }
     this.event('handoff', 'info', { detail: { reason, repeat: Boolean(already) } })
     if (already) {
-      this.say(this.t('Таны хүсэлт ажилтанд хүрсэн. Тэр зуур би бусад асуултад тань тусалж болно.', 'Your request has reached our staff. Meanwhile I can help with anything else.'))
+      this.say(
+        this.t(
+          'Таны хүсэлт ажилтанд хүрсэн. Тэр зуур би бусад асуултад тань тусалж болно.',
+          'Your request has reached our staff. Meanwhile I can help with anything else.',
+        ),
+      )
       return
     }
     this.say(
@@ -1670,14 +1981,26 @@ class Turn {
         ),
     )
     if (this.snap.salon.isDemo)
-      this.parts.push({ type: 'notice', text: this.t('Демо: мэдэгдэл бодитоор илгээгдэхгүй, зөвхөн бүртгэлд хадгалагдана.', 'Demo: no real message is sent; it is only logged.') })
+      this.parts.push({
+        type: 'notice',
+        text: this.t(
+          'Демо: мэдэгдэл бодитоор илгээгдэхгүй, зөвхөн бүртгэлд хадгалагдана.',
+          'Demo: no real message is sent; it is only logged.',
+        ),
+      })
   }
 
   async unknown(text: string) {
     const s = this.state
     const write = this.input.models?.write
     if (write) {
-      const answer = await write({ question: text, snapshot: this.snap, history: this.input.history, locale: this.locale, today: this.today }).catch(() => null)
+      const answer = await write({
+        question: text,
+        snapshot: this.snap,
+        history: this.input.history,
+        locale: this.locale,
+        today: this.today,
+      }).catch(() => null)
       if (answer) {
         this.usedModel = true
         this.intent = 'ai_answer'
@@ -1699,6 +2022,9 @@ class Turn {
         `Sorry, I don’t have a reliable answer to that. Shall I connect you with staff? You can also call ${phone(this.snap.salon.phone)}.`,
       ),
     )
-    this.quick([{ label: this.t('Ажилтантай холбогдох', 'Talk to staff'), action: { type: 'human' } }, ...this.menu().slice(0, 2)])
+    this.quick([
+      { label: this.t('Ажилтантай холбогдох', 'Talk to staff'), action: { type: 'human' } },
+      ...this.menu().slice(0, 2),
+    ])
   }
 }

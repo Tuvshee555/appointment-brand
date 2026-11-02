@@ -69,7 +69,14 @@ export type ChatPart =
   | { type: 'quick_replies'; options: QuickReply[] }
   | { type: 'slots'; date: string; dateLabel: string; serviceLabel: string; slots: { start: number; label: string }[] }
   | { type: 'draft'; draftId: string; summary: DraftSummary }
-  | { type: 'booking'; reference: string; status: string; statusLabel: string; explanation: string; link: string | null }
+  | {
+      type: 'booking'
+      reference: string
+      status: string
+      statusLabel: string
+      explanation: string
+      link: string | null
+    }
   | { type: 'appointment'; summary: AppointmentSummary }
   | { type: 'change'; draftId: string; summary: ChangeSummary }
   | { type: 'handoff'; text: string }

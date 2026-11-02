@@ -37,7 +37,11 @@ export default async function AssistantProblemsPage({ searchParams }: { searchPa
       <AssistantTabs current="problems" problems={byKind.reduce((a, k) => a + k.n, 0)} />
       <div className="mb-4 flex gap-2 text-sm">
         {[1, 7, 30].map((d) => (
-          <Link key={d} href={`/admin/assistant/problems?days=${d}`} className={d === days ? 'font-medium underline' : 'text-ink-3'}>
+          <Link
+            key={d}
+            href={`/admin/assistant/problems?days=${d}`}
+            className={d === days ? 'font-medium underline' : 'text-ink-3'}
+          >
             {d === 1 ? '24 цаг' : `${d} хоног`}
           </Link>
         ))}
@@ -55,7 +59,9 @@ export default async function AssistantProblemsPage({ searchParams }: { searchPa
           ))}
         </div>
       ) : (
-        <EmptyState title="Асуудал алга">Энэ хугацаанд туслах бүх асуултад хариулж, үйлдлүүд амжилттай болсон.</EmptyState>
+        <EmptyState title="Асуудал алга">
+          Энэ хугацаанд туслах бүх асуултад хариулж, үйлдлүүд амжилттай болсон.
+        </EmptyState>
       )}
       {latest.length ? (
         <TableWrap>
@@ -72,7 +78,8 @@ export default async function AssistantProblemsPage({ searchParams }: { searchPa
               <tr key={e.id}>
                 <td className={`${td} whitespace-nowrap`}>{formatDateTime(e.createdAt)}</td>
                 <td className={td}>
-                  {EVENT_LABELS[e.kind] ?? e.kind} <Badge tone={e.level === 'error' ? 'danger' : 'warning'}>{e.level}</Badge>
+                  {EVENT_LABELS[e.kind] ?? e.kind}{' '}
+                  <Badge tone={e.level === 'error' ? 'danger' : 'warning'}>{e.level}</Badge>
                 </td>
                 <td className={`${td} max-w-md`}>
                   {question

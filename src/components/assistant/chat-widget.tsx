@@ -16,7 +16,11 @@ import { formatDuration } from '@/lib/datetime'
 import { formatMoney } from '@/lib/money'
 import { cn } from '@/lib/cn'
 
-async function callChat(body: { message?: string; action?: ChatAction; clientMessageId?: string }): Promise<ChatResponse> {
+async function callChat(body: {
+  message?: string
+  action?: ChatAction
+  clientMessageId?: string
+}): Promise<ChatResponse> {
   try {
     const res = await fetch(withBasePath('/api/chat'), {
       method: 'POST',
@@ -41,7 +45,9 @@ async function loadHistory(after?: string): Promise<{ messages: ChatMessage[]; s
 }
 
 function newId() {
-  return typeof crypto !== 'undefined' && 'randomUUID' in crypto ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`
+  return typeof crypto !== 'undefined' && 'randomUUID' in crypto
+    ? crypto.randomUUID()
+    : `${Date.now()}-${Math.random()}`
 }
 
 export function ChatPartView({
@@ -273,7 +279,11 @@ export function ChatWidget({ salonName }: { salonName: string }) {
       const known = new Set(m.map((x) => x.id))
       return [...m, ...incoming.filter((x) => !known.has(x.id))]
     })
-    const latest = incoming.map((x) => x.createdAt).filter(Boolean).sort().at(-1)
+    const latest = incoming
+      .map((x) => x.createdAt)
+      .filter(Boolean)
+      .sort()
+      .at(-1)
     if (latest) lastAt.current = latest
   }, [])
 

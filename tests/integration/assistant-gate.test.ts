@@ -20,7 +20,9 @@ describe('assistant gate conversations', () => {
       const result = await runCase(env.db, env.salonId, world, c)
       const problems = result.rows
         .filter((r) => r.hard.length || r.failures.length)
-        .map((r) => `«${r.text}» → ${[...r.hard, ...r.failures].join('; ')}\n    reply: ${r.reply.replace(/\n/g, ' / ')}`)
+        .map(
+          (r) => `«${r.text}» → ${[...r.hard, ...r.failures].join('; ')}\n    reply: ${r.reply.replace(/\n/g, ' / ')}`,
+        )
       expect(problems, problems.join('\n')).toEqual([])
     })
   }

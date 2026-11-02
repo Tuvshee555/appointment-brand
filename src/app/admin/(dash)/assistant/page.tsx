@@ -9,7 +9,17 @@ import { assistantOverview } from '@/server/queries/admin-assistant'
 
 export const metadata = { title: 'AI туслах' }
 
-function Channel({ name, tone, status, children }: { name: string; tone: 'success' | 'muted' | 'warning'; status: string; children: React.ReactNode }) {
+function Channel({
+  name,
+  tone,
+  status,
+  children,
+}: {
+  name: string
+  tone: 'success' | 'muted' | 'warning'
+  status: string
+  children: React.ReactNode
+}) {
   return (
     <div className="surface p-4 text-sm">
       <p className="flex items-center justify-between gap-2 font-medium">
@@ -57,13 +67,25 @@ export default async function AssistantOverviewPage() {
       <div className="mt-6 grid gap-6 xl:grid-cols-[1fr_1fr]">
         <Card title="Сувгууд">
           <div className="grid gap-3 sm:grid-cols-2">
-            <Channel name="Вэбсайт чат" tone={o.settings.enabled ? 'success' : 'warning'} status={o.settings.enabled ? 'Идэвхтэй' : 'Унтраалттай'}>
+            <Channel
+              name="Вэбсайт чат"
+              tone={o.settings.enabled ? 'success' : 'warning'}
+              status={o.settings.enabled ? 'Идэвхтэй' : 'Унтраалттай'}
+            >
               Сайтын баруун доод булан. IP тус бүрээр хязгаартай.
             </Channel>
-            <Channel name="Facebook Messenger" tone={o.messenger ? 'success' : 'muted'} status={o.messenger ? 'Тохируулсан' : 'Бэлтгэсэн, идэвхгүй'}>
+            <Channel
+              name="Facebook Messenger"
+              tone={o.messenger ? 'success' : 'muted'}
+              status={o.messenger ? 'Тохируулсан' : 'Бэлтгэсэн, идэвхгүй'}
+            >
               Ижил хөдөлгүүр, гарын үсэг шалгадаг webhook. Meta апп, хуудасны token шаардлагатай.
             </Channel>
-            <Channel name="Ажилтанд мэдэгдэл" tone={o.telegram && !o.demoMode ? 'success' : 'muted'} status={o.demoMode ? 'Демо: бүртгэлд' : o.telegram ? 'Telegram' : 'Тохируулаагүй'}>
+            <Channel
+              name="Ажилтанд мэдэгдэл"
+              tone={o.telegram && !o.demoMode ? 'success' : 'muted'}
+              status={o.demoMode ? 'Демо: бүртгэлд' : o.telegram ? 'Telegram' : 'Тохируулаагүй'}
+            >
               Хүн хэрэгтэй үед мэдэгдэл үүсгэнэ. Демо горимд гадагш илгээхгүй.
             </Channel>
             <Channel name="SMS" tone="muted" status="Холбоогүй">
@@ -83,14 +105,17 @@ export default async function AssistantOverviewPage() {
             <dd>{o.keys.anthropic ? 'Тохируулсан' : 'Алга'}</dd>
             <dt className="text-ink-3">AI хэрэглэх</dt>
             <dd>
-              {[o.settings.useModelForUnderstanding && 'ойлгоогүй мессеж унших', o.settings.useModelForAnswers && 'нээлттэй асуултад хариулах']
+              {[
+                o.settings.useModelForUnderstanding && 'ойлгоогүй мессеж унших',
+                o.settings.useModelForAnswers && 'нээлттэй асуултад хариулах',
+              ]
                 .filter(Boolean)
                 .join(', ') || 'Унтраасан'}
             </dd>
           </dl>
           <p className="mt-4 text-xs text-ink-3">
-            Үнэ, хугацаа, сул цаг, захиалгыг AI биш, салоны систем тодорхойлно. AI-ийн бичсэн хариултыг илгээхийн өмнө үнэ, цаг,
-            утасны дугаар бүрийг баталгаажсан мэдээлэлтэй тулгана.
+            Үнэ, хугацаа, сул цаг, захиалгыг AI биш, салоны систем тодорхойлно. AI-ийн бичсэн хариултыг илгээхийн өмнө
+            үнэ, цаг, утасны дугаар бүрийг баталгаажсан мэдээлэлтэй тулгана.
           </p>
         </Card>
       </div>

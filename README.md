@@ -14,23 +14,23 @@ All salon names, staff, customers, phone numbers and bookings are fictional samp
 
 ## What is real and what is simulated
 
-| Area                                                                                              | Status                                                                                                                                                                                 |
-| ------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Availability (shifts, breaks, time off, buffers, holidays, special hours, notice, booking window) | Real, computed from the database                                                                                                                                                       |
-| Double-booking protection                                                                         | Real: per-day advisory lock, re-validation in the transaction, Postgres exclusion constraint                                                                                           |
-| Booking, cancel, reschedule, staff confirm/reject/complete/no-show, history                       | Real                                                                                                                                                                                   |
-| Admin dashboard, calendar, catalogue, staff, customers, payments, reports, settings               | Real data. Demo visitors' changes are validated by the server and then rolled back                                                                                                     |
-| Deposits (QPay)                                                                                   | **Simulation** in the public demo, clearly labelled; no money moves. A QPay Merchant v2 adapter is implemented; the supplied credentials were verified with an auth-token request only |
-| AI assistant                                                                                      | Rule-based engine is live and reads the database. The Claude tool-use path is implemented but needs `ANTHROPIC_API_KEY`                                                                |
-| Notifications                                                                                     | Logged in the database only (demo). Telegram delivery to staff is implemented for non-demo salons                                                                                      |
-| Facebook Messenger                                                                                | Webhook prepared and signature-checked, **inactive** until a Meta app is configured                                                                                                    |
-| SMS                                                                                               | Not integrated                                                                                                                                                                         |
-| Image uploads                                                                                     | Cloudinary uploads work for the owner account; disabled for demo visitors                                                                                                              |
+| Area                                                                                              | Status                                                                                                                                                                                                                                                                                                                                                                                  |
+| ------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Availability (shifts, breaks, time off, buffers, holidays, special hours, notice, booking window) | Real, computed from the database                                                                                                                                                                                                                                                                                                                                                        |
+| Double-booking protection                                                                         | Real: per-day advisory lock, re-validation in the transaction, Postgres exclusion constraint                                                                                                                                                                                                                                                                                            |
+| Booking, cancel, reschedule, staff confirm/reject/complete/no-show, history                       | Real                                                                                                                                                                                                                                                                                                                                                                                    |
+| Admin dashboard, calendar, catalogue, staff, customers, payments, reports, settings               | Real data. Demo visitors' changes are validated by the server and then rolled back                                                                                                                                                                                                                                                                                                      |
+| Deposits (QPay)                                                                                   | **Simulation** in the public demo, clearly labelled; no money moves. A QPay Merchant v2 adapter is implemented; the supplied credentials were verified with an auth-token request only                                                                                                                                                                                                  |
+| AI assistant                                                                                      | Real: reads Mongolian (Cyrillic and Latin letters) and English, checks live availability, books, cancels and moves bookings after the customer confirms, hands over to staff. Rules answer without a model; with `OPENAI_API_KEY` (default `gpt-4.1-mini`) or `ANTHROPIC_API_KEY` a model reads unclear messages and writes open answers behind a fact check. No key is set in the demo |
+| Notifications                                                                                     | Logged in the database only (demo). Telegram delivery to staff is implemented for non-demo salons                                                                                                                                                                                                                                                                                       |
+| Facebook Messenger                                                                                | Webhook prepared and signature-checked, **inactive** until a Meta app is configured                                                                                                                                                                                                                                                                                                     |
+| SMS                                                                                               | Not integrated                                                                                                                                                                                                                                                                                                                                                                          |
+| Image uploads                                                                                     | Cloudinary uploads work for the owner account; disabled for demo visitors                                                                                                                                                                                                                                                                                                               |
 
 ## Stack
 
 Next.js 16 (App Router, Cache Components, Partial Prefetching) · React 19 · TypeScript ·
-Tailwind CSS 4 · Drizzle ORM · PostgreSQL (Neon) · Zod 4 · Anthropic SDK · Vitest · Playwright ·
+Tailwind CSS 4 · Drizzle ORM · PostgreSQL (Neon) · Zod 4 · OpenAI / Anthropic (optional) · Vitest · Playwright ·
 Vercel (functions in `cle1`, next to the Neon database in us-east-2).
 
 ## Getting started
@@ -66,15 +66,23 @@ demo uses separate read-only demo accounts.
 
 ## Testing
 
-- **Unit (46):** availability engine, pricing and deposits, status machine (checked against the
-  constraint SQL), Ulaanbaatar time, money, phone numbers, assistant rules and the reply guard.
-- **Integration (19):** a throwaway PostgreSQL (embedded-postgres) with the real migrations;
+- **Unit (67):** availability engine, pricing and deposits, status machine (checked against the
+  constraint SQL), Ulaanbaatar time, money, phone numbers; the assistant's Mongolian/Latin/English
+  reading, dates and times, intents, vocabulary, knowledge, fact check, model adapter (fake
+  `fetch`) and grounding of model proposals.
+- **Integration (108):** a throwaway PostgreSQL (embedded-postgres) with the real migrations;
   each test file gets its own database cloned from a seeded template. Covers price snapshots,
   buffers, breaks, notice, three simultaneous requests for one slot, the exclusion constraint,
   hold expiry, reschedule and cancellation history, provider-verified deposits, refunds,
-  seed idempotency and the demo-only reset.
-- **End-to-end (10):** home, services filter, a full booking and cancellation on desktop and
-  mobile, the assistant's prices, the demo admin's dry run and masked contacts.
+  seed idempotency and the demo-only reset; for the assistant, 68 gate conversations and 21
+  scenarios (two customers on one slot, duplicate and repeated sends, unauthorized changes,
+  model down, invented model facts, budget, database error, timeout, staff takeover, test chat).
+- **Held-out conversations** (`npm run eval:assistant`, not part of `npm test`): see
+  [docs/assistant/EVALUATION.md](docs/assistant/EVALUATION.md).
+- **End-to-end (16):** home, services filter, a full booking and cancellation on desktop and
+  mobile, the assistant's prices, a booking made and cancelled in the chat, Latin-script and
+  English questions, the AI admin section and its phone layout, the demo admin's dry run and
+  masked contacts.
 
 ## Documentation
 
@@ -83,3 +91,4 @@ demo uses separate read-only demo accounts.
 - [Booking engine](docs/booking.md)
 - [Security and the public demo](docs/security.md)
 - [Deployment and going live](docs/deployment.md)
+- [Assistant architecture](docs/assistant/ARCHITECTURE.md) and [evaluation](docs/assistant/EVALUATION.md)

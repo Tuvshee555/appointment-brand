@@ -22,24 +22,46 @@ export default async function AssistantAnalyticsPage({ searchParams }: { searchP
   const allReplies = a.modes.reduce((s, m) => s + m.n, 0)
   return (
     <>
-      <PageHeader title="AI туслах" description="Туслахын яриа, үүсгэсэн захиалга, ажилтанд шилжүүлэлт, AI-ийн зардал. Туршилтын яриаг тооцохгүй." />
+      <PageHeader
+        title="AI туслах"
+        description="Туслахын яриа, үүсгэсэн захиалга, ажилтанд шилжүүлэлт, AI-ийн зардал. Туршилтын яриаг тооцохгүй."
+      />
       <AssistantTabs current="analytics" />
       <div className="mb-4 flex gap-2">
         {RANGES.map((r) => (
           <Link
             key={r}
             href={`/admin/assistant/analytics?days=${r}`}
-            className={cn('rounded-full border px-3 py-1.5 text-sm', r === days ? 'border-cocoa-800 bg-cocoa-800 text-ivory' : 'border-line-strong')}
+            className={cn(
+              'rounded-full border px-3 py-1.5 text-sm',
+              r === days ? 'border-cocoa-800 bg-cocoa-800 text-ivory' : 'border-line-strong',
+            )}
           >
             {r} хоног
           </Link>
         ))}
       </div>
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <StatCard label="Яриа" value={a.totals.conversations} hint={`${(a.totals.conversion * 100).toFixed(0)}% нь захиалгатай дууссан`} />
-        <StatCard label="Туслахаар захиалга" value={a.totals.bookings} hint={`цуцлалт ${a.totals.cancels} · шилжүүлэлт ${a.totals.reschedules}`} />
-        <StatCard label="Ажилтанд шилжүүлсэн" value={a.totals.handoffs} hint={`хариулж чадаагүй ${a.totals.unanswered}`} />
-        <StatCard label="AI зардал" value={`$${a.usageCost.toFixed(2)}`} hint={`AI хариулт ${allReplies ? Math.round((aiReplies / allReplies) * 100) : 0}% · дундаж ${a.durations.avg} мс`} />
+        <StatCard
+          label="Яриа"
+          value={a.totals.conversations}
+          hint={`${(a.totals.conversion * 100).toFixed(0)}% нь захиалгатай дууссан`}
+        />
+        <StatCard
+          label="Туслахаар захиалга"
+          value={a.totals.bookings}
+          hint={`цуцлалт ${a.totals.cancels} · шилжүүлэлт ${a.totals.reschedules}`}
+        />
+        <StatCard
+          label="Ажилтанд шилжүүлсэн"
+          value={a.totals.handoffs}
+          hint={`хариулж чадаагүй ${a.totals.unanswered}`}
+        />
+        <StatCard
+          label="AI зардал"
+          value={`$${a.usageCost.toFixed(2)}`}
+          hint={`AI хариулт ${allReplies ? Math.round((aiReplies / allReplies) * 100) : 0}% · дундаж ${a.durations.avg} мс`}
+        />
       </div>
       <div className="mt-6 grid gap-6 xl:grid-cols-2">
         <Card title="Өдрөөр (яриа · захиалга · шилжүүлэлт)">
@@ -48,7 +70,10 @@ export default async function AssistantAnalyticsPage({ searchParams }: { searchP
               <li key={d.day} className="grid grid-cols-[3.5rem_1fr_5rem] items-center gap-2 text-xs">
                 <span className="tabular text-ink-3">{formatShortDate(d.day)}</span>
                 <span className="h-2.5 rounded-full bg-sand">
-                  <span className="block h-2.5 rounded-full bg-cocoa-700" style={{ width: `${(d.conversations / max) * 100}%` }} />
+                  <span
+                    className="block h-2.5 rounded-full bg-cocoa-700"
+                    style={{ width: `${(d.conversations / max) * 100}%` }}
+                  />
                 </span>
                 <span className="tabular text-right text-ink-2">
                   {d.conversations} · {d.bookings} · {d.handoffs}
@@ -120,7 +145,9 @@ export default async function AssistantAnalyticsPage({ searchParams }: { searchP
           </TableWrap>
         ) : (
           <div className="p-5">
-            <EmptyState title="AI дуудлага алга">AI түлхүүр тохируулаагүй эсвэл бүх асуултад дүрмээр хариулсан.</EmptyState>
+            <EmptyState title="AI дуудлага алга">
+              AI түлхүүр тохируулаагүй эсвэл бүх асуултад дүрмээр хариулсан.
+            </EmptyState>
           </div>
         )}
       </Card>

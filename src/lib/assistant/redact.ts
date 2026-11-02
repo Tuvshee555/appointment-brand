@@ -24,7 +24,11 @@ export function redactParts(parts: ChatPart[]): ChatPart[] {
       case 'draft':
         return {
           ...p,
-          summary: { ...p.summary, customerName: maskName(p.summary.customerName), customerPhone: maskPhones(p.summary.customerPhone) },
+          summary: {
+            ...p.summary,
+            customerName: maskName(p.summary.customerName),
+            customerPhone: maskPhones(p.summary.customerPhone),
+          },
         }
       default:
         return p

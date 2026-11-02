@@ -195,18 +195,20 @@ export const heldoutCases: EvalCase[] = [
   // ---- Replacements written after run 1
   c('h2-price-01', 'price', 'latin', [t('parafin archilgaa hed ve', { must: ['30,000₮'] })]),
   c('h2-staff-01', 'staff', 'english', [t('who can do acrylic nails', { must: ['Солонго', 'Ану'] })]),
-  c('h2-book-01', 'booking', 'cyrillic', [t('Нөгөөдөр өглөө 10 цагт педикюр хийлгэе', { must: ['10:00'], booking: 'none' })]),
+  c('h2-book-01', 'booking', 'cyrillic', [
+    t('Нөгөөдөр өглөө 10 цагт педикюр хийлгэе', { must: ['10:00'], booking: 'none' }),
+  ]),
   c('h2-unsup-01', 'unsupported', 'latin', [
-    t('humsnii minii unguu shar bolchloo yaah ve', { must: ['ажилтан|5000 0100|эмч|баттай'], mustNot: ['[0-9]{2},[0-9]{3}₮'] }),
+    t('humsnii minii unguu shar bolchloo yaah ve', {
+      must: ['ажилтан|5000 0100|эмч|баттай'],
+      mustNot: ['[0-9]{2},[0-9]{3}₮'],
+    }),
   ]),
 
   // ---- Short messages and context
   c('h-short-01', 'short', 'latin', [t('une', { must: ['үйлчилгээ|35,000₮'] })]),
   c('h-short-02', 'context', 'cyrillic', [t('Гель педикюр', {}), t('hed ve', { must: ['95,000₮'] })]),
-  c('h-short-03', 'context', 'latin', [
-    t('manikyur hed ve', {}),
-    t('ene ni hed minut', { must: ['мин|цаг'] }),
-  ]),
+  c('h-short-03', 'context', 'latin', [t('manikyur hed ve', {}), t('ene ni hed minut', { must: ['мин|цаг'] })]),
   c('h-short-04', 'repeat', 'latin', [
     t('gel budalt hed ve', { must: ['65,000₮'] }),
     t('gel budalt hed ve', { must: ['65,000₮'], mustNot: ['өмнө нь хэлсэн|already'] }),

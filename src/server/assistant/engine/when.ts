@@ -70,7 +70,9 @@ export function parseDate(norm: string, raw: string, today: DateKey): { date?: D
     if (d) return { date: d }
   }
   // "nov 20", "20 november"
-  const en = new RegExp(`\\b(?:(${MONTHS_EN.join('|')})[a-z]*\\.?\\s*(\\d{1,2})|(\\d{1,2})(?:st|nd|rd|th)?\\s+(${MONTHS_EN.join('|')})[a-z]*)\\b`).exec(raw)
+  const en = new RegExp(
+    `\\b(?:(${MONTHS_EN.join('|')})[a-z]*\\.?\\s*(\\d{1,2})|(\\d{1,2})(?:st|nd|rd|th)?\\s+(${MONTHS_EN.join('|')})[a-z]*)\\b`,
+  ).exec(raw)
   if (en) {
     const month = MONTHS_EN.indexOf((en[1] ?? en[4]).slice(0, 3)) + 1
     const d = monthDay(today, month, Number(en[2] ?? en[3]))

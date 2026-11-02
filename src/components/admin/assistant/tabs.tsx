@@ -1,7 +1,8 @@
 import Link from 'next/link'
 import { cn } from '@/lib/cn'
 
-export type AssistantTab = 'overview' | 'conversations' | 'knowledge' | 'settings' | 'analytics' | 'activity' | 'try' | 'problems'
+export type AssistantTab =
+  'overview' | 'conversations' | 'knowledge' | 'settings' | 'analytics' | 'activity' | 'try' | 'problems'
 
 const TABS: { key: AssistantTab; label: string; href: string }[] = [
   { key: 'overview', label: 'Тойм', href: '/admin/assistant' },

@@ -48,7 +48,11 @@ export function estimateCostUsd(model: string, inputTokens: number, outputTokens
 export function resolveModel(setting: { provider: 'auto' | Provider; model: string | null }): ModelOption | null {
   const chosen = setting.model ? optionFor(setting.model) : undefined
   const order: Provider[] =
-    setting.provider === 'auto' ? (chosen ? [chosen.provider, 'openai', 'anthropic'] : ['openai', 'anthropic']) : [setting.provider]
+    setting.provider === 'auto'
+      ? chosen
+        ? [chosen.provider, 'openai', 'anthropic']
+        : ['openai', 'anthropic']
+      : [setting.provider]
   for (const provider of order) {
     if (!providerConfigured(provider)) continue
     if (chosen?.provider === provider) return chosen

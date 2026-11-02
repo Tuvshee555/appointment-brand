@@ -169,6 +169,8 @@ export interface SalonPort {
   getBooking(id: string): Promise<BookingView | null>
   cancel(id: string, note: string | null): Promise<ChangeOutcome>
   /** Whether the customer may move the booking online, and with which services and specialist. */
-  rescheduleOptions(id: string): Promise<{ ok: true; serviceIds: string[]; staffId: string | null } | { ok: false; message: string }>
+  rescheduleOptions(
+    id: string,
+  ): Promise<{ ok: true; serviceIds: string[]; staffId: string | null } | { ok: false; message: string }>
   reschedule(id: string, date: DateKey, start: number): Promise<ChangeOutcome>
 }

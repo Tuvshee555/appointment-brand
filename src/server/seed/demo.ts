@@ -987,7 +987,9 @@ export async function deleteDemoData(db: Database, salonId: string) {
       .where(and(eq(t.appointments.salonId, salonId), eq(t.appointments.isDemo, true)))
     await tx.delete(t.appointments).where(and(eq(t.appointments.salonId, salonId), eq(t.appointments.isDemo, true)))
     await tx.delete(t.customers).where(and(eq(t.customers.salonId, salonId), eq(t.customers.isDemo, true)))
-    await tx.delete(t.assistantEvents).where(and(eq(t.assistantEvents.salonId, salonId), eq(t.assistantEvents.isDemo, true)))
+    await tx
+      .delete(t.assistantEvents)
+      .where(and(eq(t.assistantEvents.salonId, salonId), eq(t.assistantEvents.isDemo, true)))
     await tx.delete(t.chatSessions).where(and(eq(t.chatSessions.salonId, salonId), eq(t.chatSessions.isDemo, true)))
     await tx.delete(t.specialDays).where(and(eq(t.specialDays.salonId, salonId), eq(t.specialDays.isDemo, true)))
     const staffIds = tx.select({ id: t.staff.id }).from(t.staff).where(eq(t.staff.salonId, salonId))

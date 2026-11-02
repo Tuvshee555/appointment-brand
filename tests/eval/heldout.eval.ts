@@ -21,7 +21,8 @@ afterAll(() => env.close())
 const useModel = process.env.EVAL_MODEL === '1'
 
 it('runs the held-out and gate sets and reports the results', async () => {
-  if (useModel && /neon\.tech/.test(process.env.DATABASE_URL ?? '')) throw new Error('refusing a model run with a production DATABASE_URL')
+  if (useModel && /neon\.tech/.test(process.env.DATABASE_URL ?? ''))
+    throw new Error('refusing a model run with a production DATABASE_URL')
   const caller = useModel ? createModelCaller() : null
   const run = async (cases: typeof heldoutCases) => {
     const out: CaseResult[] = []

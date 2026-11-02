@@ -88,14 +88,29 @@ const TOPICS: [Topic, RegExp][] = [
     'hours',
     /(?:ажлын\s*цаг|хэдэн\s*цаг(?:аас|т)\s*(?:онгой|нээ|ажилл|хаа)|хэдэн\s*цаг\s*хүртэл|онгойдог|хаадаг|амардаг|нээлттэй|ажилладаг\s+(?:уу|вэ|бэ)|гараг\S*\s+ажилладаг|өдөр\S*\s+ажилладаг|opening\s+hours|working\s+hours|are\s+you\s+open|open\s+on|what\s+time\s+do\s+you\s+(?:open|close))/u,
   ],
-  ['location', /(?:хаяг|байршил|хаана\s+(?:байдаг|байрладаг|байна|вэ|бэ)|яаж\s+(?:оч|ирэх)|address|where\s+are\s+you|location|directions?)/u],
+  [
+    'location',
+    /(?:хаяг|байршил|хаана\s+(?:байдаг|байрладаг|байна|вэ|бэ)|яаж\s+(?:оч|ирэх)|address|where\s+are\s+you|location|directions?)/u,
+  ],
   ['deposit', /(?:урьдчилгаа|deposit|prepay)/u],
-  ['payment', /(?:(?<!бэлэг)(?<!бэлэг\s)(?<!бэлгийн\s)карт|бэлэн\s*(?:мөнгө|ээр)?|qpay|төлбөр\s*(?:яаж|хэрхэн|ямар)|яаж\s+төл|төлөх\s+(?:вэ|уу)|данс|card|cash|how\s+(?:can|do)\s+i\s+pay|payment\s+method)/u],
-  ['preparation', /(?:өмнө\s+(?:юу|яах|яаж)|бэлтгэ|юу\s+авчрах|ирэхээсээ\s+өмнө|before\s+(?:my|the)\s+(?:appointment|visit)|prepare|preparation)/u],
-  ['aftercare', /(?:дараа\s+(?:яаж|юу)\s+(?:хийх|арчлах)|арчилгаа\s+(?:яаж|хэрхэн)|удаан\s+тогт|хэр\s+удаан\s+тогт|aftercare|how\s+long\s+(?:does\s+it|will\s+it)\s+last)/u],
+  [
+    'payment',
+    /(?:(?<!бэлэг)(?<!бэлэг\s)(?<!бэлгийн\s)карт|бэлэн\s*(?:мөнгө|ээр)?|qpay|төлбөр\s*(?:яаж|хэрхэн|ямар)|яаж\s+төл|төлөх\s+(?:вэ|уу)|данс|card|cash|how\s+(?:can|do)\s+i\s+pay|payment\s+method)/u,
+  ],
+  [
+    'preparation',
+    /(?:өмнө\s+(?:юу|яах|яаж)|бэлтгэ|юу\s+авчрах|ирэхээсээ\s+өмнө|before\s+(?:my|the)\s+(?:appointment|visit)|prepare|preparation)/u,
+  ],
+  [
+    'aftercare',
+    /(?:дараа\s+(?:яаж|юу)\s+(?:хийх|арчлах)|арчилгаа\s+(?:яаж|хэрхэн)|удаан\s+тогт|хэр\s+удаан\s+тогт|aftercare|how\s+long\s+(?:does\s+it|will\s+it)\s+last)/u,
+  ],
   ['parking', /(?:зогсоол|машин\s+тавих|parking)/u],
   ['contact', /(?:утасны\s+дугаар|утас\s+(?:хэд|юу)|холбоо\s+барих|contact|phone\s+number|e-?mail|и-?мэйл)/u],
-  ['availability', /(?:сул\s*(?:цаг|байна|байгаа|уу|юу)|цаг\s*(?:байна\s*уу|байгаа\s*юу|бий\s*юу|гарах|олдох)|боломжтой\s*(?:юу|уу)|available|free\s+(?:slot|time)|any\s+(?:slots?|time|openings?))/u],
+  [
+    'availability',
+    /(?:сул\s*(?:цаг|байна|байгаа|уу|юу)|цаг\s*(?:байна\s*уу|байгаа\s*юу|бий\s*юу|гарах|олдох)|боломжтой\s*(?:юу|уу)|available|free\s+(?:slot|time)|any\s+(?:slots?|time|openings?))/u,
+  ],
 ]
 
 const QUESTION =

@@ -63,14 +63,26 @@ export function AssistantSettingsForm({
           onChange={(e) => set('enabled', e.target.checked)}
         />
         <div className="grid gap-4 sm:grid-cols-2">
-          <Field label="Үйлчилгээ үзүүлэгч" htmlFor="as-provider" hint="Автомат: OpenAI түлхүүр байвал түүнийг, үгүй бол Anthropic-ийг.">
-            <Select id="as-provider" value={v.provider} onChange={(e) => set('provider', e.target.value as SettingsValues['provider'])}>
+          <Field
+            label="Үйлчилгээ үзүүлэгч"
+            htmlFor="as-provider"
+            hint="Автомат: OpenAI түлхүүр байвал түүнийг, үгүй бол Anthropic-ийг."
+          >
+            <Select
+              id="as-provider"
+              value={v.provider}
+              onChange={(e) => set('provider', e.target.value as SettingsValues['provider'])}
+            >
               <option value="auto">Автомат</option>
               <option value="openai">OpenAI</option>
               <option value="anthropic">Anthropic</option>
             </Select>
           </Field>
-          <Field label="Загвар" htmlFor="as-model" hint="Анхдагч: GPT-4.1 mini. Үнэ — 1 сая токен тутамд (оролт / гаралт).">
+          <Field
+            label="Загвар"
+            htmlFor="as-model"
+            hint="Анхдагч: GPT-4.1 mini. Үнэ — 1 сая токен тутамд (оролт / гаралт)."
+          >
             <Select id="as-model" value={v.model} onChange={(e) => set('model', e.target.value)}>
               {models.map((m) => (
                 <option key={m.model} value={m.model}>
@@ -80,7 +92,11 @@ export function AssistantSettingsForm({
               ))}
             </Select>
           </Field>
-          <Field label="Өдрийн дээд зардал (USD)" htmlFor="as-budget" hint="Хэтэрвэл туслах дүрмээрээ хариулсаар байна. 0 = хязгааргүй.">
+          <Field
+            label="Өдрийн дээд зардал (USD)"
+            htmlFor="as-budget"
+            hint="Хэтэрвэл туслах дүрмээрээ хариулсаар байна. 0 = хязгааргүй."
+          >
             <Input
               id="as-budget"
               type="number"
@@ -124,14 +140,26 @@ export function AssistantSettingsForm({
           />
         </div>
         <Field label="Мэндчилгээ" htmlFor="as-greeting" optional hint="Хоосон бол анхдагч мэндчилгээ.">
-          <Textarea id="as-greeting" value={v.greeting ?? ''} onChange={(e) => set('greeting', e.target.value || null)} />
+          <Textarea
+            id="as-greeting"
+            value={v.greeting ?? ''}
+            onChange={(e) => set('greeting', e.target.value || null)}
+          />
         </Field>
         <Field label="Ажилтанд шилжүүлэх үеийн мессеж" htmlFor="as-handover" optional>
-          <Textarea id="as-handover" value={v.handoverMessage ?? ''} onChange={(e) => set('handoverMessage', e.target.value || null)} />
+          <Textarea
+            id="as-handover"
+            value={v.handoverMessage ?? ''}
+            onChange={(e) => set('handoverMessage', e.target.value || null)}
+          />
         </Field>
       </fieldset>
       <div className="flex flex-wrap items-center gap-3">
-        {canEdit ? <Submit pending={pending} /> : <p className="text-sm text-ink-3">Тохиргоог эзэмшигч, менежер өөрчилнө.</p>}
+        {canEdit ? (
+          <Submit pending={pending} />
+        ) : (
+          <p className="text-sm text-ink-3">Тохиргоог эзэмшигч, менежер өөрчилнө.</p>
+        )}
         <FeedbackLine feedback={feedback} />
       </div>
     </form>
@@ -178,7 +206,11 @@ export function KnowledgeEditor({ initial, canEdit }: { initial: KnowledgeValues
       <fieldset disabled={!canEdit} className="space-y-3">
         <div className="grid gap-3 sm:grid-cols-[12rem_1fr]">
           <Field label="Сэдэв" htmlFor={`kn-topic-${key}`}>
-            <Select id={`kn-topic-${key}`} value={v.topic} onChange={(e) => set('topic', e.target.value as KnowledgeValues['topic'])}>
+            <Select
+              id={`kn-topic-${key}`}
+              value={v.topic}
+              onChange={(e) => set('topic', e.target.value as KnowledgeValues['topic'])}
+            >
               {Object.entries(TOPICS).map(([k, label]) => (
                 <option key={k} value={k}>
                   {label}
@@ -225,7 +257,15 @@ export function KnowledgeEditor({ initial, canEdit }: { initial: KnowledgeValues
   )
 }
 
-export function ConversationActions({ sessionId, status, canReply }: { sessionId: string; status: string; canReply: boolean }) {
+export function ConversationActions({
+  sessionId,
+  status,
+  canReply,
+}: {
+  sessionId: string
+  status: string
+  canReply: boolean
+}) {
   const [text, setText] = useState('')
   const [pending, start] = useTransition()
   const [feedback, setFeedback] = useState<Feedback>(null)
@@ -261,16 +301,26 @@ export function ConversationActions({ sessionId, status, canReply }: { sessionId
       <FeedbackLine feedback={feedback} />
       <div className="flex flex-wrap gap-2">
         {status !== 'staff' ? (
-          <ActionButton okText="Та энэ яриаг хариулахаар авлаа — туслах чимээгүй болно." action={() => setConversationStatusAction({ sessionId, status: 'staff' })}>
+          <ActionButton
+            okText="Та энэ яриаг хариулахаар авлаа — туслах чимээгүй болно."
+            action={() => setConversationStatusAction({ sessionId, status: 'staff' })}
+          >
             Хариулахаар авах
           </ActionButton>
         ) : (
-          <ActionButton okText="Туслах дахин хариулна." action={() => setConversationStatusAction({ sessionId, status: 'bot' })}>
+          <ActionButton
+            okText="Туслах дахин хариулна."
+            action={() => setConversationStatusAction({ sessionId, status: 'bot' })}
+          >
             Туслахад буцаах
           </ActionButton>
         )}
         {status !== 'closed' ? (
-          <ActionButton variant="ghost" okText="Шийдвэрлэсэн гэж тэмдэглэлээ." action={() => setConversationStatusAction({ sessionId, status: 'closed' })}>
+          <ActionButton
+            variant="ghost"
+            okText="Шийдвэрлэсэн гэж тэмдэглэлээ."
+            action={() => setConversationStatusAction({ sessionId, status: 'closed' })}
+          >
             Шийдвэрлэсэн
           </ActionButton>
         ) : null}

@@ -22,7 +22,12 @@
 | `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET` | Image uploads for the owner account |
 
 Not set on purpose: the QPay merchant credentials (the demo never takes payments),
-`ANTHROPIC_API_KEY` (the assistant runs its rule engine), Telegram and Messenger tokens.
+`OPENAI_API_KEY` / `ANTHROPIC_API_KEY` (the assistant runs its rules), Telegram and Messenger
+tokens.
+
+Before deploying the assistant upgrade (branch `chatbot-intelligence`): apply migration 0002
+(`npm run db:migrate` with the production `DATABASE_URL`), then `npm run db:seed` once
+(idempotent: adds the new role permissions and the sample assistant knowledge).
 See `.env.example` for every supported variable.
 
 Database changes are not run by the build: apply migrations with `npm run db:migrate`
@@ -76,7 +81,8 @@ site that links to https://appointment-brand.vercel.app/portfolio/appointments.
    `QPAY_INVOICE_CODE`). Test with `QPAY_MODE=sandbox` and the sandbox URL first, then switch
    to `production`. Set a dedicated `QPAY_CALLBACK_SECRET`. QPay's own transaction fees are
    separate from Ursgal Digital's integration fee.
-3. **Assistant:** `ANTHROPIC_API_KEY`, with `AI_DAILY_BUDGET_USD` set to the agreed limit.
+3. **Assistant:** `OPENAI_API_KEY` (default model `gpt-4.1-mini`; or `ANTHROPIC_API_KEY`), the
+   daily budget in Admin → AI туслах → Тохиргоо, and the salon's own verified FAQ under «Мэдлэг».
 4. **Notifications:** `TELEGRAM_BOT_TOKEN` and `TELEGRAM_CHAT_ID` for staff alerts. SMS needs a
    Mongolian SMS gateway contract (not integrated yet).
 5. **Messenger:** a Meta app with `pages_messaging` approval, the page token,

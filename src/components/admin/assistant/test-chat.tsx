@@ -22,11 +22,14 @@ export function TestChat() {
   async function send(body: { message?: string; action?: ChatAction }, label?: string) {
     setBusy(true)
     setError(null)
-    if (label) setMessages((m) => [...m, { id: `u-${Date.now()}`, role: 'user', parts: [{ type: 'text', text: label }] }])
+    if (label)
+      setMessages((m) => [...m, { id: `u-${Date.now()}`, role: 'user', parts: [{ type: 'text', text: label }] }])
     const res = await testChatAction(body)
     setBusy(false)
     if (!res.ok) return setError(res.error)
-    const debug = [res.data.mode === 'ai' ? 'AI' : 'дүрэм', res.data.intent, ...(res.data.events ?? [])].filter(Boolean).join(' · ')
+    const debug = [res.data.mode === 'ai' ? 'AI' : 'дүрэм', res.data.intent, ...(res.data.events ?? [])]
+      .filter(Boolean)
+      .join(' · ')
     setMessages((m) => [...m, ...res.data.messages.map((x) => ({ ...x, debug }))])
   }
 
@@ -41,7 +44,8 @@ export function TestChat() {
     setInput('')
     void send({ message: text }, text)
   }
-  const onQuick = (q: QuickReply) => void send(q.action ? { action: q.action } : { message: q.message ?? q.label }, q.label)
+  const onQuick = (q: QuickReply) =>
+    void send(q.action ? { action: q.action } : { message: q.message ?? q.label }, q.label)
   const onAction = (a: ChatAction, label: string) => void send({ action: a }, label)
 
   return (
@@ -65,7 +69,8 @@ export function TestChat() {
       <div ref={listRef} className="flex-1 space-y-3 overflow-y-auto px-4 py-4 text-[0.9rem]" aria-live="polite">
         {!messages.length && !busy ? (
           <p className="text-sm text-ink-3">
-            Жишээ: «margaash 3 tsagt manikyur», «gel budalt hed ve», «tsagaa tsutsalmaar baina», «huntei yarimaar baina».
+            Жишээ: «margaash 3 tsagt manikyur», «gel budalt hed ve», «tsagaa tsutsalmaar baina», «huntei yarimaar
+            baina».
           </p>
         ) : null}
         {messages.map((m) => (
@@ -94,7 +99,13 @@ export function TestChat() {
         <label htmlFor="test-chat-input" className="sr-only">
           Туршилтын мессеж
         </label>
-        <Input id="test-chat-input" value={input} maxLength={500} onChange={(e) => setInput(e.target.value)} placeholder="Үйлчлүүлэгчийн мессеж…" />
+        <Input
+          id="test-chat-input"
+          value={input}
+          maxLength={500}
+          onChange={(e) => setInput(e.target.value)}
+          placeholder="Үйлчлүүлэгчийн мессеж…"
+        />
         <Button type="submit" disabled={busy || !input.trim()} aria-label="Илгээх">
           <Send className="size-4" aria-hidden />
         </Button>

@@ -73,7 +73,11 @@ export async function assistantOverview(salonId: string, now: Date) {
     db.$count(t.chatSessions, and(live(salonId), eq(t.chatSessions.status, 'staff'))),
     db.$count(
       t.assistantEvents,
-      and(eq(t.assistantEvents.salonId, salonId), eq(t.assistantEvents.kind, 'booking_created'), gte(t.assistantEvents.createdAt, weekAgo)),
+      and(
+        eq(t.assistantEvents.salonId, salonId),
+        eq(t.assistantEvents.kind, 'booking_created'),
+        gte(t.assistantEvents.createdAt, weekAgo),
+      ),
     ),
     db.$count(
       t.assistantEvents,
@@ -97,7 +101,9 @@ export async function assistantOverview(salonId: string, now: Date) {
     bookings7,
     problems24,
     spent,
-    messenger: Boolean(process.env.MESSENGER_PAGE_TOKEN && process.env.MESSENGER_APP_SECRET && process.env.MESSENGER_VERIFY_TOKEN),
+    messenger: Boolean(
+      process.env.MESSENGER_PAGE_TOKEN && process.env.MESSENGER_APP_SECRET && process.env.MESSENGER_VERIFY_TOKEN,
+    ),
     telegram: Boolean(process.env.TELEGRAM_BOT_TOKEN && process.env.TELEGRAM_CHAT_ID),
     demoMode: process.env.DEMO_MODE === 'true',
   }
@@ -139,8 +145,16 @@ export async function conversationDetail(salonId: string, sessionId: string) {
     .where(and(eq(t.chatSessions.id, sessionId), eq(t.chatSessions.salonId, salonId)))
   if (!row) return null
   const [messages, events] = await Promise.all([
-    db.select().from(t.chatMessages).where(eq(t.chatMessages.sessionId, sessionId)).orderBy(asc(t.chatMessages.createdAt)),
-    db.select().from(t.assistantEvents).where(eq(t.assistantEvents.sessionId, sessionId)).orderBy(asc(t.assistantEvents.createdAt)),
+    db
+      .select()
+      .from(t.chatMessages)
+      .where(eq(t.chatMessages.sessionId, sessionId))
+      .orderBy(asc(t.chatMessages.createdAt)),
+    db
+      .select()
+      .from(t.assistantEvents)
+      .where(eq(t.assistantEvents.sessionId, sessionId))
+      .orderBy(asc(t.assistantEvents.createdAt)),
   ])
   return { ...row, messages, events }
 }
@@ -160,14 +174,28 @@ export async function assistantAnalytics(salonId: string, now: Date, days: numbe
   const dayExpr = (col: unknown) => sql<string>`to_char(${col} at time zone 'Asia/Ulaanbaatar', 'YYYY-MM-DD')`
   const [conversations, events, intents, modes, durations, usage, reasons] = await Promise.all([
     db
-      .select({ day: dayExpr(t.chatSessions.createdAt), n: sql<number>`count(*)::int`, booked: sql<number>`count(${t.chatSessions.appointmentId})::int` })
+      .select({
+        day: dayExpr(t.chatSessions.createdAt),
+        n: sql<number>`count(*)::int`,
+        booked: sql<number>`count(${t.chatSessions.appointmentId})::int`,
+      })
       .from(t.chatSessions)
       .where(and(live(salonId), gte(t.chatSessions.createdAt, since)))
       .groupBy(sql`1`),
     db
-      .select({ kind: t.assistantEvents.kind, day: dayExpr(t.assistantEvents.createdAt), n: sql<number>`count(*)::int` })
+      .select({
+        kind: t.assistantEvents.kind,
+        day: dayExpr(t.assistantEvents.createdAt),
+        n: sql<number>`count(*)::int`,
+      })
       .from(t.assistantEvents)
-      .where(and(eq(t.assistantEvents.salonId, salonId), eq(t.assistantEvents.isTest, false), gte(t.assistantEvents.createdAt, since)))
+      .where(
+        and(
+          eq(t.assistantEvents.salonId, salonId),
+          eq(t.assistantEvents.isTest, false),
+          gte(t.assistantEvents.createdAt, since),
+        ),
+      )
       .groupBy(t.assistantEvents.kind, sql`2`),
     db
       .select({ intent: sql<string>`${t.chatMessages.meta}->>'intent'`, n: sql<number>`count(*)::int` })
@@ -190,7 +218,14 @@ export async function assistantAnalytics(salonId: string, now: Date, days: numbe
       })
       .from(t.chatMessages)
       .innerJoin(t.chatSessions, eq(t.chatSessions.id, t.chatMessages.sessionId))
-      .where(and(live(salonId), eq(t.chatMessages.role, 'assistant'), gte(t.chatMessages.createdAt, since), sql`${t.chatMessages.meta} ? 'durationMs'`)),
+      .where(
+        and(
+          live(salonId),
+          eq(t.chatMessages.role, 'assistant'),
+          gte(t.chatMessages.createdAt, since),
+          sql`${t.chatMessages.meta} ? 'durationMs'`,
+        ),
+      ),
     db.select().from(t.assistantUsage).where(gte(t.assistantUsage.day, from)).orderBy(asc(t.assistantUsage.day)),
     db
       .select({ reason: t.chatSessions.handoffReason, n: sql<number>`count(*)::int` })
