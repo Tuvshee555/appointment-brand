@@ -815,6 +815,13 @@ export function BookingWizard({ catalog, rules }: { catalog: PublicCatalog; rule
           {/* ---- Step 6: review */}
           {step === 'review' && quote && date && slot && (
             <div className="mt-6 space-y-6">
+              <p role="note" className="flex gap-2 rounded-xs bg-blush-50 px-4 py-3 text-sm text-blush-700">
+                <Info className="mt-0.5 size-4 shrink-0" aria-hidden />
+                <span>
+                  <strong className="font-medium">Демо захиалга.</strong> Сувд бол Ursgal Digital-ын портфолио демо
+                  салон: бодит цаг товлогдохгүй, SMS, Messenger мэдэгдэл илгээгдэхгүй, бодит төлбөр авахгүй.
+                </span>
+              </p>
               <div className="surface divide-y divide-line">
                 <ReviewRow label="Үйлчилгээ" onEdit={() => goto('services')}>
                   <ul className="space-y-1.5">
