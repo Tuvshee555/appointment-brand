@@ -26,7 +26,7 @@ import {
 import { recordModelUsage, spentTodayUsd, withinBudget } from './usage'
 
 export interface ChatChannel {
-  channel: 'web' | 'messenger' | 'test'
+  channel: 'web' | 'messenger' | 'instagram' | 'test'
   /** Hashed visitor cookie, Messenger sender id or admin id — never the raw id. */
   visitorHash: string
   /** Demo visitor link so a chat booking shows as "your test" in the demo admin. */
@@ -502,6 +502,13 @@ export async function postStaffReply(
     .from(t.chatSessions)
     .where(and(eq(t.chatSessions.id, input.sessionId), eq(t.chatSessions.salonId, ctx.salonId)))
   if (!session) throw new ServiceError('not_found', 'Яриа олдсонгүй.')
+  // Messenger and Instagram customers are answered from the Page inbox (Meta Business Suite);
+  // that reply reaches this conversation by its echo and takes the chat over.
+  if (session.channel === 'messenger' || session.channel === 'instagram')
+    throw new ServiceError(
+      'meta_inbox',
+      'Messenger, Instagram-ийн ярианд Meta Business Suite-ийн inbox-оос хариулна уу. Таны хариулт энд автоматаар бүртгэгдэж, туслах түр зогсоно.',
+    )
   const text = input.text.trim().slice(0, 1000)
   if (!text) throw new ServiceError('validation', 'Хариугаа бичнэ үү.')
   await ctx.db.insert(t.chatMessages).values({

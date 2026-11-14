@@ -8,6 +8,7 @@ import { loadAssistantSettings } from '@/server/assistant/settings'
 import { spentTodayUsd } from '@/server/assistant/usage'
 import { db } from '@/server/db'
 import * as t from '@/server/db/schema'
+import { metaConfig } from '@/server/meta/config'
 
 export const EVENT_LABELS: Record<string, string> = {
   booking_created: 'Захиалга үүсгэсэн',
@@ -101,9 +102,7 @@ export async function assistantOverview(salonId: string, now: Date) {
     bookings7,
     problems24,
     spent,
-    messenger: Boolean(
-      process.env.MESSENGER_PAGE_TOKEN && process.env.MESSENGER_APP_SECRET && process.env.MESSENGER_VERIFY_TOKEN,
-    ),
+    messenger: Boolean(metaConfig()),
     telegram: Boolean(process.env.TELEGRAM_BOT_TOKEN && process.env.TELEGRAM_CHAT_ID),
     demoMode: process.env.DEMO_MODE === 'true',
   }
@@ -111,9 +110,19 @@ export async function assistantOverview(salonId: string, now: Date) {
 
 export type ConversationFilter = 'all' | 'attention' | 'staff' | 'booked' | 'test'
 
-export async function listConversations(salonId: string, filter: ConversationFilter, page: number, pageSize: number) {
+/** Real Messenger/Instagram conversations (visitor hash "mt:…") are never shown to the public demo role. */
+const metaHidden = (hide: boolean) => (hide ? sql`${t.chatSessions.visitorHash} not like 'mt:%'` : undefined)
+
+export async function listConversations(
+  salonId: string,
+  filter: ConversationFilter,
+  page: number,
+  pageSize: number,
+  opts: { hideMeta?: boolean } = {},
+) {
   const where = and(
     eq(t.chatSessions.salonId, salonId),
+    metaHidden(opts.hideMeta ?? false),
     filter === 'test' ? eq(t.chatSessions.isTest, true) : eq(t.chatSessions.isTest, false),
     filter === 'attention' ? eq(t.chatSessions.status, 'handoff') : undefined,
     filter === 'staff' ? eq(t.chatSessions.status, 'staff') : undefined,
@@ -136,13 +145,15 @@ export async function listConversations(salonId: string, filter: ConversationFil
   return { rows, total }
 }
 
-export async function conversationDetail(salonId: string, sessionId: string) {
+export async function conversationDetail(salonId: string, sessionId: string, opts: { hideMeta?: boolean } = {}) {
   const [row] = await db
     .select({ s: t.chatSessions, reference: t.appointments.reference, assignee: t.adminUsers.name })
     .from(t.chatSessions)
     .leftJoin(t.appointments, eq(t.appointments.id, t.chatSessions.appointmentId))
     .leftJoin(t.adminUsers, eq(t.adminUsers.id, t.chatSessions.assignedAdminId))
-    .where(and(eq(t.chatSessions.id, sessionId), eq(t.chatSessions.salonId, salonId)))
+    .where(
+      and(eq(t.chatSessions.id, sessionId), eq(t.chatSessions.salonId, salonId), metaHidden(opts.hideMeta ?? false)),
+    )
   if (!row) return null
   const [messages, events] = await Promise.all([
     db

@@ -41,9 +41,12 @@ export default async function ConversationsPage({
   const sp = await searchParams
   const filter: ConversationFilter = sp.filter && sp.filter in FILTERS ? (sp.filter as ConversationFilter) : 'all'
   const page = Math.max(1, Math.floor(Number(sp.page)) || 1)
-  const { rows, total } = await listConversations(session.salonId, filter, page, PAGE_SIZE)
+  // The public demo role never sees real Messenger/Instagram conversations.
+  const { rows, total } = await listConversations(session.salonId, filter, page, PAGE_SIZE, {
+    hideMeta: session.isDemo,
+  })
   const selectedId = sp.session ?? rows[0]?.s.id
-  const detail = selectedId ? await conversationDetail(session.salonId, selectedId) : null
+  const detail = selectedId ? await conversationDetail(session.salonId, selectedId, { hideMeta: session.isDemo }) : null
   const contacts = !session.isDemo && session.permissions.includes('customers.contact')
   const canReply = session.permissions.includes('assistant.reply')
   const href = (f: ConversationFilter, p = 1, s?: string) =>
@@ -94,8 +97,14 @@ export default async function ConversationsPage({
                       </span>
                     </span>
                     <span className="mt-0.5 block text-xs text-ink-3">
-                      {s.channel === 'messenger' ? 'Messenger' : s.channel === 'test' ? 'Туршилт' : 'Вэбсайт'} ·{' '}
-                      {s.messageCount} мессеж
+                      {s.channel === 'messenger'
+                        ? 'Messenger'
+                        : s.channel === 'instagram'
+                          ? 'Instagram'
+                          : s.channel === 'test'
+                            ? 'Туршилт'
+                            : 'Вэбсайт'}{' '}
+                      · {s.messageCount} мессеж
                       {reference ? ` · ${reference}` : ''}
                       {s.handoffReason ? ` · ${HANDOFF_LABELS[s.handoffReason] ?? s.handoffReason}` : ''}
                     </span>

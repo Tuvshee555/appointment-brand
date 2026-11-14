@@ -62,8 +62,12 @@ specialist), only when `DEMO_MODE=true` and only for a salon flagged as a demo.
 ## Messaging
 
 - Demo mode never sends messages: notifications are written to the database as `logged`.
-- The Messenger webhook verifies Meta's `X-Hub-Signature-256` and is inactive without
-  `MESSENGER_APP_SECRET` and the page token.
+- The Meta webhook (Messenger and Instagram) verifies Meta's `X-Hub-Signature-256` over the raw
+  body, accepts only the configured Page and Instagram account, stores each event before
+  answering 200 (a retry is recognised, never answered twice) and is inactive (503) without
+  `META_APP_SECRET`, `META_VERIFY_TOKEN`, `META_PAGE_ID` and `META_PAGE_ACCESS_TOKEN`. Nothing is
+  sent unless `META_OUTBOUND_ENABLED=true`. Real Messenger/Instagram conversations are hidden
+  from the public demo role. See `docs/meta-integration.md`.
 - The assistant books, cancels or moves a booking only after the customer answers "yes" to a
   summary, through the same services as the website (day lock, re-validation, no-overlap
   constraint; a phone number may not hold two overlapping chat bookings).

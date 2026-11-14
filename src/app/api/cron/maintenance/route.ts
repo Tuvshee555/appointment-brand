@@ -1,9 +1,10 @@
 // Daily maintenance (Vercel Cron, Bearer CRON_SECRET): expire unpaid holds and
 // unanswered past requests, queue reminders, prune rate limits and old demo
-// chats, and — in DEMO_MODE only — refresh the sample data to today's dates.
+// chats and Meta webhook receipts, and — in DEMO_MODE only — refresh the sample data to today's dates.
 import { and, eq, lt } from 'drizzle-orm'
 import { db } from '@/server/db'
 import * as t from '@/server/db/schema'
+import { purgeReceipts } from '@/server/meta/receipts'
 import { expireStaleHolds, expireUnhandledRequests, queueReminders } from '@/server/services/booking'
 import { loadSalonConfig } from '@/server/services/salon'
 import { pruneRateLimits } from '@/server/security/rate-limit'
@@ -46,5 +47,6 @@ export async function GET(req: Request) {
     .where(
       and(eq(t.chatSessions.isTest, true), lt(t.chatSessions.lastMessageAt, new Date(now.getTime() - 7 * 86_400_000))),
     )
+  report.metaReceiptsPurged = await purgeReceipts(db, 30, now)
   return Response.json({ ok: true, at: now.toISOString(), report })
 }

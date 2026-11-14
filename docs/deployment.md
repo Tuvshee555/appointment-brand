@@ -85,9 +85,10 @@ site that links to https://appointment-brand.vercel.app/portfolio/appointments.
    daily budget in Admin → AI туслах → Тохиргоо, and the salon's own verified FAQ under «Мэдлэг».
 4. **Notifications:** `TELEGRAM_BOT_TOKEN` and `TELEGRAM_CHAT_ID` for staff alerts. SMS needs a
    Mongolian SMS gateway contract (not integrated yet).
-5. **Messenger:** a Meta app with `pages_messaging` approval, the page token,
-   `MESSENGER_APP_SECRET` and `MESSENGER_VERIFY_TOKEN`; then subscribe the webhook
-   `/portfolio/appointments/api/messenger/webhook`.
+5. **Messenger and Instagram:** a Meta app with the permissions in `docs/meta-integration.md`,
+   then `META_APP_SECRET`, `META_VERIFY_TOKEN`, `META_PAGE_ID`, `META_PAGE_ACCESS_TOKEN`
+   (and `META_INSTAGRAM_ACCOUNT_ID`); subscribe the webhook
+   `/portfolio/appointments/api/meta/webhook`. Replies are sent only with `META_OUTBOUND_ENABLED=true`.
 6. **Holidays:** Tsagaan Sar follows the lunar calendar. Add its dates each year under
    Settings → Баяр, онцгой өдөр.
 7. **Domain and legal:** custom domain, privacy and cancellation policies reviewed by the

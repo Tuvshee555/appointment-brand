@@ -22,6 +22,13 @@
       "when": 1793584996158,
       "tag": "0002_assistant_intelligence",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1794624960885,
+      "tag": "0003_meta_webhooks",
+      "breakpoints": true
     }
   ]
 }
