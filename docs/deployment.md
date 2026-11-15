@@ -22,11 +22,15 @@
 | `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET` | Image uploads for the owner account |
 
 Not set on purpose: the QPay merchant credentials (the demo never takes payments),
-`ANTHROPIC_API_KEY` (the assistant runs its rule engine), Telegram and Messenger tokens.
+`OPENAI_API_KEY` / `ANTHROPIC_API_KEY` (the assistant runs its rules), Telegram and Messenger
+tokens.
+
 See `.env.example` for every supported variable.
 
-Database changes are not run by the build: apply migrations with `npm run db:migrate`
-against the production `DATABASE_URL` before deploying code that needs them.
+A production deploy applies pending migrations and the idempotent base seed itself
+(`scripts/migrate-on-deploy.ts`, run by `npm run build` only when `VERCEL_ENV=production`).
+If a migration fails, the build fails and the previous deployment keeps serving. Review
+anything destructive first and run it by hand with `npm run db:migrate`.
 
 ## Serving it from the Ursgal site
 
@@ -76,12 +80,14 @@ site that links to https://appointment-brand.vercel.app/portfolio/appointments.
    `QPAY_INVOICE_CODE`). Test with `QPAY_MODE=sandbox` and the sandbox URL first, then switch
    to `production`. Set a dedicated `QPAY_CALLBACK_SECRET`. QPay's own transaction fees are
    separate from Ursgal Digital's integration fee.
-3. **Assistant:** `ANTHROPIC_API_KEY`, with `AI_DAILY_BUDGET_USD` set to the agreed limit.
+3. **Assistant:** `OPENAI_API_KEY` (default model `gpt-4.1-mini`; or `ANTHROPIC_API_KEY`), the
+   daily budget in Admin → AI туслах → Тохиргоо, and the salon's own verified FAQ under «Мэдлэг».
 4. **Notifications:** `TELEGRAM_BOT_TOKEN` and `TELEGRAM_CHAT_ID` for staff alerts. SMS needs a
    Mongolian SMS gateway contract (not integrated yet).
-5. **Messenger:** a Meta app with `pages_messaging` approval, the page token,
-   `MESSENGER_APP_SECRET` and `MESSENGER_VERIFY_TOKEN`; then subscribe the webhook
-   `/portfolio/appointments/api/messenger/webhook`.
+5. **Messenger and Instagram:** a Meta app with the permissions in `docs/meta-integration.md`,
+   then `META_APP_SECRET`, `META_VERIFY_TOKEN`, `META_PAGE_ID`, `META_PAGE_ACCESS_TOKEN`
+   (and `META_INSTAGRAM_ACCOUNT_ID`); subscribe the webhook
+   `/portfolio/appointments/api/meta/webhook`. Replies are sent only with `META_OUTBOUND_ENABLED=true`.
 6. **Holidays:** Tsagaan Sar follows the lunar calendar. Add its dates each year under
    Settings → Баяр, онцгой өдөр.
 7. **Domain and legal:** custom domain, privacy and cancellation policies reviewed by the

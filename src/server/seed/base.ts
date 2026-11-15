@@ -10,6 +10,7 @@ import { PHOTOS } from '@/lib/photo-manifest'
 import { hashPassword } from '@/server/auth/password'
 import type { Database } from '@/server/db/client'
 import * as t from '@/server/db/schema'
+import { seedKnowledge } from './knowledge-data'
 import {
   ADDONS,
   CATEGORIES,
@@ -239,6 +240,8 @@ export async function seedBase(db: Database, { now = new Date() }: { now?: Date 
       },
     ])
     .onConflictDoNothing({ target: t.adminUsers.email })
+
+  await seedKnowledge(db, salonId, now)
 
   return {
     salonId,

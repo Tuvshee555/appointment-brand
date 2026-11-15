@@ -20,7 +20,8 @@ string is server-only, and nothing reaches the browser.
 | Bookings   | `customers`, `appointments`, `appointment_services`, `appointment_addons`, `appointment_events`, `cancellation_records` |
 | Payments   | `payments`, `payment_records`                                                                                           |
 | Admin      | `admin_roles`, `admin_users`, `admin_sessions`, `audit_log`                                                             |
-| Messaging  | `notifications`, `chat_sessions`, `chat_messages`, `ai_usage`                                                           |
+| Messaging  | `notifications`, `chat_sessions`, `chat_messages`, `ai_usage` (legacy)                                                  |
+| Assistant  | `assistant_settings`, `assistant_knowledge`, `assistant_events`, `assistant_usage`                                      |
 | Protection | `rate_limits`                                                                                                           |
 
 ### Appointments

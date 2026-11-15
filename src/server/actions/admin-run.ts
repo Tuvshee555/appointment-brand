@@ -59,7 +59,9 @@ export async function runAdminAction<T>(
     const { actor } = ctx
     if (actor.isDemo) {
       // Demo visitors need the read permission for the area they explore.
-      const viewPermission = permission.replace(/\.manage$/, '.view').replace(/^customers\.contact$/, 'customers.view')
+      const viewPermission = permission
+        .replace(/\.(?:manage|reply)$/, '.view')
+        .replace(/^customers\.contact$/, 'customers.view')
       if (!actor.permissions.includes(viewPermission)) throw ERR.forbidden()
       await enforceRateLimit(ctx.db, LIMITS.demoMutation, actor.demoVisitorHash ?? ctx.ipHash)
       if (opts.ownAppointmentId && (await isOwnDemoAppointment(ctx, opts.ownAppointmentId))) {

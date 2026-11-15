@@ -62,11 +62,24 @@ specialist), only when `DEMO_MODE=true` and only for a salon flagged as a demo.
 ## Messaging
 
 - Demo mode never sends messages: notifications are written to the database as `logged`.
-- The Messenger webhook verifies Meta's `X-Hub-Signature-256` and is inactive without
-  `MESSENGER_APP_SECRET` and the page token.
-- The assistant cannot book on its own: it prepares a draft that the customer confirms. Its
-  replies are checked so that every price and time comes from the database, and model calls
-  stop at the daily budget.
+- The Meta webhook (Messenger and Instagram) verifies Meta's `X-Hub-Signature-256` over the raw
+  body, accepts only the configured Page and Instagram account, stores each event before
+  answering 200 (a retry is recognised, never answered twice) and is inactive (503) without
+  `META_APP_SECRET`, `META_VERIFY_TOKEN`, `META_PAGE_ID` and `META_PAGE_ACCESS_TOKEN`. Nothing is
+  sent unless `META_OUTBOUND_ENABLED=true`. Real Messenger/Instagram conversations are hidden
+  from the public demo role. See `docs/meta-integration.md`.
+- The assistant books, cancels or moves a booking only after the customer answers "yes" to a
+  summary, through the same services as the website (day lock, re-validation, no-overlap
+  constraint; a phone number may not hold two overlapping chat bookings).
+- An existing booking is shown or changed only if this chat created it, or after its reference
+  **and** the phone on it match (rate-limited, one answer for both failures, three attempts).
+- Prices, times and specialists come from the database; model-written text passes a fact check
+  (amounts, times, phones, e-mails, links, claims of actions or payments) or is not sent. Model
+  calls stop at the owner's daily budget; keys are server-side only.
+- Customer text is data to the model, never instructions. Events store no message text or
+  contact details; booking manage links are never stored with chat messages; contact answers are
+  hidden in the admin from staff without contact access and from demo visitors.
+- The admin «Try it» chat validates bookings and changes and rolls them back.
 
 ## Rate limits
 

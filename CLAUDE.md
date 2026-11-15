@@ -29,6 +29,10 @@ Read `README.md` and `docs/` before changing booking, payments, security or demo
   enum types as `"salon"."…"`.
 - Admin segments each need a `loading.tsx`, and URL-reading client hooks need a `<Suspense>`
   boundary (Cache Components validation).
+- The assistant (`src/server/assistant`, see `docs/assistant/ARCHITECTURE.md`) states facts only
+  from the database and books, cancels or moves only through the booking services after the
+  customer confirms. Its gate conversations run in `npm test`; never tune against the held-out set
+  (`npm run eval:assistant`) — a fixed held-out case moves to `tests/eval/gate.ts`.
 
 ## Gotchas
 

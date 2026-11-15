@@ -16,6 +16,7 @@ import {
   boolean,
   check,
   date,
+  doublePrecision,
   index,
   integer,
   jsonb,
@@ -873,10 +874,24 @@ export const chatSessions = salonSchema
       isDemo: boolean().notNull().default(false),
       createdAt: createdAt(),
       lastMessageAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+      /** bot: the assistant answers; handoff: waiting for staff; staff: a person took over; closed. */
+      status: varchar({ length: 16 }).notNull().default('bot'),
+      handoffReason: varchar({ length: 32 }),
+      handoffAt: timestamp({ withTimezone: true }),
+      assignedAdminId: uuid().references(() => adminUsers.id, { onDelete: 'set null' }),
+      lastStaffAt: timestamp({ withTimezone: true }),
+      resolvedAt: timestamp({ withTimezone: true }),
+      locale: varchar({ length: 2 }).notNull().default('mn'),
+      /** Short processing lease: one turn of a conversation at a time. */
+      leaseUntil: timestamp({ withTimezone: true }),
+      leaseOwner: uuid(),
+      /** The admin «Try it» chat: bookings are simulated and it stays out of the statistics. */
+      isTest: boolean().notNull().default(false),
     },
     (t) => [
       index('chat_sessions_visitor').on(t.salonId, t.visitorHash),
       index('chat_sessions_last').on(t.lastMessageAt),
+      index('chat_sessions_status').on(t.salonId, t.status, t.lastMessageAt),
     ],
   )
   .enableRLS()
@@ -893,8 +908,17 @@ export const chatMessages = salonSchema
       content: text().notNull(),
       meta: jsonb().$type<Record<string, unknown>>(),
       createdAt: createdAt(),
+      /** The widget's id for a customer message: a repeated send returns the stored reply. */
+      clientMessageId: varchar({ length: 80 }),
+      /** Staff replies: who wrote them. */
+      authorAdminId: uuid().references(() => adminUsers.id, { onDelete: 'set null' }),
     },
-    (t) => [index('chat_messages_session').on(t.sessionId, t.createdAt)],
+    (t) => [
+      index('chat_messages_session').on(t.sessionId, t.createdAt),
+      uniqueIndex('chat_messages_client_id')
+        .on(t.sessionId, t.clientMessageId)
+        .where(sql`${t.clientMessageId} is not null`),
+    ],
   )
   .enableRLS()
 
@@ -913,6 +937,103 @@ export const aiUsage = salonSchema
   )
   .enableRLS()
 
+/** The owner's assistant settings (one row per salon; defaults apply when it is missing). */
+export const assistantSettings = salonSchema
+  .table('assistant_settings', {
+    salonId: uuid()
+      .primaryKey()
+      .references(() => salons.id, { onDelete: 'cascade' }),
+    enabled: boolean().notNull().default(true),
+    /** auto | openai | anthropic */
+    provider: varchar({ length: 16 }).notNull().default('auto'),
+    model: varchar({ length: 80 }).notNull().default('gpt-4.1-mini'),
+    dailyBudgetUsd: doublePrecision().notNull().default(2),
+    useModelForUnderstanding: boolean().notNull().default(true),
+    useModelForAnswers: boolean().notNull().default(true),
+    englishReplies: boolean().notNull().default(true),
+    /** A conversation a person took over returns to the assistant after this many silent hours (0 = never). */
+    handoverAutoResumeHours: integer().notNull().default(24),
+    greeting: text(),
+    handoverMessage: text(),
+    updatedAt: updatedAt(),
+    updatedBy: uuid().references(() => adminUsers.id, { onDelete: 'set null' }),
+  })
+  .enableRLS()
+
+/** Verified business answers the assistant quotes verbatim (only active, verified entries). */
+export const assistantKnowledge = salonSchema
+  .table(
+    'assistant_knowledge',
+    {
+      id: uuid().primaryKey().defaultRandom(),
+      salonId: uuid()
+        .notNull()
+        .references(() => salons.id, { onDelete: 'cascade' }),
+      /** general | preparation | aftercare | payment | parking | policy */
+      topic: varchar({ length: 24 }).notNull().default('general'),
+      question: text().notNull(),
+      answer: text().notNull(),
+      /** Comma-separated phrases that identify the entry. */
+      keywords: text().notNull().default(''),
+      isActive: boolean().notNull().default(true),
+      /** Editing the answer clears verification; unverified entries are never quoted. */
+      verifiedAt: timestamp({ withTimezone: true }),
+      verifiedBy: uuid().references(() => adminUsers.id, { onDelete: 'set null' }),
+      sortOrder: integer().notNull().default(0),
+      createdAt: createdAt(),
+      updatedAt: updatedAt(),
+      updatedBy: uuid().references(() => adminUsers.id, { onDelete: 'set null' }),
+    },
+    (t) => [index('assistant_knowledge_salon').on(t.salonId, t.sortOrder)],
+  )
+  .enableRLS()
+
+/** What the assistant did: bookings, changes, hand-overs, refusals and failures (no message text). */
+export const assistantEvents = salonSchema
+  .table(
+    'assistant_events',
+    {
+      id: uuid().primaryKey().defaultRandom(),
+      salonId: uuid()
+        .notNull()
+        .references(() => salons.id, { onDelete: 'cascade' }),
+      sessionId: uuid().references(() => chatSessions.id, { onDelete: 'cascade' }),
+      kind: varchar({ length: 40 }).notNull(),
+      /** info | warning | error — warnings and errors are listed under Problems. */
+      level: varchar({ length: 8 }).notNull().default('info'),
+      appointmentId: uuid().references(() => appointments.id, { onDelete: 'set null' }),
+      detail: jsonb().$type<Record<string, unknown>>(),
+      isDemo: boolean().notNull().default(false),
+      isTest: boolean().notNull().default(false),
+      createdAt: createdAt(),
+    },
+    (t) => [
+      index('assistant_events_salon_created').on(t.salonId, t.createdAt),
+      index('assistant_events_level').on(t.salonId, t.level, t.createdAt),
+    ],
+  )
+  .enableRLS()
+
+/** Model calls per day, environment, model and purpose, with an estimated cost. */
+export const assistantUsage = salonSchema
+  .table(
+    'assistant_usage',
+    {
+      day: date({ mode: 'string' }).notNull(),
+      environment: varchar({ length: 16 }).notNull(),
+      provider: varchar({ length: 16 }).notNull(),
+      model: varchar({ length: 80 }).notNull(),
+      source: varchar({ length: 24 }).notNull(),
+      calls: integer().notNull().default(0),
+      failures: integer().notNull().default(0),
+      inputTokens: integer().notNull().default(0),
+      outputTokens: integer().notNull().default(0),
+      costUsd: doublePrecision().notNull().default(0),
+    },
+    (t) => [primaryKey({ columns: [t.day, t.environment, t.model, t.source] })],
+  )
+  .enableRLS()
+
 // ---- Infrastructure ---------------------------------------------------------------------
 
 export const rateLimits = salonSchema
@@ -921,4 +1042,46 @@ export const rateLimits = salonSchema
     count: integer().notNull(),
     windowStartedAt: timestamp({ withTimezone: true }).notNull(),
   })
+  .enableRLS()
+
+// ---- Meta (Messenger, Instagram) webhook receipts ---------------------------------------
+
+/**
+ * One row per webhook event (message, postback, echo, comment) and per message we sent
+ * (kind "sent", so its echo is recognised). Stored before Meta gets its 200, so a retried
+ * delivery is recognised and nothing is answered twice. The customer's text is removed once
+ * the event is handled; rows are purged after 30 days.
+ */
+export const metaWebhookEvents = salonSchema
+  .table(
+    'meta_webhook_events',
+    {
+      /** sha256 of the event's stable identity (platform, account, Meta message or comment id). */
+      id: varchar({ length: 64 }).primaryKey(),
+      /** messenger | instagram */
+      platform: varchar({ length: 16 }).notNull(),
+      /** message | postback | echo | comment | sent */
+      kind: varchar({ length: 16 }).notNull(),
+      /** The Page or Instagram account id the event arrived for. */
+      accountId: varchar({ length: 40 }).notNull(),
+      payload: jsonb().notNull().default({}),
+      /** pending | processing | done | skipped | expired | failed */
+      status: varchar({ length: 16 }).notNull().default('pending'),
+      attempts: integer().notNull().default(0),
+      leaseUntil: timestamp({ withTimezone: true }),
+      /** A short code: sent, suppressed, uncertain, staff_took_over, send_failed:http_400:10 … */
+      outcome: varchar({ length: 80 }),
+      eventAt: timestamp({ withTimezone: true }).notNull(),
+      createdAt: createdAt(),
+      processedAt: timestamp({ withTimezone: true }),
+    },
+    (t) => [
+      index('meta_webhook_events_queue').on(t.status, t.createdAt),
+      index('meta_webhook_events_created').on(t.createdAt),
+      check(
+        'meta_webhook_events_status',
+        sql`${t.status} in ('pending', 'processing', 'done', 'skipped', 'expired', 'failed')`,
+      ),
+    ],
+  )
   .enableRLS()

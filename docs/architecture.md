@@ -17,7 +17,7 @@ src/
     db/                Drizzle schema and client (`parallel()` helper)
     services/          business rules: salon, catalog, availability, booking
     payments/          provider interface, simulated QPay, QPay Merchant v2, payment service
-    assistant/         shared tools, rule engine, Claude tool loop, reply guard, chat engine
+    assistant/         conversation engine, dialogue, Сувд adapter, model bridge (docs/assistant)
     auth/              password hashing, sessions, page guards
     actions/           Server Actions (thin: parse input, check access, call services)
     queries/           read models for pages
@@ -57,16 +57,10 @@ them; dates are `YYYY-MM-DD` keys in the salon's local calendar.
 
 ## Assistant
 
-`api/chat` keeps a conversation in `salon.chat_sessions` (visitor cookie hashed). Both engines
-use the same tools in `server/assistant/tools.ts` (search services, salon info, staff, check
-availability, next openings, prepare booking), so prices and times always come from the
-database.
-
-- **Rule engine** (default): Mongolian keyword and Latin-transliteration matching, a
-  button-driven booking flow, and a hand-off to staff when unsure.
-- **Claude path** (with `ANTHROPIC_API_KEY`): `claude-opus-5-5` at low effort with strict tool
-  schemas, a cached system prompt and the server-side fallback beta. A reply guard rejects
-  any price or time that does not appear in the tool results, and a daily budget
-  (`AI_DAILY_BUDGET_USD`) stops model calls.
-- Neither engine books on its own: it prepares a draft and the customer presses
-  «Баталгаажуулах».
+`api/chat` (website), the Messenger webhook and the admin «Try it» chat all call
+`server/assistant/handler.ts`. The conversation reads Mongolian in Cyrillic and Latin letters
+and English, remembers what the customer said, checks real availability, and books, cancels or
+moves bookings through the same services as the website — only after the customer confirms a
+summary. A language model (default `gpt-4.1-mini`, optional) only reads messages the rules cannot
+and words open answers behind a fact check. See [assistant/ARCHITECTURE.md](assistant/ARCHITECTURE.md)
+and [assistant/EVALUATION.md](assistant/EVALUATION.md).
