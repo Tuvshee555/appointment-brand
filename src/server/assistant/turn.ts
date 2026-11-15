@@ -1704,6 +1704,8 @@ class Turn {
           break
         }
         case 'duration': {
+          // The price line already carries the duration ("Франц дизайн — 20,000₮, 25 мин").
+          if (topics.includes('price')) break
           const ids = r.generic && !r.services.length ? r.generic.candidates : focus
           if (ids.length) lines.push(...list(ids).map((x) => `${x.name} — ${duration(x.durationMinutes, this.locale)}`))
           else lines.push(this.t('Аль үйлчилгээний хугацааг асууж байна вэ?', 'Which service do you mean?'))

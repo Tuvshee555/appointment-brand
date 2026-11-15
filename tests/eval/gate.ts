@@ -36,6 +36,14 @@ export const gateCases: EvalCase[] = [
       booking: 'none',
     }),
   ]),
+  // ---- Duration and price in one question: one line per service, not two
+  c('g-price-and-duration-01', 'price', 'cyrillic', [
+    t('Франц дизайн хэр удаан хийдэг вэ, үнэ нь хэд вэ?', {
+      must: ['Франц дизайн — 20,000₮, 25 мин'],
+      mustNot: ['Франц дизайн — 25 мин'],
+      booking: 'none',
+    }),
+  ]),
   // ---- The task's examples
   c('g-spec-01', 'availability', 'cyrillic', [t('Өнөөдөр цаг байна уу?', { booking: 'none', must: ['үйлчилгээ'] })]),
   c('g-spec-02', 'booking', 'latin', [
