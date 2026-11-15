@@ -237,7 +237,7 @@ export function ChatWidget({ salonName }: { salonName: string }) {
             <div>
               <p className="font-display text-xl leading-none text-cocoa-900">{salonName} · туслах</p>
               <p className="mt-1 text-[0.7rem] text-ink-3">
-                {mode === 'ai' ? 'AI загвар · ' : 'Дүрэмд суурилсан туслах · '}
+                {mode === 'ai' ? 'AI туслах · ' : 'Цаг захиалгын туслах · '}
                 салоны бодит үнэ, сул цагаас хариулна
               </p>
             </div>

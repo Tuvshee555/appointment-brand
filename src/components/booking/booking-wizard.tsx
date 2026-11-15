@@ -739,7 +739,7 @@ export function BookingWizard({ catalog, rules }: { catalog: PublicCatalog; rule
               noValidate
             >
               <div className="flex flex-wrap items-center justify-between gap-3 rounded-xs bg-blush-50 px-4 py-3 text-sm text-blush-700">
-                <span>Демо: бодит нэр, утасны дугаар оруулах шаардлагагүй.</span>
+                <span>Туршиж байна уу? Бодит мэдээлэл оруулах шаардлагагүй.</span>
                 <button
                   type="button"
                   onClick={fillDemoCustomer}

@@ -47,8 +47,8 @@ async function DemoBanner() {
       <Info className="mt-0.5 size-4 shrink-0" aria-hidden />
       <div className="flex flex-1 flex-col gap-1 md:flex-row md:items-center md:justify-between md:gap-4">
         <p>
-          <span className="font-semibold">Демо горим.</span> Зохиомол салон, жишээ өгөгдөл. Өөрчлөлтийг сервер шалгаад
-          хадгалахгүй — зөвхөн өөрийн туршилтын захиалгыг өөрчилнө. Хандалт {formatTime(session.expiresAt)}-д дуусна.
+          <span className="font-semibold">Демо самбар.</span> Өөрчлөлт хадгалагдахгүй — зөвхөн өөрийн туршилтын
+          захиалгаа жинхэнээр өөрчилнө. Хандалт {formatTime(session.expiresAt)} хүртэл.
         </p>
         <Link href="/book" className="shrink-0 font-medium underline underline-offset-4">
           Туршилтын захиалга үүсгэх

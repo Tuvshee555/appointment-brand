@@ -5,7 +5,6 @@ import { Suspense } from 'react'
 import { DepositPanel } from '@/components/booking/deposit-panel'
 import { ManageBooking } from '@/components/booking/manage-booking'
 import { buttonClass } from '@/components/ui/button'
-import { DemoTag } from '@/components/ui/badge'
 import { Money } from '@/components/ui/money'
 import { formatDateTime, formatDateWithWeekday, formatDuration, formatTimeRange, hoursUntil } from '@/lib/datetime'
 import { formatMoney } from '@/lib/money'
@@ -84,7 +83,6 @@ async function BookingContent({
       ) : null}
       <div className="flex flex-wrap items-center gap-3">
         <p className="eyebrow">Захиалгын дугаар</p>
-        {booking.isDemo ? <DemoTag /> : null}
       </div>
       <h1 className="display tabular mt-2 text-5xl text-cocoa-900 sm:text-6xl">{booking.reference}</h1>
 

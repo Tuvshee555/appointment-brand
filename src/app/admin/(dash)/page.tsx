@@ -6,8 +6,19 @@ import { RankBars, RevenueBars } from '@/components/admin/charts'
 import { Card, EmptyState, PageHeader, StatCard } from '@/components/admin/ui'
 import { StaffAvatar } from '@/components/catalog/staff-card'
 import { buttonClass } from '@/components/ui/button'
-import { DemoTag, StatusBadge } from '@/components/ui/badge'
-import { dateKeyOf, formatDateKey, formatDateTime, formatDuration, formatTime, formatTimeRange } from '@/lib/datetime'
+import { StatusBadge } from '@/components/ui/badge'
+import {
+  addDays,
+  dateKeyOf,
+  formatDateKey,
+  formatDateTime,
+  formatDuration,
+  formatShortDate,
+  formatTime,
+  formatTimeRange,
+  WEEKDAYS_MN,
+  weekdayOf,
+} from '@/lib/datetime'
 import { formatMoney } from '@/lib/money'
 import { transitionAction } from '@/server/actions/admin-appointments'
 import { requireAdminPage } from '@/server/auth/current'
@@ -38,6 +49,12 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
   const now = new Date()
   const [data, sp] = await Promise.all([loadDashboard(session, now), searchParams])
   const scoped = session.role === 'specialist'
+  // Closed today: the schedule and staff cards show the next working day.
+  const closedToday = data.focusDay !== data.today
+  const focusLabel =
+    data.focusDay === addDays(data.today, 1)
+      ? 'маргааш'
+      : `${WEEKDAYS_MN[weekdayOf(data.focusDay) - 1]}, ${formatShortDate(data.focusDay)}`
 
   return (
     <>
@@ -47,7 +64,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
         description={
           scoped
             ? 'Мастерын эрх: зөвхөн өөрийн захиалга, хуваарь харагдана.'
-            : 'Бүх тоо салоны өгөгдлийн сангаас шууд тооцоологдоно (жишээ өгөгдөл).'
+            : 'Бүх тоо салоны өгөгдлийн сангаас шууд тооцоологдоно.'
         }
         actions={
           session.permissions.includes('appointments.view') ? (
@@ -62,7 +79,16 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
       ) : null}
 
       <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
-        <StatCard label="Өнөөдөр" value={data.counts.today} hint="захиалга" tone="accent" />
+        {closedToday ? (
+          <StatCard
+            label="Өнөөдөр"
+            value="Амарна"
+            hint={`${focusLabel} ${data.todayList.length} захиалга`}
+            tone="accent"
+          />
+        ) : (
+          <StatCard label="Өнөөдөр" value={data.counts.today} hint="захиалга" tone="accent" />
+        )}
         <StatCard label="Ойрын 7 хоног" value={data.counts.upcoming} hint="идэвхтэй захиалга" />
         <StatCard
           label="Хүлээгдэж буй"
@@ -83,14 +109,14 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
       {data.revenue ? (
         <div className="mt-3 grid gap-3 md:grid-cols-3">
           <StatCard label="Өнөөдрийн орлого" value={formatMoney(data.revenue.today)} hint="баталгаажсан төлбөр" />
-          <StatCard label="Энэ долоо хоног" value={formatMoney(data.revenue.week)} hint="Даваагаас хойш" />
+          <StatCard label="Сүүлийн 7 хоног" value={formatMoney(data.revenue.week)} hint="өнөөдрийг оруулаад" />
           <StatCard label="Энэ сар" value={formatMoney(data.revenue.month)} hint="буцаалт хассан" />
         </div>
       ) : null}
 
       <div className="mt-6 grid gap-6 xl:grid-cols-[1.35fr_1fr]">
         <Card
-          title="Өнөөдрийн цагийн хуваарь"
+          title={closedToday ? `Цагийн хуваарь · ${focusLabel}` : 'Өнөөдрийн цагийн хуваарь'}
           action={
             <Link
               href="/admin/calendar"
@@ -101,9 +127,14 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
           }
           bodyClassName="p-0"
         >
+          {closedToday ? (
+            <p className="border-b border-line px-5 py-2.5 text-xs text-ink-3">
+              Өнөөдөр салон амарна — дараагийн ажлын өдрийг харуулж байна.
+            </p>
+          ) : null}
           {data.todayList.length === 0 ? (
             <div className="p-5">
-              <EmptyState title="Өнөөдөр захиалга алга" />
+              <EmptyState title={closedToday ? 'Захиалга алга' : 'Өнөөдөр захиалга алга'} />
             </div>
           ) : (
             <ul className="divide-y divide-line">
@@ -118,9 +149,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
                     </span>
                     <span className="h-9 w-1 shrink-0 rounded-full" style={{ background: a.staffColor }} aria-hidden />
                     <span className="min-w-0 flex-1">
-                      <span className="block truncate text-sm font-medium text-ink">
-                        {a.customerName} {a.isDemo ? <DemoTag className="ml-1" /> : null}
-                      </span>
+                      <span className="block truncate text-sm font-medium text-ink">{a.customerName}</span>
                       <span className="block truncate text-xs text-ink-3">
                         {a.services} · {a.staffName}
                       </span>
@@ -217,7 +246,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
             <EmptyState title="Мэдээлэл алга" />
           )}
         </Card>
-        <Card title="Өнөөдрийн мастерууд">
+        <Card title={closedToday ? `Мастерууд · ${focusLabel}` : 'Өнөөдрийн мастерууд'}>
           <ul className="space-y-3">
             {data.staffToday.map((s) => (
               <li key={s.id} className="flex items-center gap-3">

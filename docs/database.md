@@ -74,10 +74,13 @@ the database (a Neon branch) before any change that drops or rewrites data.
   descriptions, 7 add-ons, 8 skills, 5 staff with schedules and breaks, staff–service
   eligibility, demo access accounts, and the owner account from `ADMIN_EMAIL`/`ADMIN_PASSWORD`.
   Running it again changes nothing.
-- `npm run db:seed:demo` — adds sample data if none exists: 40 customers, about 75
+- `npm run db:seed:demo` — adds sample data if none exists: 40 customers, about 85
   appointments across the last 40 and next 30 days in every status, placed by the
   availability engine (no overlaps), with matching payments, events, cancellations and
-  logged notifications. All rows carry `is_demo = true`.
+  logged notifications. All rows carry `is_demo = true`. Today and the next three days
+  are the busiest, and the next three days hold only confirmed or pending bookings, so the
+  dashboard looks like a working salon — on a closed day (Monday) it shows the next
+  working day's schedule, and the calendar's day view opens on that day.
 
 ## Demo reset
 

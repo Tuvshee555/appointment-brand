@@ -2,11 +2,11 @@ import { asc, desc, eq, inArray } from 'drizzle-orm'
 import Link from 'next/link'
 import { connection } from 'next/server'
 import { Card, EmptyState, PageHeader, StatCard } from '@/components/admin/ui'
-import { Badge, DemoTag } from '@/components/ui/badge'
+import { Badge } from '@/components/ui/badge'
 import type { ChatPart } from '@/lib/assistant/types'
 import { formatDateTime } from '@/lib/datetime'
 import { cn } from '@/lib/cn'
-import { AI_MODEL, aiConfigured, spentToday } from '@/server/assistant/llm'
+import { aiConfigured, spentToday } from '@/server/assistant/llm'
 import { requireAdminPage } from '@/server/auth/current'
 import { db } from '@/server/db'
 import * as t from '@/server/db/schema'
@@ -39,6 +39,9 @@ export default async function AssistantAdminPage({ searchParams }: { searchParam
         .from(t.appointments)
         .where(inArray(t.appointments.id, booked))
     : []
+  // Owners see what the assistant does; model names and setup steps stay in the docs.
+  const ai = aiConfigured()
+  const messageCount = sessions.reduce((sum, s) => sum + s.messageCount, 0)
   const spent = await spentToday({ db, salonId: session.salonId, actor: null, now })
   const budget = Number(process.env.AI_DAILY_BUDGET_USD ?? 2)
   const messenger = Boolean(
@@ -51,12 +54,16 @@ export default async function AssistantAdminPage({ searchParams }: { searchParam
         description="Туслах үнэ, хугацаа, мастер, сул цагийг салоны өгөгдлийн сангаас уншина. Захиалгыг өөрөө баталгаажуулдаггүй — үйлчлүүлэгч хураангуйг шалгаад «Баталгаажуулах» дарна."
       />
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <StatCard
-          label="Горим"
-          value={aiConfigured() ? 'AI' : 'Дүрэм'}
-          hint={aiConfigured() ? AI_MODEL : 'ANTHROPIC_API_KEY тохируулаагүй — дүрэмд суурилсан хариулт'}
-        />
-        <StatCard label="Өнөөдрийн AI зардал" value={`$${spent.toFixed(2)}`} hint={`Өдрийн дээд хязгаар $${budget}`} />
+        <StatCard label="Хариулдаг" value="24/7" hint="Үнэ, сул цагийг салоны өгөгдлөөс уншина" />
+        {ai ? (
+          <StatCard
+            label="Өнөөдрийн AI зардал"
+            value={`$${spent.toFixed(2)}`}
+            hint={`Өдрийн дээд хязгаар $${budget}`}
+          />
+        ) : (
+          <StatCard label="Мессеж" value={messageCount} hint="сүүлийн яриануудад" />
+        )}
         <StatCard label="Яриа" value={sessions.length} hint="сүүлийн 40" />
         <StatCard label="Туслахаар үүссэн захиалга" value={booked.length} />
       </div>
@@ -65,16 +72,15 @@ export default async function AssistantAdminPage({ searchParams }: { searchParam
           <p className="flex items-center justify-between font-medium">
             Вэбсайт чат <Badge tone="success">Идэвхтэй</Badge>
           </p>
-          <p className="mt-1 text-xs text-ink-3">Баруун доод булан дахь туслах. IP тус бүрээр хязгаартай.</p>
+          <p className="mt-1 text-xs text-ink-3">Вэбсайтын баруун доод буланд байрлана.</p>
         </div>
         <div className="surface p-4 text-sm">
           <p className="flex items-center justify-between font-medium">
             Facebook Messenger{' '}
-            <Badge tone={messenger ? 'success' : 'muted'}>{messenger ? 'Тохируулсан' : 'Бэлтгэсэн, идэвхгүй'}</Badge>
+            <Badge tone={messenger ? 'success' : 'muted'}>{messenger ? 'Холбогдсон' : 'Холбоход бэлэн'}</Badge>
           </p>
           <p className="mt-1 text-xs text-ink-3">
-            Webhook (/api/messenger/webhook) гарын үсэг шалгадаг, ижил хөдөлгүүр ашиглана. Идэвхжүүлэхэд Meta апп,
-            хуудасны token, pages_messaging зөвшөөрөл шаардлагатай.
+            Салоны Facebook хуудсанд холбоход Messenger-т ирсэн асуултад вэбсайтын туслахтай ижил хариулна.
           </p>
         </div>
       </div>
@@ -91,7 +97,6 @@ export default async function AssistantAdminPage({ searchParams }: { searchParam
                     <span className="flex items-center justify-between gap-2">
                       <span>{formatDateTime(s.lastMessageAt)}</span>
                       <span className="flex gap-1">
-                        {s.isDemo ? <DemoTag /> : null}
                         {s.handedOff ? <Badge tone="warning">Ажилтанд</Badge> : null}
                         {s.appointmentId ? <Badge tone="success">Захиалга</Badge> : null}
                       </span>
@@ -126,7 +131,7 @@ export default async function AssistantAdminPage({ searchParams }: { searchParam
                       <p className="whitespace-pre-line">{m.content}</p>
                       {m.role === 'assistant' ? (
                         <p className="mt-1 text-[0.68rem] text-ink-3">
-                          {mode === 'ai' ? 'AI' : 'дүрэм'}
+                          {mode === 'ai' ? 'AI' : 'туслах'}
                           {parts.some((p) => p.type === 'booking') ? ' · захиалга үүсгэсэн' : ''} ·{' '}
                           {formatDateTime(m.createdAt)}
                         </p>

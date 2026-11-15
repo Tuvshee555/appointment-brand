@@ -122,7 +122,7 @@ export function MonthCalendar({
                         isSelected ? 'text-blush-100' : 'text-sage-600',
                       )}
                     >
-                      {d.slotCount} цаг
+                      {d.slotCount} сул
                     </span>
                   ) : d.state === 'full' ? (
                     <span className="mt-0.5 hidden text-[0.62rem] no-underline sm:block">дүүрсэн</span>

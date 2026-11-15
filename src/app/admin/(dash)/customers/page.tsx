@@ -4,7 +4,6 @@ import Link from 'next/link'
 import { connection } from 'next/server'
 import { EmptyState, PageHeader, Pager, TableWrap, td, th } from '@/components/admin/ui'
 import { buttonClass } from '@/components/ui/button'
-import { DemoTag } from '@/components/ui/badge'
 import { inputClass } from '@/components/ui/field'
 import { Money } from '@/components/ui/money'
 import { formatDateNumeric, formatDateTime } from '@/lib/datetime'
@@ -47,7 +46,7 @@ export default async function CustomersPage({
         title="Харилцагч"
         description={
           session.isDemo || !session.permissions.includes('customers.contact')
-            ? 'Хувийн мэдээллийг хамгаалах үүднээс утасны дугаар нууцлагдсан. Бүх харилцагч зохиомол.'
+            ? 'Хувийн мэдээллийг хамгаалах үүднээс утасны дугаар нууцлагдсан.'
             : 'Харилцагчийн түүх, тэмдэглэл, ирц.'
         }
       />
@@ -101,7 +100,6 @@ export default async function CustomersPage({
                   <Link href={`/admin/customers/${c.id}`} className="font-medium text-cocoa-900 hover:underline">
                     {c.name}
                   </Link>{' '}
-                  {c.isDemo ? <DemoTag /> : null}
                 </td>
                 <td className={cn(td, 'tabular')}>{formatPhone(c.phone)}</td>
                 <td className={cn(td, 'tabular text-right')}>{c.stats.visits}</td>

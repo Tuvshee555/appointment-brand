@@ -40,8 +40,9 @@ export const BRAND = {
 /** Ursgal Digital portfolio links (the salon is one zone of the Ursgal site). */
 export const PORTFOLIO = {
   agency: 'Ursgal Digital',
-  /** Absolute so it also works when the salon runs on its own domain. */
-  portfolioUrl: process.env.NEXT_PUBLIC_PORTFOLIO_URL || 'https://ursgal-digital.vercel.app/#demos',
+  /** Absolute so it also works when the salon runs on its own domain. Fixed to the
+   *  agency's own domain: an old NEXT_PUBLIC_PORTFOLIO_URL pointed at a retired page. */
+  portfolioUrl: 'https://www.ursgaldigital.com/demo',
   note: 'Ursgal Digital-ын дотоод демо. Салон, ажилтан, үйлчлүүлэгч, захиалга бүгд зохиомол.',
 } as const
 

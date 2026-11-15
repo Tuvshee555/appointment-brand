@@ -115,9 +115,20 @@ export default async function CalendarPage({
   const sp = await searchParams
   const today = dateKeyOf(new Date())
   const view: View = sp.view === 'week' || sp.view === 'month' ? sp.view : 'day'
-  const date = sp.date && isDateKey(sp.date) ? sp.date : today
   const staffParam = sp.staff && /^[0-9a-f-]{36}$/.test(sp.staff) ? sp.staff : null
   const showCancelled = sp.cancelled === '1'
+  let date = sp.date && isDateKey(sp.date) ? sp.date : today
+  // Opening the day view on a closed day (Mondays in the sample salon) jumps to
+  // the next working day rather than an empty page.
+  let skippedClosed = false
+  if (!sp.date && view === 'day') {
+    const week = await loadCalendar(session, today, addDays(today, 7), { staffId: staffParam, showCancelled })
+    const open = week.days.find((d) => d.hours)
+    if (open && open.date !== today) {
+      date = open.date
+      skippedClosed = true
+    }
+  }
   const range =
     view === 'day'
       ? { from: date, to: date }
@@ -245,6 +256,9 @@ export default async function CalendarPage({
         </div>
       </div>
 
+      {skippedClosed ? (
+        <p className="mb-3 text-sm text-ink-3">Өнөөдөр салон амарна — дараагийн ажлын өдрийг харуулж байна.</p>
+      ) : null}
       {view === 'day' && (
         <div className="surface overflow-x-auto">
           {!data.days[0].hours ? (

@@ -86,7 +86,7 @@ export function Footer({ salon }: { salon: PublicSalon }) {
       </div>
       <div className="border-t border-white/10">
         <div className="container-page flex flex-col gap-3 py-6 text-xs text-cocoa-300 sm:flex-row sm:items-center sm:justify-between">
-          <p>© {salon.name} · зохиомол брэнд. Бүх нэр, утас, захиалга жишээ өгөгдөл.</p>
+          <p>© {salon.name} · Ursgal Digital-ын демо салон. Нэр, хөрөг (AI), гэрэл зураг, захиалга — жишээ.</p>
           <div className="flex flex-wrap gap-x-5 gap-y-2">
             <Link href="/credits" className="hover:text-ivory">
               Зургийн эх сурвалж

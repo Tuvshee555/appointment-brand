@@ -1,16 +1,7 @@
 // Dashboard read model. Every number is computed from database rows.
 import 'server-only'
 import { and, desc, eq, gte, inArray, lt, sql, type SQL } from 'drizzle-orm'
-import {
-  addDays,
-  dateKeyOf,
-  dayBounds,
-  firstOfMonth,
-  addMonths,
-  startOfWeek,
-  weekdayOf,
-  type DateKey,
-} from '@/lib/datetime'
+import { addDays, dateKeyOf, dayBounds, firstOfMonth, addMonths, weekdayOf, type DateKey } from '@/lib/datetime'
 import { db } from '@/server/db'
 import * as t from '@/server/db/schema'
 import type { SessionActor } from '@/server/auth/session'
@@ -40,7 +31,6 @@ export async function loadDashboard(session: SessionActor, now: Date) {
   const salonId = session.salonId
   const today = dateKeyOf(now)
   const { start: dayStart, end: dayEnd } = dayBounds(today)
-  const weekStart = dayBounds(startOfWeek(today)).start
   const monthStart = dayBounds(firstOfMonth(today)).start
   const nextMonth = dayBounds(addMonths(today, 1)).start
   const scope = staffScope(session)
@@ -48,35 +38,42 @@ export async function loadDashboard(session: SessionActor, now: Date) {
 
   const appt = (where: SQL | undefined) => and(eq(t.appointments.salonId, salonId), scope, where)
 
+  // One day's schedule; used for today and, when the salon is closed today,
+  // for the next working day.
+  const dayList = (day: DateKey) => {
+    const bounds = dayBounds(day)
+    return db
+      .select({
+        id: t.appointments.id,
+        reference: t.appointments.reference,
+        status: t.appointments.status,
+        startsAt: t.appointments.startsAt,
+        endsAt: t.appointments.endsAt,
+        total: t.appointments.totalPrice,
+        isDemo: t.appointments.isDemo,
+        customerName: t.customers.name,
+        staffName: t.staff.displayName,
+        staffColor: t.staff.calendarColor,
+        services: sql<string>`(select string_agg(service_name, ', ' order by sort_order) from salon.appointment_services s where s.appointment_id = ${t.appointments.id})`,
+      })
+      .from(t.appointments)
+      .innerJoin(t.customers, eq(t.customers.id, t.appointments.customerId))
+      .innerJoin(t.staff, eq(t.staff.id, t.appointments.staffId))
+      .where(
+        appt(
+          and(
+            gte(t.appointments.startsAt, bounds.start),
+            lt(t.appointments.startsAt, bounds.end),
+            inArray(t.appointments.status, [...COUNTED]),
+          ),
+        ),
+      )
+      .orderBy(t.appointments.startsAt)
+  }
+
   const [todayList, upcoming, completedMonth, pendingRequests, cancelledMonth, noShowMonth, popular, events, audits] =
     await Promise.all([
-      db
-        .select({
-          id: t.appointments.id,
-          reference: t.appointments.reference,
-          status: t.appointments.status,
-          startsAt: t.appointments.startsAt,
-          endsAt: t.appointments.endsAt,
-          total: t.appointments.totalPrice,
-          isDemo: t.appointments.isDemo,
-          customerName: t.customers.name,
-          staffName: t.staff.displayName,
-          staffColor: t.staff.calendarColor,
-          services: sql<string>`(select string_agg(service_name, ', ' order by sort_order) from salon.appointment_services s where s.appointment_id = ${t.appointments.id})`,
-        })
-        .from(t.appointments)
-        .innerJoin(t.customers, eq(t.customers.id, t.appointments.customerId))
-        .innerJoin(t.staff, eq(t.staff.id, t.appointments.staffId))
-        .where(
-          appt(
-            and(
-              gte(t.appointments.startsAt, dayStart),
-              lt(t.appointments.startsAt, dayEnd),
-              inArray(t.appointments.status, [...COUNTED]),
-            ),
-          ),
-        )
-        .orderBy(t.appointments.startsAt),
+      dayList(today),
       db.$count(
         t.appointments,
         appt(
@@ -178,17 +175,34 @@ export async function loadDashboard(session: SessionActor, now: Date) {
   const revenue = canSeeMoney
     ? {
         today: await revenueBetween(salonId, dayStart, dayEnd),
-        week: await revenueBetween(salonId, weekStart, dayEnd),
+        week: await revenueBetween(salonId, dayBounds(addDays(today, -6)).start, dayEnd),
         month: await revenueBetween(salonId, monthStart, nextMonth),
         daily: await dailyRevenue(salonId, addDays(today, -13), today),
       }
     : null
 
-  const staffToday = await availableStaffToday(salonId, today, scope ? session.staffId : null)
+  let staffToday = await availableStaffToday(salonId, today, scope ? session.staffId : null)
+
+  // On a closed day (the sample salon rests on Mondays) the schedule and staff
+  // cards show the next working day instead of an empty dashboard.
+  let focusDay = today
+  let focusList = todayList
+  if (!todayList.length && !staffToday.some((s) => s.working)) {
+    for (let i = 1; i <= 7; i++) {
+      const day = addDays(today, i)
+      const staff = await availableStaffToday(salonId, day, scope ? session.staffId : null)
+      if (!staff.some((s) => s.working)) continue
+      focusDay = day
+      staffToday = staff
+      focusList = await dayList(day)
+      break
+    }
+  }
 
   return {
     today,
-    todayList,
+    focusDay,
+    todayList: focusList,
     counts: {
       today: todayList.length,
       upcoming,

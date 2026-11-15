@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { connection } from 'next/server'
 import { EmptyState, PageHeader, TableWrap, td, th } from '@/components/admin/ui'
 import { buttonClass } from '@/components/ui/button'
-import { DemoTag, StatusBadge } from '@/components/ui/badge'
+import { StatusBadge } from '@/components/ui/badge'
 import { SOURCE_LABELS } from '@/lib/booking/status'
 import { inputClass } from '@/components/ui/field'
 import { Money } from '@/components/ui/money'
@@ -128,9 +128,7 @@ export default async function AppointmentsPage({
                     <span className="text-sm font-medium text-cocoa-900">{formatDateTime(r.startsAt)}</span>
                     <StatusBadge status={r.status} />
                   </span>
-                  <span className="mt-1 flex items-center gap-1.5 text-sm text-ink">
-                    {r.customerName} {r.isDemo ? <DemoTag /> : null}
-                  </span>
+                  <span className="mt-1 flex items-center gap-1.5 text-sm text-ink">{r.customerName}</span>
                   <span className="mt-0.5 block text-xs text-ink-3">
                     {r.services} · {r.staffName}
                   </span>
@@ -170,9 +168,7 @@ export default async function AppointmentsPage({
                       </div>
                     </td>
                     <td className={td}>
-                      <div className="flex items-center gap-1.5">
-                        {r.customerName} {r.isDemo ? <DemoTag /> : null}
-                      </div>
+                      <div className="flex items-center gap-1.5">{r.customerName}</div>
                       <div className="tabular text-xs text-ink-3">{formatPhone(r.customerPhone)}</div>
                       {r.demoVisitorHash && r.demoVisitorHash === session.demoVisitorHash ? (
                         <span className="mt-1 inline-block rounded-xs bg-sage-50 px-1.5 py-0.5 text-[0.68rem] text-sage-700">

@@ -7,7 +7,7 @@ test.beforeEach(async ({ page }) => {
 })
 
 test('visitors can explore the demo dashboard @mobile', async ({ page }) => {
-  await expect(page.getByText('Демо горим.')).toBeVisible()
+  await expect(page.getByText('Демо самбар.')).toBeVisible()
   await page.goto('admin/appointments')
   await expect(page.getByRole('heading', { name: 'Захиалгууд' })).toBeVisible()
   await page.goto('admin/calendar?view=week')

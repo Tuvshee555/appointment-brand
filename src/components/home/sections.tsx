@@ -124,7 +124,7 @@ export function PriceList({ catalog }: { catalog: PublicCatalog }) {
         id="prices-title"
         eyebrow="Үнийн жагсаалт"
         title="Үнэ, хугацаа"
-        lead="«-өөс» гэсэн үнэ дизайны нарийн түвшнээс хамаарч салонд тохирно. Бүх үнэ жишээ (зохиомол) бөгөөд эзэмшигч админ самбараас өөрчилнө."
+        lead="«-өөс» гэсэн үнэ дизайны нарийн түвшнээс хамаарч салонд тохирно. Үнийг эзэмшигч админ самбараас өөрөө өөрчилнө."
       />
       <div className="mt-12 grid gap-x-16 gap-y-12 lg:grid-cols-2">
         {catalog.categories.map((c) => (
@@ -181,7 +181,7 @@ export function StaffSection({ catalog }: { catalog: PublicCatalog }) {
           id="staff-title"
           eyebrow="Мастерууд"
           title="Таны гарт итгэл хүлээлгэх хүмүүс"
-          lead="Мастер бүр зөвхөн өөрийн мэргэшсэн үйлчилгээг хийнэ. Зураг нь зохиомол хүмүүсийн AI-аар бүтээсэн хөрөг."
+          lead="Мастер бүр зөвхөн өөрийн мэргэшсэн үйлчилгээг хийнэ."
           action={
             <ButtonLink
               href="/staff"
@@ -223,7 +223,7 @@ export function Gallery() {
         id="gallery-title"
         eyebrow="Галерей"
         title="Бидний ажлын өнгө төрх"
-        lead="Лицензтэй (Unsplash) гэрэл зураг — бодит салоны ажил биш, брэндийн чиглэлийг харуулна."
+        lead="Улирлын өнгө, хумсны дизайны санаа."
       />
       <ul className="mt-12 grid auto-rows-[11rem] grid-cols-2 gap-3 sm:auto-rows-[14rem] md:grid-cols-3 lg:auto-rows-[15rem] lg:grid-cols-4">
         {GALLERY.map((g) => {
@@ -399,7 +399,7 @@ function MapPlaceholder() {
     <div
       className="relative aspect-[4/3] overflow-hidden rounded-xs border border-line bg-[#efe7dc]"
       role="img"
-      aria-label="Зохиомол байршлын газрын зураг (демо)"
+      aria-label="Байршлын жишээ газрын зураг"
     >
       <svg viewBox="0 0 400 300" className="absolute inset-0 size-full" aria-hidden>
         <rect width="400" height="300" fill="#efe7dc" />
@@ -420,7 +420,7 @@ function MapPlaceholder() {
         </div>
       </div>
       <p className="absolute right-3 bottom-3 rounded-xs bg-ivory/90 px-2 py-1 text-[0.7rem] text-ink-3">
-        Газрын зураг — демо (байршил зохиомол)
+        Байршлын жишээ
       </p>
     </div>
   )

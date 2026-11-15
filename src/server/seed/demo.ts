@@ -317,10 +317,12 @@ export async function seedDemo(
         : offset < 0
           ? rng.int(2, 3)
           : offset === 0
-            ? rng.int(3, 5)
-            : offset <= 7
-              ? rng.int(2, 3)
-              : rng.int(0, 1)
+            ? rng.int(5, 7)
+            : offset <= 3
+              ? rng.int(4, 6)
+              : offset <= 7
+                ? rng.int(2, 3)
+                : rng.int(0, 1)
     for (let k = 0; k < target; k++) {
       const combo = rng.weighted(COMBOS)
       const probe = quoteFor(combo, ubToUtc(date, 12 * 60))
@@ -345,12 +347,19 @@ export async function seedDemo(
           ] as const)
         : inProgress
           ? 'confirmed'
-          : rng.weighted([
-              ['confirmed', 48],
-              ['pending', 34],
-              ['cancelled', 9],
-              ['rescheduled', 9],
-            ] as const)
+          : offset >= 1 && offset <= 3
+            ? // The next few days always look like a working salon: the dashboard
+              // shows them when the salon is closed today (Mondays).
+              rng.weighted([
+                ['confirmed', 60],
+                ['pending', 40],
+              ] as const)
+            : rng.weighted([
+                ['confirmed', 48],
+                ['pending', 34],
+                ['cancelled', 9],
+                ['rescheduled', 9],
+              ] as const)
       let source: Source = rng.weighted([
         ['website', 50],
         ['assistant', 15],
