@@ -328,3 +328,21 @@ describe('grounding a model proposal', () => {
     expect(r.staffId).toBeUndefined()
   })
 })
+
+describe('spellings found in the 15 November probe', () => {
+  it('reads next-week weekdays, suffixed weekdays and colloquial day parts', () => {
+    expect(when('ирэх 7 хоногийн мягмар').date).toBe('2026-11-17')
+    expect(when('daraa 7 khonogiin baasan garigt').date).toBe('2026-11-20')
+    expect(when('irex lhagvad 11:30')).toMatchObject({ date: '2026-11-11', time: 690 })
+    expect(when('onoodor udeesh')).toMatchObject({ date: TODAY, range: { label: 'afternoon' } })
+  })
+  it('reads hand-over, thanks and short yes/no spellings', () => {
+    expect(intents('hun ruu holbooroi').intents).toContain('human')
+    expect(intents('baylalaa').intents).toContain('thanks')
+    const yes = (t: string) => isYes(normText(t), t.toLowerCase())
+    const no = (t: string) => isNo(normText(t), t.toLowerCase())
+    expect(yes('tegeye')).toBe(true)
+    expect(no('hereggui')).toBe(true)
+    expect(no('ugui ee bolih')).toBe(true)
+  })
+})

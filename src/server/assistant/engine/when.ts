@@ -91,7 +91,7 @@ export function parseDate(norm: string, raw: string, today: DateKey): { date?: D
   const wd = WEEKDAYS.findIndex((w) => new RegExp(`(?:^|\\s)${w}`).test(norm))
   if (wd >= 0) {
     let date = upcomingWeekday(today, wd + 1)
-    if (/дараа\s*долоо\s*хоног|next\s+week/.test(`${norm} ${raw}`)) date = addDays(date, 7)
+    if (/(?:дараа|ирэх|дараагийн)\s*(?:долоо|7)\s*хоног|next\s+week/.test(`${norm} ${raw}`)) date = addDays(date, 7)
     return { date, fromWeekday: true }
   }
   return {}
