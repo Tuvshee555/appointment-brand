@@ -21,6 +21,7 @@ import { resolveSalonId } from '@/server/services/salon'
 import type { Chip } from './graph'
 import type { MetaPlatform } from './events'
 import type { MetaAdapter, MetaReply } from './process'
+import { withSlotTimes } from './text'
 
 /**
  * Sessions from Meta carry this prefix on their visitor hash, so the public demo
@@ -59,7 +60,8 @@ export function toMetaReply(parts: ChatPart[]): MetaReply | null {
     if (p.type === 'text' || p.type === 'handoff' || p.type === 'staff' || p.type === 'notice') lines.push(p.text)
     if (p.type === 'quick_replies') chips.push(...p.options.map(chipFor))
     if (p.type === 'slots') {
-      lines.push(`${p.dateLabel}, ${p.serviceLabel}: ${p.slots.map((s) => s.label).join(', ')}`)
+      const merged = withSlotTimes(lines, `${p.dateLabel}, ${p.serviceLabel}`, p.slots.map((s) => s.label).join(', '))
+      lines.splice(0, lines.length, ...merged)
       chips.push(
         ...p.slots.slice(0, 10).map((s) => ({
           title: s.label,

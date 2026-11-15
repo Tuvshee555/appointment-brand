@@ -7,6 +7,7 @@ import { DEFAULT_COMMENT_KEYWORDS, metaConfig, missingMetaVariables } from '@/se
 import { commentMatches, MetaPayloadError, parseWebhook } from '@/server/meta/events'
 import { chunkText, quickReplies } from '@/server/meta/graph'
 import { validSignature, validVerifyToken } from '@/server/meta/signature'
+import { withSlotTimes } from '@/server/meta/text'
 
 const PAGE = '1111111111'
 const IG = '2222222222'
@@ -258,5 +259,23 @@ describe('message sizing', () => {
     expect(chips[0].title.length).toBeLessThanOrEqual(20)
     expect(chips[0].payload).toBe('Үнэ, хэмжээний мэдээлэл авах')
     expect(quickReplies([])).toBeUndefined()
+  })
+})
+
+describe('free times on Messenger', () => {
+  const header = 'Маргааш (11 сарын 17, Мягмар), Сонгодог маникюр'
+  it('puts the times on the assistant line instead of repeating the day and service', () => {
+    const intro = '«Маникюр» гэснийг Сонгодог маникюр (45,000₮, 1 цаг) гэж ойлголоо.'
+    const lines = [intro, `${header} — сул цагууд: Тодорхой мастер сонгох бол нэрийг нь бичээрэй.`]
+    expect(withSlotTimes(lines, header, '10:00, 11:00')).toEqual([
+      intro,
+      `${header} — сул цагууд: 10:00, 11:00. Тодорхой мастер сонгох бол нэрийг нь бичээрэй.`,
+    ])
+    expect(withSlotTimes([`${header} — сул цагууд:`], header, '10:00')).toEqual([`${header} — сул цагууд: 10:00.`])
+  })
+  it('gives the times their own line after any other text', () => {
+    const lines = ['Тэр цаг завгүй байна.\nОйрын сул цагууд:']
+    expect(withSlotTimes(lines, header, '15:00, 16:00')).toEqual([...lines, `${header}: 15:00, 16:00`])
+    expect(withSlotTimes([], header, '15:00')).toEqual([`${header}: 15:00`])
   })
 })
