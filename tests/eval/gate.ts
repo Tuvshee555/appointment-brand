@@ -19,10 +19,22 @@ export const gateCases: EvalCase[] = [
   ]),
   c('g-price-and-times-02', 'availability', 'cyrillic', [
     t('Сайн байна уу, хумс будуулах үнэ хэд вэ? Маргааш сул цаг байгаа юу?', {
-      must: ['35,000₮', 'Маргааш ямар үйлчилгээ'],
+      must: ['Хумс будалт', 'Гель будалт', 'Сонгодог маникюр'],
       booking: 'none',
     }),
     t('Маникюр', { must: ['Сонгодог маникюр', '10:00'], booking: 'none' }),
+  ]),
+  c('g-price-and-times-04', 'availability', 'cyrillic', [
+    t('Үнэ хэд вэ? Маргааш сул цаг байна уу?', { must: ['35,000₮', 'Маргааш ямар үйлчилгээ'], booking: 'none' }),
+    t('Маникюр', { must: ['Сонгодог маникюр', '10:00'], booking: 'none' }),
+  ]),
+  c('g-price-and-times-03', 'availability', 'cyrillic', [
+    t('Педикюр хийлгэмээр байна. Нөгөөдөр сул цаг байна уу?', { must: ['Энгийн педикюр', '10:00'], booking: 'none' }),
+    t('Хумс будуулах үнэ хэд вэ? Маргааш сул цаг байгаа юу?', {
+      must: ['Хумс будалт', 'Гель будалт', 'Сонгодог маникюр'],
+      mustNot: ['Аль цаг тохирох'],
+      booking: 'none',
+    }),
   ]),
   // ---- The task's examples
   c('g-spec-01', 'availability', 'cyrillic', [t('Өнөөдөр цаг байна уу?', { booking: 'none', must: ['үйлчилгээ'] })]),

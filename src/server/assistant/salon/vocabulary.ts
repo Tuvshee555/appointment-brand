@@ -82,6 +82,21 @@ export const GENERIC_TERMS: {
     canonical: null,
   },
   {
+    key: 'polish',
+    label: 'Хумс будалт',
+    phrases: [
+      'хумс будуулах',
+      'хумсаа будуулах',
+      'хумс будах',
+      'хумсаа будах',
+      'хумс будалт',
+      'лак түрхүүлэх',
+      'nail polish',
+    ],
+    slugs: ['gel-polish', 'classic-manicure', 'french-manicure', 'gel-polish-renewal'],
+    canonical: null,
+  },
+  {
     key: 'french',
     label: 'Франц',
     phrases: ['франц', 'french'],

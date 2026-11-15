@@ -510,7 +510,12 @@ class Turn {
           : infoTopics
       // "Маникюр хэд вэ? Маргааш сул цаг байна уу?": the price, then that day's free times
       // (or which service, when none is named yet).
-      const wantsTimes = r.det.topics.includes('availability') && !awaitingBooking && !s.manage
+      // Mid-booking, naming another service with its free-time question starts over with that service.
+      const named = r.services.length > 0 || Boolean(r.generic)
+      const current = s.booking?.serviceIds ?? []
+      const switching =
+        Boolean(awaitingBooking) && named && !(r.services.length && r.services.every((id) => current.includes(id)))
+      const wantsTimes = r.det.topics.includes('availability') && !s.manage && (!awaitingBooking || switching)
       await this.info(r, topics, { askService: !wantsTimes })
       if (wantsTimes) {
         this.merge(r)
@@ -602,6 +607,11 @@ class Turn {
       b.assumed = undefined
     } else if (r.generic) {
       const scoped = s.awaiting === 'service_choice' && s.choices?.kind === 'service' ? s.choices.values : null
+      // "Маникюр" while choosing between the listed services: its usual meaning, when it is one of them.
+      if (scoped && r.generic.canonical && scoped.includes(r.generic.canonical)) {
+        b.serviceIds = [r.generic.canonical]
+        b.assumed = { serviceId: r.generic.canonical, label: r.generic.label, told: false }
+      }
       if (!scoped) {
         if (r.generic.canonical) {
           b.serviceIds =
