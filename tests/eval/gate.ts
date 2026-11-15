@@ -13,6 +13,17 @@ const c = (id: string, category: string, script: EvalCase['script'], turns: Eval
 })
 
 export const gateCases: EvalCase[] = [
+  // ---- Two questions in one message: the price and the free times together
+  c('g-price-and-times-01', 'availability', 'cyrillic', [
+    t('Маникюр хэд вэ? Маргааш сул цаг байна уу?', { must: ['45,000₮', 'сул цаг', '10:00'], booking: 'none' }),
+  ]),
+  c('g-price-and-times-02', 'availability', 'cyrillic', [
+    t('Сайн байна уу, хумс будуулах үнэ хэд вэ? Маргааш сул цаг байгаа юу?', {
+      must: ['35,000₮', 'Маргааш ямар үйлчилгээ'],
+      booking: 'none',
+    }),
+    t('Маникюр', { must: ['Сонгодог маникюр', '10:00'], booking: 'none' }),
+  ]),
   // ---- The task's examples
   c('g-spec-01', 'availability', 'cyrillic', [t('Өнөөдөр цаг байна уу?', { booking: 'none', must: ['үйлчилгээ'] })]),
   c('g-spec-02', 'booking', 'latin', [

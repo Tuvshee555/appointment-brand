@@ -508,7 +508,14 @@ class Turn {
         r.staffNamed.length && infoTopics.some((x) => x === 'services' || x === 'staff')
           ? (['staff'] as Topic[])
           : infoTopics
-      await this.info(r, topics)
+      // "Маникюр хэд вэ? Маргааш сул цаг байна уу?": the price, then that day's free times
+      // (or which service, when none is named yet).
+      const wantsTimes = r.det.topics.includes('availability') && !awaitingBooking && !s.manage
+      await this.info(r, topics, { askService: !wantsTimes })
+      if (wantsTimes) {
+        this.merge(r)
+        return this.bookingFlow()
+      }
       if (awaitingBooking) this.reprompt()
       return
     }
@@ -1646,7 +1653,7 @@ class Turn {
     return s.booking?.serviceIds.length ? s.booking.serviceIds : (s.focus?.serviceIds ?? [])
   }
 
-  async info(r: Reading, topics: Topic[]) {
+  async info(r: Reading, topics: Topic[], opts: { askService?: boolean } = {}) {
     this.intent = `info:${topics.join('+')}`
     const lines: string[] = []
     const salon = this.snap.salon
@@ -1675,7 +1682,8 @@ class Turn {
               const min = Math.min(...items.map((x) => x.price))
               lines.push(`${c.name} — ${formatMoney(min)}${this.t('-өөс', ' and up')}`)
             }
-            lines.push(this.t('Аль үйлчилгээг сонирхож байна вэ?', 'Which service are you interested in?'))
+            if (opts.askService !== false)
+              lines.push(this.t('Аль үйлчилгээг сонирхож байна вэ?', 'Which service are you interested in?'))
           }
           break
         }
