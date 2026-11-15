@@ -43,3 +43,11 @@ Read `README.md` and `docs/` before changing booking, payments, security or demo
 - Development uses only the local database from `npm run db:dev`; the production URL is set
   only in Vercel. An older `.env.local` that still points at Neon writes to the live demo.
 - Never commit `.env.local` or any credential.
+
+## Git: only `main`
+
+- `main` is the only branch that stays. Work on a short-lived branch when needed, then merge
+  it into `main` and delete it locally and on GitHub as soon as the job is done.
+- Finished work that must wait (a client's permission, an owner decision) is parked as a
+  patch in `docs/pending/`, not as a long-lived branch.
+- Before ending a task, check `git ls-remote --heads origin` lists only `main`.
