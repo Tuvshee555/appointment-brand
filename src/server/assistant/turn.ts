@@ -516,7 +516,10 @@ class Turn {
       const switching =
         Boolean(awaitingBooking) && named && !(r.services.length && r.services.every((id) => current.includes(id)))
       const wantsTimes = r.det.topics.includes('availability') && !s.manage && (!awaitingBooking || switching)
-      await this.info(r, topics, { askService: !wantsTimes })
+      // The choice list below already shows each kind with its price, so it is not listed twice.
+      const choiceFollows = wantsTimes && !r.services.length && Boolean(r.generic && !r.generic.canonical)
+      const shown = choiceFollows ? topics.filter((x) => x !== 'price') : topics
+      if (shown.length) await this.info(r, shown, { askService: !wantsTimes })
       if (wantsTimes) {
         this.merge(r)
         return this.bookingFlow()
@@ -739,7 +742,10 @@ class Turn {
     s.choices = { kind: 'service', values: list.map((x) => x.id) }
     this.say(
       [
-        this.t('Хэд хэдэн төрөл бий — алийг нь хийлгэх вэ?', 'There are a few kinds — which one would you like?'),
+        this.t(
+          `${s.booking?.date ? `${fullDayLabel(s.booking.date, this.today, this.locale).replace(/^./u, (c) => c.toLocaleUpperCase('mn'))}: сонгосон төрлийн сул цагийг харуулъя. ` : ''}Хэд хэдэн төрөл бий — алийг нь хийлгэх вэ?`,
+          `${s.booking?.date ? `${fullDayLabel(s.booking.date, this.today, this.locale)}: I'll show the free times for the one you pick. ` : ''}There are a few kinds — which one would you like?`,
+        ),
         ...list.map((x, i) => `${i + 1}. ${serviceLine(x, this.locale)}`),
       ].join('\n'),
     )
