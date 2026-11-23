@@ -478,7 +478,12 @@ export function Location({ salon }: { salon: PublicSalon }) {
           <ul className="mt-6 space-y-1 text-sm text-ink-3">
             {salon.email ? <li>И-мэйл: {salon.email}</li> : null}
             {salon.instagram ? <li>Instagram: {salon.instagram}</li> : null}
-            {salon.facebook ? <li>Facebook: {salon.facebook}</li> : null}
+            <li>
+              Facebook:{' '}
+              <a href={PORTFOLIO.facebookPage} target="_blank" rel="noopener" className="underline underline-offset-4 hover:text-ink">
+                suvd.nail.atelier
+              </a>
+            </li>
             <li className="flex items-center gap-1.5">
               <MessageCircle className="size-4" aria-hidden /> Чат туслах — баруун доод буланд
             </li>

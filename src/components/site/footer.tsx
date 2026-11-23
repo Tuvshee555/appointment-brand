@@ -81,6 +81,11 @@ export function Footer({ salon }: { salon: PublicSalon }) {
             {salon.email ? <li>{salon.email}</li> : null}
             <li className="leading-relaxed">{salon.addressLine}</li>
             {salon.addressNote ? <li className="text-xs text-cocoa-300">{salon.addressNote}</li> : null}
+            <li>
+              <a href={PORTFOLIO.facebookPage} target="_blank" rel="noopener" className="underline underline-offset-4 hover:text-ivory">
+                Facebook хуудас
+              </a>
+            </li>
           </ul>
         </div>
       </div>

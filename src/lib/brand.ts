@@ -43,6 +43,8 @@ export const PORTFOLIO = {
   /** Absolute so it also works when the salon runs on its own domain. Fixed to the
    *  agency's own domain: an old NEXT_PUBLIC_PORTFOLIO_URL pointed at a retired page. */
   portfolioUrl: 'https://www.ursgaldigital.com/demo',
+  /** The demo salon's own Facebook Page (labelled as a demo there too). */
+  facebookPage: 'https://www.facebook.com/suvd.nail.atelier',
   note: 'Ursgal Digital-ын дотоод демо. Салон, ажилтан, үйлчлүүлэгч, захиалга бүгд зохиомол.',
 } as const
 
