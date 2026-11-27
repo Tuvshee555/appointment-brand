@@ -75,7 +75,7 @@ export default async function NotificationsPage({
               ? demo
                 ? 'Тохируулсан, демод унтраалттай'
                 : 'Идэвхтэй'
-              : 'TELEGRAM_BOT_TOKEN тохируулаагүй',
+              : 'Telegram бот холбогдоогүй (Ursgal Digital тохируулж өгнө)',
           },
           { name: 'SMS (үйлчлүүлэгч)', on: false, note: 'SMS үйлчилгээ холбогдоогүй' },
           { name: 'Messenger', on: false, note: 'Facebook хуудас холбогдоогүй' },

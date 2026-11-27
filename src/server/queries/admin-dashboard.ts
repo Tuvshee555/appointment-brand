@@ -5,6 +5,7 @@ import { addDays, dateKeyOf, dayBounds, firstOfMonth, addMonths, weekdayOf, type
 import { db } from '@/server/db'
 import * as t from '@/server/db/schema'
 import type { SessionActor } from '@/server/auth/session'
+import { salonHoursFor } from '@/lib/availability/engine'
 
 const COUNTED = ['awaiting_deposit', 'pending', 'confirmed', 'completed', 'no_show'] as const
 
@@ -245,10 +246,28 @@ export async function dailyRevenue(salonId: string, from: DateKey, to: DateKey) 
   return out
 }
 
-/** Specialists working today with booked vs. scheduled minutes. */
+/**
+ * Specialists working today with booked vs. scheduled minutes. A day the salon is closed (a holiday
+ * in special days, or its weekly closed day) has nobody working, whatever the personal schedules
+ * say, and special opening hours shorten every shift, as in the booking calendar (salonHoursFor).
+ * 2026-11-27: on a public holiday the dashboard showed every master "8 цаг сул".
+ */
 export async function availableStaffToday(salonId: string, today: DateKey, onlyStaffId: string | null) {
   const weekday = weekdayOf(today)
   const { start, end } = dayBounds(today)
+  const [weekly, specials] = await Promise.all([
+    db
+      .select({ weekday: t.openingHours.weekday, isClosed: t.openingHours.isClosed, opensAt: t.openingHours.opensAt, closesAt: t.openingHours.closesAt })
+      .from(t.openingHours)
+      .where(eq(t.openingHours.salonId, salonId)),
+    db
+      .select({ date: t.specialDays.date, kind: t.specialDays.kind, opensAt: t.specialDays.opensAt, closesAt: t.specialDays.closesAt, label: t.specialDays.label })
+      .from(t.specialDays)
+      .where(and(eq(t.specialDays.salonId, salonId), eq(t.specialDays.date, today))),
+  ])
+  // No opening hours saved at all: nothing to apply (the personal schedules decide, as before).
+  const hours = weekly.length || specials.length ? salonHoursFor(today, weekly, specials) : { startsAt: 0, endsAt: 1440 }
+  const salonClosed = hours ? null : { label: specials.find((d) => d.kind === 'closed')?.label ?? null }
   const rows = await db
     .select({
       id: t.staff.id,
@@ -304,13 +323,16 @@ export async function availableStaffToday(salonId: string, today: DateKey, onlyS
   return rows.map((r) => {
     const timeOff = off.find((o) => o.staffId === r.id)
     const fullDayOff = Boolean(timeOff && timeOff.startsAt <= start && timeOff.endsAt >= end)
-    const working = Boolean(r.isWorking) && !fullDayOff
-    const shiftMinutes = working && r.startsAt !== null && r.endsAt !== null ? r.endsAt - r.startsAt : 0
+    const shiftStart = hours && r.startsAt !== null ? Math.max(r.startsAt, hours.startsAt) : null
+    const shiftEnd = hours && r.endsAt !== null ? Math.min(r.endsAt, hours.endsAt) : null
+    const shiftMinutes = shiftStart !== null && shiftEnd !== null ? Math.max(0, shiftEnd - shiftStart) : 0
+    const working = Boolean(r.isWorking) && !fullDayOff && !salonClosed && shiftMinutes > 0
     return {
       ...r,
       working,
+      salonClosed,
       timeOff: timeOff ? { kind: timeOff.kind, fullDay: fullDayOff } : null,
-      shiftMinutes,
+      shiftMinutes: working ? shiftMinutes : 0,
       bookedMinutes: booked.find((b) => b.staffId === r.id)?.minutes ?? 0,
     }
   })

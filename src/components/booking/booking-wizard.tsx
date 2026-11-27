@@ -899,8 +899,10 @@ export function BookingWizard({ catalog, rules }: { catalog: PublicCatalog; rule
               ) : null}
               <p className="text-xs text-ink-3">
                 «Захиалах» дарснаар сервер сонгосон цаг сул эсэхийг дахин шалгаж, үнийг салоны каталогоос дахин
-                тооцоолно. Цуцлалтын нөхцөл: {rules.cancellationNoticeHours} цагаас өмнө цуцалбал урьдчилгаа бүтэн
-                буцна.
+                тооцоолно. Цуцлалтын нөхцөл:{' '}
+                {quote.deposit > 0
+                  ? `${rules.cancellationNoticeHours} цагаас өмнө цуцалбал урьдчилгаа бүтэн буцна.`
+                  : `${rules.cancellationNoticeHours} цагаас өмнө төлбөргүй цуцална.`}
               </p>
             </div>
           )}

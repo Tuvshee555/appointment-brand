@@ -1,5 +1,6 @@
 import { connection } from 'next/server'
-import { KnowledgeEditor, TOPICS, type KnowledgeValues } from '@/components/admin/assistant/forms'
+import { KnowledgeEditor, type KnowledgeValues } from '@/components/admin/assistant/forms'
+import { knowledgeTopic, topicLabel } from '@/lib/knowledge-topics'
 import { AssistantTabs } from '@/components/admin/assistant/tabs'
 import { Card, EmptyState, PageHeader } from '@/components/admin/ui'
 import { Badge } from '@/components/ui/badge'
@@ -43,7 +44,7 @@ export default async function KnowledgePage() {
               title={
                 <span className="flex flex-wrap items-center gap-2">
                   {k.question}
-                  <Badge tone="muted">{TOPICS[k.topic as KnowledgeValues['topic']] ?? k.topic}</Badge>
+                  <Badge tone="muted">{topicLabel(k.topic)}</Badge>
                   {k.verifiedAt ? (
                     <Badge tone="success">Баталгаажсан</Badge>
                   ) : (
@@ -58,7 +59,7 @@ export default async function KnowledgePage() {
                 canEdit={canEdit}
                 initial={{
                   id: k.id,
-                  topic: (k.topic in TOPICS ? k.topic : 'general') as KnowledgeValues['topic'],
+                  topic: knowledgeTopic(k.topic),
                   question: k.question,
                   answer: k.answer,
                   keywords: k.keywords,

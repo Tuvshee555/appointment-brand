@@ -98,7 +98,7 @@ export default async function SettingsPage() {
           <Card title="Цагийн бүс, холболт">
             <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-sm">
               <dt className="text-ink-3">Цагийн бүс</dt>
-              <dd>{salon.timezone} (UTC+8, зуны цаггүй). Бүх цагийг UTC-ээр хадгалж, Улаанбаатарын цагаар харуулна.</dd>
+              <dd>{salon.timezone === 'Asia/Ulaanbaatar' ? 'Улаанбаатар' : salon.timezone} (UTC+8, зуны цаггүй). Бүх цагийг Улаанбаатарын цагаар харуулна.</dd>
               <dt className="text-ink-3">Валют</dt>
               <dd>MNT, бүхэл төгрөг</dd>
               <dt className="text-ink-3">QPay</dt>

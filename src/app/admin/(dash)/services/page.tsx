@@ -163,7 +163,7 @@ export default async function ServicesAdminPage() {
       </div>
 
       <div className="mt-10 grid gap-6 xl:grid-cols-[1.6fr_1fr]">
-        <Card title="Нэмэлт сонголтууд (add-on)">
+        <Card title="Нэмэлт сонголтууд">
           {canEdit ? (
             <>
               {catalog.addons.map((a) => (

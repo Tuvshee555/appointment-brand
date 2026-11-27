@@ -201,9 +201,16 @@ async function BookingContent({
           canCancel={canCancel}
           canReschedule={canReschedule}
           rescheduleBlockedReason={
-            active && !canReschedule && startsIn > 0
-              ? `Цаг эхлэхээс ${salon.rules.rescheduleNoticeHours} цагийн дотор онлайнаар өөрчлөх боломжгүй — салон руу залгана уу (${formatPhone(salon.phone)}).`
-              : null
+            // The real reason: the notice window only when the start really is that close, otherwise
+            // the unpaid deposit (the time can move once it is paid). 2026-11-27: a booking 8 days
+            // away awaiting its deposit was told it was "within 12 hours".
+            !active || canReschedule || startsIn <= 0
+              ? null
+              : startsIn < salon.rules.rescheduleNoticeHours
+                ? `Цаг эхлэхээс ${salon.rules.rescheduleNoticeHours} цагийн дотор онлайнаар өөрчлөх боломжгүй — салон руу залгана уу (${formatPhone(salon.phone)}).`
+                : booking.status === 'awaiting_deposit'
+                  ? 'Урьдчилгаа төлөгдсөний дараа цагаа онлайнаар өөрчилж болно.'
+                  : null
           }
           cancelWithinPolicy={startsIn >= salon.rules.cancellationNoticeHours}
           paidDeposit={paidDeposit}

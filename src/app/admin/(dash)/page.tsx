@@ -256,9 +256,11 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
                   <p className="text-xs text-ink-3">
                     {s.working
                       ? `${formatDuration(s.bookedMinutes)} захиалгатай · ${formatDuration(Math.max(0, s.shiftMinutes - s.bookedMinutes))} сул`
-                      : s.timeOff?.fullDay
-                        ? 'Чөлөөтэй (амралт)'
-                        : 'Амралтын өдөр'}
+                      : s.salonClosed
+                        ? `Салон амарна${s.salonClosed.label ? ` · ${s.salonClosed.label}` : ''}`
+                        : s.timeOff?.fullDay
+                          ? 'Чөлөөтэй (амралт)'
+                          : 'Амралтын өдөр'}
                   </p>
                 </div>
                 <span

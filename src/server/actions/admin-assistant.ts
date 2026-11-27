@@ -5,6 +5,7 @@ import { z } from 'zod'
 import { chatRequestSchema } from '@/lib/assistant/schema'
 import type { ChatResponse } from '@/lib/assistant/types'
 import { id, optionalText } from '@/lib/validation/common'
+import { KNOWLEDGE_TOPICS } from '@/lib/knowledge-topics'
 import { answerHasAmount } from '@/server/assistant/engine/knowledge'
 import { MODEL_OPTIONS } from '@/server/assistant/engine/model'
 import { handleChat, postStaffReply, setConversationStatus } from '@/server/assistant/handler'
@@ -53,7 +54,7 @@ export async function saveAssistantSettingsAction(input: unknown) {
 
 const knowledgeSchema = z.object({
   id: id.nullish(),
-  topic: z.enum(['general', 'preparation', 'aftercare', 'payment', 'parking', 'policy']),
+  topic: z.enum(KNOWLEDGE_TOPICS),
   question: z.string().trim().min(3).max(300),
   answer: z.string().trim().min(3).max(1500),
   keywords: z.string().trim().max(300),

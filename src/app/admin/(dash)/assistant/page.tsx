@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge'
 import { buttonClass } from '@/components/ui/button'
 import { requireAdminPage } from '@/server/auth/current'
 import { assistantOverview } from '@/server/queries/admin-assistant'
+import { optionFor } from '@/server/assistant/engine/model'
 
 export const metadata = { title: 'AI туслах' }
 
@@ -101,7 +102,7 @@ export default async function AssistantOverviewPage() {
         <Card title="AI загвар">
           <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-sm">
             <dt className="text-ink-3">Сонгосон</dt>
-            <dd>{o.settings.model}</dd>
+            <dd>{o.settings.model ? (optionFor(o.settings.model)?.label ?? o.settings.model) : 'Автомат'}</dd>
             <dt className="text-ink-3">Ажиллаж буй</dt>
             <dd>{o.model ? `${o.model.label} (${o.model.provider})` : 'Салоны өгөгдөл (AI-гүй горим)'}</dd>
             {o.demoMode ? null : (

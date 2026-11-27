@@ -5,6 +5,7 @@ import { useState, useTransition } from 'react'
 import { ActionButton, FeedbackLine, feedbackFrom, type Feedback } from '@/components/admin/action-button'
 import { Button } from '@/components/ui/button'
 import { Checkbox, Field, Input, Select, Textarea } from '@/components/ui/field'
+import { TOPIC_LABELS, type KnowledgeTopic } from '@/lib/knowledge-topics'
 import {
   deleteKnowledgeAction,
   saveAssistantSettingsAction,
@@ -168,21 +169,12 @@ export function AssistantSettingsForm({
 
 export interface KnowledgeValues {
   id: string | null
-  topic: 'general' | 'preparation' | 'aftercare' | 'payment' | 'parking' | 'policy'
+  topic: KnowledgeTopic
   question: string
   answer: string
   keywords: string
   isActive: boolean
   verified: boolean
-}
-
-export const TOPICS: Record<KnowledgeValues['topic'], string> = {
-  general: 'Ерөнхий',
-  preparation: 'Бэлтгэл',
-  aftercare: 'Дараах арчилгаа',
-  payment: 'Төлбөр',
-  parking: 'Зогсоол, хүрэх',
-  policy: 'Журам',
 }
 
 export function KnowledgeEditor({ initial, canEdit }: { initial: KnowledgeValues; canEdit: boolean }) {
@@ -211,7 +203,7 @@ export function KnowledgeEditor({ initial, canEdit }: { initial: KnowledgeValues
               value={v.topic}
               onChange={(e) => set('topic', e.target.value as KnowledgeValues['topic'])}
             >
-              {Object.entries(TOPICS).map(([k, label]) => (
+              {Object.entries(TOPIC_LABELS).map(([k, label]) => (
                 <option key={k} value={k}>
                   {label}
                 </option>
